@@ -768,8 +768,8 @@ for (const w of WIRES) if (VIA[w.id]) w.via = VIA[w.id];
 for (const id of ['l1','l2','l4','l6','l7']) WIRES.find(w=>w.id===id).k = 26;
 
 const wireEls = {};
-function drawWire(w, animate){
-  const g = el('g', {class:'wiregrp', 'data-id':w.id}, gWires);
+function drawWire(w, animate, parent = gWires){
+  const g = el('g', {class:'wiregrp', 'data-id':w.id}, parent);
   const d = wirePath(w);
   const black = w.c==='blk';
   el('path', {class:'wire', d, stroke:black?'#8a9aaa':'#000', 'stroke-width':w.g+2.5, 'stroke-opacity':black?.9:.6}, g);
@@ -787,6 +787,7 @@ function drawWire(w, animate){
     for (const [xx,c] of [[-6,'#795548'],[-1,'#000'],[4,'#ff9800']]) el('rect', {x:xx, y:-5.5, width:3, height:11, fill:c}, rg);
     txt(rg, 0, -9, '10k', {'font-size':9.5, fill:'#d7ccc8', 'text-anchor':'middle'});
   }
+  if (parent !== gWires) return;
   g.addEventListener('click', e => { e.stopPropagation(); onWireClick(w); });
   g.addEventListener('pointerenter', e => showWireTip(e, w));
   g.addEventListener('pointermove', moveTip);
@@ -1036,21 +1037,81 @@ function goto(i){
 }
 
 /* ---------- explore ---------- */
+const WIRE_LAYERS = [['hv','12V power & motors',COL.red],['gnd','Ground',COL.blk],['lv','5V / 3.3V logic power',COL.org],['sig','Signals',COL.blu]];
+
+async function downloadDiagram(){
+  const scale = 3;
+  const margin = 28;
+  const width = W + 2 * margin;
+  const height = H + 140;
+  const diagram = el('svg', {
+    viewBox: `-${margin} -80 ${width} ${height}`,
+    width: width * scale, height: height * scale,
+    'font-family': 'Arial, sans-serif'
+  });
+  diagram.append(defs.cloneNode(true));
+  el('rect', {x:-margin, y:-80, width, height, fill:'#0e141b'}, diagram);
+  const wireStyle = el('style', null, diagram);
+  wireStyle.textContent = '.wire{fill:none;stroke-linecap:round;stroke-linejoin:round} .term .hit{fill:transparent}';
+  const map = el('svg', {x:-margin, y:0, width, height:H, viewBox:`-${margin} 0 ${width} ${H}`}, diagram);
+  map.append(gBg.cloneNode(true));
+  const wires = el('g', null, map);
+  for (const wire of WIRES) drawWire(wire, false, wires);
+  map.append(gComps.cloneNode(true), gTerms.cloneNode(true));
+  for (const terminal of map.querySelectorAll('.term')) terminal.style.removeProperty('opacity');
+
+  txt(diagram, 0, -33, 'McLaren F1 · Finished wiring diagram', {fill:'#e6edf3', 'font-size':29, 'font-weight':700});
+  WIRE_LAYERS.forEach(([key, label, color], index) => {
+    const x = index * W / WIRE_LAYERS.length;
+    el('rect', {x, y:H+23, width:26, height:7, rx:3, fill:color, stroke:key==='gnd'?'#8a9aaa':'none'}, diagram);
+    txt(diagram, x+35, H+32, label, {fill:'#e6edf3', 'font-size':16});
+  });
+
+  const svgURL = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(diagram)], {type:'image/svg+xml;charset=utf-8'}));
+  try {
+    const image = new Image();
+    image.src = svgURL;
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    canvas.getContext('2d').drawImage(image, 0, 0);
+    const png = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!png) throw new Error('PNG export failed');
+    const url = URL.createObjectURL(png);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'mclaren-f1-wiring-diagram.png';
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  } finally {
+    URL.revokeObjectURL(svgURL);
+  }
+}
+
 function renderLegend(){
   const L = document.getElementById('legend');
-  const cats = [['hv','12V power & motors',COL.red],['gnd','Ground',COL.blk],['lv','5V / 3.3V logic power',COL.org],['sig','Signals',COL.blu]];
   if (mode==='explore'){
-    L.innerHTML = `<div style="margin-bottom:4px;color:#e6edf3"><b>Layers</b> · click any terminal to trace its node</div><div class="row">` + cats.map(([k,n,c])=>`<label><input type="checkbox" data-layer="${k}" ${state.layers[k]?'checked':''}><span class="sw" style="background:${c};${k==='gnd'?'outline:1px solid #8a9aaa':''}"></span>${n}</label>`).join('') + '</div>';
+    L.innerHTML = `<div style="margin-bottom:4px;color:#e6edf3"><b>Layers</b> · click any terminal to trace its node</div><div class="row">` + WIRE_LAYERS.map(([k,n,c])=>`<label><input type="checkbox" data-layer="${k}" ${state.layers[k]?'checked':''}><span class="sw" style="background:${c};${k==='gnd'?'outline:1px solid #8a9aaa':''}"></span>${n}</label>`).join('') + '</div>';
     L.querySelectorAll('input').forEach(i => i.onchange = () => { state.layers[i.dataset.layer] = i.checked; save(); renderWires(); });
   } else {
-    L.innerHTML = `<div class="row">` + cats.map(([k,n,c])=>`<span><span class="sw" style="background:${c};${k==='gnd'?'outline:1px solid #8a9aaa':''}"></span> ${n}</span>`).join('') + `</div><div style="margin-top:4px">Hover a terminal for what it is · scroll = zoom · drag = pan</div>`;
+    L.innerHTML = `<div class="row">` + WIRE_LAYERS.map(([k,n,c])=>`<span><span class="sw" style="background:${c};${k==='gnd'?'outline:1px solid #8a9aaa':''}"></span> ${n}</span>`).join('') + `</div><div style="margin-top:4px">Hover a terminal for what it is · scroll = zoom · drag = pan</div>`;
   }
 }
 function renderExplore(extra){
   panel.innerHTML = `<div class="card"><h2>Explore the finished car</h2><p>Every wire is drawn. <b>Click a terminal or wire</b> to trace everything electrically connected to it, through Wagos and shared pins. Toggle layers bottom-left.</p>
-  <p class="meta">${WIRES.length} wires total · ${WIRES.filter(w=>w.cat==='hv').length} heavy 12V · ${WIRES.filter(w=>w.cat==='sig').length} signal</p></div>` + (extra||'') +
+  <p class="meta">${WIRES.length} wires total · ${WIRES.filter(w=>w.cat==='hv').length} heavy 12V · ${WIRES.filter(w=>w.cat==='sig').length} signal</p><button class="btn" id="downloadDiagram">Download diagram (PNG)</button></div>` + (extra||'') +
   `<div class="card"><h3>Good nodes to trace</h3><div class="navrow">
    ${[['wpos.p1','Motor +'],['bat.-','Ground'],['w12.p1','+12V bus'],['esp.3V3','3.3V'],['esp.5V','5V'],['drv1.R_EN','Rear enable']].map(([f,n])=>`<button class="btn small" data-trace="${f}">${n}</button>`).join('')}</div></div>`;
+  const download = panel.querySelector('#downloadDiagram');
+  download.onclick = async () => {
+    download.disabled = true;
+    try { await downloadDiagram(); }
+    catch (error) { console.error(error); toast('Could not download the wiring diagram.', 'bad'); }
+    finally { download.disabled = false; }
+  };
   panel.querySelectorAll('[data-trace]').forEach(b => b.onclick = () => highlightNet(b.dataset.trace));
 }
 
