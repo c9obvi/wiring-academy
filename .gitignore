@@ -1,2 +1,5 @@
 /source/Project_Summary_Hardware_Spec.pdf
 /.wrangler/
+
+# Car Wi-Fi password: local only, never commit
+firmware/**/secrets.h

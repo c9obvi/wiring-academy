@@ -4,6 +4,7 @@ Huffy 12V McLaren F1 ride-on (model 17154). The stock control board comes out, a
 
 - **[wiring-academy.html](wiring-academy.html)**: interactive top-down wiring tutorial. Open it in Chrome or Safari. It has 51 wires in build order, quizzes, safety checklists, simulators (motor direction, drive + tail light, steering PID), a printable pin map, and the plan review.
 - **[Live Wiring Academy](https://wiring-academy.tech619.com/)**
+- **[firmware/](firmware/README.md)**: milestone 1 sketch (rear drive + tail light from a phone over the ESP32's own Wi-Fi), with the minimal wiring list, flashing steps and first-drive test.
 
 ## Review of the original plan (2026-11-16)
 
