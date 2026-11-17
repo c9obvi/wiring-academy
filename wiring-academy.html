@@ -1,0 +1,1364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>McLaren F1 · Wiring Academy</title>
+<style>
+:root{
+  --bg:#0e141b; --panel:#151e28; --panel2:#1b2633; --line:#2a3a4c; --text:#e6edf3; --muted:#8fa3b8;
+  --accent:#ff8000; --ok:#4caf50; --warn:#ffb300; --bad:#ef5350; --info:#42a5f5;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{height:54px;display:flex;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid var(--line);background:#101820}
+header h1{font-size:16px;margin:0;white-space:nowrap}
+header h1 span{color:var(--accent)}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{background:transparent;border:1px solid transparent;color:var(--muted);padding:6px 12px;border-radius:8px;cursor:pointer;font:inherit}
+.tab:hover{color:var(--text)}
+.tab.on{background:var(--panel2);border-color:var(--line);color:var(--text)}
+.repo-link{margin-left:auto;color:var(--muted);white-space:nowrap}
+.repo-link:hover{color:var(--text)}
+main{display:flex;height:calc(100% - 54px)}
+#mapWrap{position:relative;flex:1;min-width:0;overflow:hidden;background:
+  radial-gradient(circle at 50% 40%,#132030 0,#0b1118 70%)}
+#svg{width:100%;height:100%;display:block;touch-action:none;user-select:none}
+#panel{width:440px;max-width:48vw;border-left:1px solid var(--line);background:var(--panel);overflow-y:auto;padding:16px}
+.mapbtns{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px}
+.mapbtns button,.btn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;font:inherit}
+.mapbtns button{width:40px;height:36px;padding:0;font-size:16px}
+.btn:hover,.mapbtns button:hover{border-color:#47627f}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#1b0f00;font-weight:600}
+.btn.primary:disabled{opacity:.35;cursor:not-allowed}
+.btn.small{padding:4px 9px;font-size:12px}
+.btn.danger{background:#5c1d1d;border-color:#8c2b2b}
+.legend{position:absolute;left:12px;bottom:12px;background:rgba(16,24,32,.88);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12px;color:var(--muted);max-width:340px}
+.legend .row{display:flex;flex-wrap:wrap;gap:4px 12px}
+.legend label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.sw{display:inline-block;width:18px;height:5px;border-radius:3px;vertical-align:middle}
+.phase-chips{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 12px}
+.chip{font-size:12px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);cursor:pointer}
+.chip.cur{border-color:var(--accent);color:var(--text)}
+.chip.done{color:#a5d6a7;border-color:#2e5d32}
+.progress{height:6px;background:#0d141b;border-radius:3px;overflow:hidden;margin:6px 0 4px}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,#ff8000,#ffb74d);width:0;transition:width .4s}
+.meta{font-size:12px;color:var(--muted)}
+.card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0}
+.card h2{font-size:17px;margin:0 0 8px}
+.card h3{font-size:13px;margin:12px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.card p{margin:6px 0}
+.wirechip{display:inline-flex;align-items:center;gap:8px;background:#0f1720;border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:12px;color:var(--muted);margin-bottom:6px}
+.wirechip i{display:inline-block;width:28px;border-radius:4px}
+.box{border-radius:8px;padding:8px 10px;margin:8px 0;font-size:13px}
+.box.tip{background:#10273a;border:1px solid #1e4a6e}
+.box.warn{background:#33250a;border:1px solid #6b4a0f}
+.box.fix{background:#2b1530;border:1px solid #5a2c66}
+.box>b:first-child{display:block;margin-bottom:2px}
+.status{margin:10px 0 4px;padding:8px 10px;border-radius:8px;background:#0f1720;border:1px dashed var(--line);font-size:13px}
+.status.ok{border-style:solid;border-color:#2e7d32;background:#0f2412;color:#c8e6c9}
+.navrow{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.check{display:flex;gap:9px;align-items:flex-start;padding:7px 8px;border-radius:8px;cursor:pointer}
+.check:hover{background:#0f1720}
+.check input{margin-top:3px;accent-color:var(--accent);width:16px;height:16px}
+.quizopt{display:block;width:100%;text-align:left;margin:6px 0;background:#0f1720;border:1px solid var(--line);color:var(--text);padding:9px 10px;border-radius:8px;cursor:pointer;font:inherit}
+.quizopt:hover{border-color:#47627f}
+.quizopt.right{border-color:#2e7d32;background:#0f2412}
+.quizopt.wrong{border-color:#8c2b2b;background:#2a1010}
+#toast{position:fixed;left:50%;top:66px;transform:translateX(-50%) translateY(-20px);opacity:0;pointer-events:none;background:#1e2a38;border:1px solid var(--line);padding:10px 14px;border-radius:10px;max-width:560px;font-size:13px;transition:.25s;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.bad{border-color:#8c2b2b}
+#toast.good{border-color:#2e7d32}
+#tip{position:fixed;pointer-events:none;background:#0b1118f2;border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12px;max-width:300px;z-index:40;display:none}
+#tip b{color:#fff}
+table.pins{width:100%;border-collapse:collapse;font-size:12.5px}
+table.pins th,table.pins td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:left;vertical-align:top}
+table.pins th{color:var(--muted);font-weight:600}
+table.pins tr.grp td{background:#0f1720;color:var(--accent);font-weight:600;padding-top:9px}
+.kbd{font-family:ui-monospace,Menlo,monospace;background:#0f1720;border:1px solid var(--line);border-radius:5px;padding:0 5px;font-size:12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:#0f1720;border:0;color:var(--muted);padding:6px 10px;cursor:pointer;font:inherit;font-size:12.5px}
+.seg button.on{background:var(--accent);color:#1b0f00;font-weight:600}
+.simgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.readout{background:#0f1720;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;color:var(--muted)}
+.readout b{display:block;color:var(--text);font-size:15px;font-family:ui-monospace,Menlo,monospace}
+.bigbtn{width:100%;padding:14px;font-size:15px;font-weight:700;border-radius:10px;border:2px solid #47627f;background:#0f1720;color:var(--text);cursor:pointer;user-select:none;touch-action:none}
+.bigbtn.down{background:#2e7d32;border-color:#66bb6a}
+.estop{background:#8e1b1b;border-color:#ef5350;color:#fff}
+.estop.on{background:#ef5350}
+canvas{display:block;width:100%}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.sev{display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:5px;margin-right:6px;vertical-align:1px}
+.sev.h{background:#5c1d1d;color:#ffcdd2}.sev.m{background:#4a3608;color:#ffe082}.sev.l{background:#123247;color:#bbdefb}.sev.g{background:#173d1a;color:#c8e6c9}
+ul.tight{margin:4px 0;padding-left:18px}ul.tight li{margin:3px 0}
+/* svg */
+.comp rect.body{transition:opacity .3s}
+.comp.dim{opacity:.28}
+.term{cursor:pointer}
+.term .hit{fill:transparent}
+.term.target .ring{stroke:#ffeb3b;stroke-width:3;animation:pulse 1s infinite}
+.term.sel .ring{stroke:#00e5ff;stroke-width:4}
+.term.flash .ring{stroke:#ef5350;stroke-width:4}
+.term:hover .ring{stroke:#fff;stroke-width:2.5}
+@keyframes pulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.15}}
+.wire{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.wire.new{animation:draw 0.8s ease-out}
+@keyframes draw{from{stroke-dashoffset:var(--len)}to{stroke-dashoffset:0}}
+.wiregrp{cursor:pointer}
+.wiregrp.hl .wire{filter:drop-shadow(0 0 6px #fff)}
+.wiregrp.faded{opacity:.12}
+.flow{fill:none;stroke:#fff;stroke-opacity:.75;stroke-dasharray:2 18;animation:flow 1s linear infinite;pointer-events:none}
+@keyframes flow{to{stroke-dashoffset:-20}}
+@media print{
+  header,#mapWrap,.noprint{display:none!important}
+  #panel{width:100%;max-width:none;border:0;background:#fff;color:#000}
+  .card{background:#fff;border-color:#999}
+  table.pins th,table.pins td{border-color:#bbb;color:#000}
+  table.pins tr.grp td{background:#eee;color:#000}
+  body{background:#fff}
+}
+@media (max-width:900px){
+  header{height:auto;min-height:54px;flex-wrap:wrap;gap:8px 16px;padding-block:8px}
+  .tabs{order:1;width:100%}
+  main{flex-direction:column}
+  #mapWrap{flex:none;height:55vh}
+  #panel{width:100%;max-width:none;border-left:0;border-top:1px solid var(--line)}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>McLaren F1 · <span>Wiring Academy</span></h1>
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-mode="learn">Tutorial</button>
+    <button class="tab" data-mode="explore">Explore</button>
+    <button class="tab" data-mode="sim">Simulators</button>
+    <button class="tab" data-mode="pins">Pin map</button>
+    <button class="tab" data-mode="review">Plan review</button>
+  </div>
+  <a class="repo-link" href="https://github.com/c9obvi/wiring-academy">View on GitHub</a>
+</header>
+<main>
+  <div id="mapWrap">
+    <svg id="svg" viewBox="0 0 1000 1500" aria-label="Top-down wiring map of the car"></svg>
+    <div class="mapbtns">
+      <button id="zin" title="Zoom in">+</button>
+      <button id="zout" title="Zoom out">−</button>
+      <button id="zfit" title="Whole car">⤢</button>
+      <button id="zfocus" title="Focus on current step">◎</button>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+  <aside id="panel"></aside>
+</main>
+<div id="toast"></div>
+<div id="tip"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   DATA: components, terminals, wires, tutorial steps
+   Coordinates are in SVG units (viewBox 1000 x 1500). Nose at top.
+   ===================================================================== */
+const W = 1000, H = 1500;
+const COL = {
+  red:'#e53935', blk:'#1c1c1c', org:'#fb8c00', yel:'#fdd835', blu:'#42a5f5', pur:'#ab47bc',
+  grn:'#66bb6a', cyn:'#26c6da', lim:'#c0ca33', wht:'#eceff1', brn:'#a1887f', tea:'#26a69a', pnk:'#f06292'
+};
+const COLNAME = {red:'red', blk:'black', org:'orange', yel:'yellow', blu:'blue', pur:'purple', grn:'green',
+  cyn:'cyan', lim:'lime', wht:'white', brn:'brown', tea:'teal', pnk:'pink'};
+
+function T(id, side, at, label, desc){ return {id, side, at, label, desc}; }
+
+const HDR = (k) => [ // BTS7960 / IBT-2 8-pin logic header, in its real order
+  T('RPWM',k,.08,'RPWM','PWM input for the "right" half-bridge. HIGH pulses push M+ toward B+.'),
+  T('LPWM',k,.20,'LPWM','PWM input for the "left" half-bridge. HIGH pulses push M− toward B+ (opposite direction).'),
+  T('R_EN',k,.32,'R_EN','Enable for the right half-bridge. LOW = that output is switched off (floating).'),
+  T('L_EN',k,.44,'L_EN','Enable for the left half-bridge. LOW = that output is switched off (floating).'),
+  T('R_IS',k,.56,'R_IS','Current-sense output (right). Leave unconnected for now; optional later for stall/overcurrent detection on an ADC pin.'),
+  T('L_IS',k,.68,'L_IS','Current-sense output (left). Leave unconnected for now.'),
+  T('VCC',k,.80,'VCC','Logic supply for the board\'s input buffer chip. Feed it 3.3V when an ESP32 drives it.'),
+  T('GND',k,.92,'GND','Logic ground. Must be common with the ESP32 ground.'),
+];
+
+const COMPS = [
+  {id:'bat', kind:'battery', x:30, y:470, w:150, h:140, title:'12V battery', sub:'ride-on SLA pack',
+    terms:[T('+','b',.3,'+','Battery positive. The first thing it touches is the main fuse, nothing else.'),
+           T('-','b',.75,'−','Battery negative. Becomes the ground for everything; motors and logic share it.')]},
+  {id:'fuse', kind:'fuse', x:40, y:655, w:70, h:40, title:'Main fuse', sub:'20A · reuse stock',
+    terms:[T('in','t',.5,'in','Fuse input, from battery +.'), T('out','b',.5,'out','Fuse output, protected +12V.')]},
+  {id:'sw', kind:'switch', x:40, y:740, w:70, h:46, title:'Power switch', sub:'stock button',
+    terms:[T('in','t',.5,'in','Switch input, from the fuse.'), T('out','b',.5,'out','Switched +12V. When OFF, the whole car is dead.')]},
+  {id:'w12', kind:'wago', x:50, y:835, w:46, h:180, title:'+12V bus', sub:'WAGO 221-415', ports:'r', bus:true,
+    terms:[1,2,3,4,5].map((n,i)=>T('p'+n,'r',.1+i*.2,String(n),'+12V bus port '+n+'. All 5 holes are joined inside the Wago, so any of them is switched, fused +12V.'))},
+  {id:'wg', kind:'wago', x:50, y:1040, w:46, h:180, title:'GND bus', sub:'WAGO 221-415', ports:'r', bus:true, gnd:true,
+    terms:[1,2,3,4,5].map((n,i)=>T('p'+n,'r',.1+i*.2,String(n),'Ground bus port '+n+'. All 5 holes are joined inside the Wago.'))},
+  {id:'fuse2', kind:'fuse', x:262, y:680, w:40, h:56, title:'2A', sub:'', small:true,
+    terms:[T('in','b',.5,'in','2A inline fuse input, from the +12V bus.'), T('out','t',.5,'out','2A fuse output, to the buck converter\'s red input lead.')]},
+  {id:'buck', kind:'buck', x:250, y:572, w:130, h:80, title:'12V→5V buck', sub:'10–60V in · 5V 3A · IP67',
+    terms:[T('in+','b',.25,'IN+','Red INPUT lead. Fused +12V goes here.'),
+           T('in-','b',.55,'IN−','Black INPUT lead, to the ground bus.'),
+           T('out+','r',.62,'5V','Red OUTPUT lead: regulated 5V. Measure it before connecting the ESP32.'),
+           T('out-','r',.86,'GND','Black OUTPUT lead: ground. Inside this module it is the same as the input ground.')]},
+  {id:'esp', kind:'esp', x:440, y:700, w:170, h:340, title:'ESP32-S3', sub:'DevKitC-1 (the long board)',
+    terms:[
+      T('5V','l',.05,'5V','5V / VIN input. Powers the board (its own regulator makes 3.3V).'),
+      T('GND','l',.13,'GND','Ground. Every GND pin on the board is the same node.'),
+      T('3V3','l',.21,'3V3','3.3V output from the ESP32\'s regulator. Small loads only (logic, the pot).'),
+      T('IO16','l',.33,'GPIO16','GPIO16: steering driver ENABLE. A pull-down keeps steering limp while booting.'),
+      T('IO15','l',.41,'GPIO15','GPIO15: steering LPWM (turn one way).'),
+      T('IO7','l',.49,'GPIO7','GPIO7: steering RPWM (turn the other way).'),
+      T('IO13','l',.62,'GPIO13','GPIO13: accelerator pedal input (INPUT_PULLUP; LOW = pressed).'),
+      T('IO14','l',.70,'GPIO14','GPIO14: Forward/Reverse switch input.'),
+      T('IO17','l',.78,'GPIO17','GPIO17: High/Low speed switch input.'),
+      T('IO18','l',.86,'GPIO18','GPIO18: Manual/RC switch input.'),
+      T('5Vb','r',.05,'5V','Second 5V tap. The board has one 5V pin, so in real life split the buck\'s 5V lead with a 3-port Wago: one branch to the ESP32 5V pin, one to the tail light.'),
+      T('GNDb','r',.13,'GND','Ground (same node as every other GND).'),
+      T('3V3b','r',.21,'3V3','3.3V (the S3 board has two 3V3 pins). With several 3.3V loads, run 3V3 to a breadboard power rail and tap from there.'),
+      T('IO1','r',.33,'GPIO1','GPIO1: steering pot (ADC1 channel 0). ADC1 keeps working while Bluetooth runs.'),
+      T('IO11','r',.45,'GPIO11','GPIO11: MAX7219 DIN (hardware SPI MOSI).'),
+      T('IO12','r',.61,'GPIO12','GPIO12: MAX7219 CLK (hardware SPI SCK).'),
+      T('IO10','r',.53,'GPIO10','GPIO10: MAX7219 CS/LOAD (the S3\'s default SPI chip-select pin).'),
+      T('IO4','r',.73,'GPIO4','GPIO4: rear RPWM (forward).'),
+      T('IO5','r',.81,'GPIO5','GPIO5: rear LPWM (reverse).'),
+      T('IO6','r',.89,'GPIO6','GPIO6: rear driver ENABLE (R_EN + L_EN).'),
+    ]},
+  {id:'drv2', kind:'driver', x:170, y:250, w:210, h:110, title:'BTS7960 #2', sub:'steering driver',
+    terms:[T('M+','t',.55,'M+','Motor output 1, to steering motor lead A.'), T('M-','t',.85,'M−','Motor output 2, to steering motor lead B.'),
+           T('B+','l',.3,'B+','Power input +12V (from the +12V bus).'), T('B-','l',.7,'B−','Power input ground (from the GND bus).'),
+           ...HDR('b')]},
+  {id:'smot', kind:'motor', x:420, y:118, w:160, h:62, title:'Steering gearbox', sub:'stock 12V motor',
+    terms:[T('a','l',.32,'A','Steering motor lead A.'), T('b','l',.72,'B','Steering motor lead B.')]},
+  {id:'pot', kind:'pot', x:540, y:240, w:110, h:62, title:'10k pot', sub:'on steering column',
+    terms:[T('1','b',.2,'3V3','Outer leg, to 3.3V. Not 5V: the ESP32 ADC tops out around 3.1V.'),
+           T('w','b',.5,'W','Middle leg (wiper). Its voltage is the steering angle; goes to an ADC pin.'),
+           T('3','b',.8,'GND','Outer leg, to ground.')]},
+  {id:'ped', kind:'pedal', x:395, y:388, w:100, h:62, title:'Foot pedal', sub:'just a switch',
+    terms:[T('s','b',.3,'SIG','Pedal contact 1, to a GPIO input.'), T('g','b',.72,'GND','Pedal contact 2, to ground.')]},
+  {id:'dash', kind:'dash', x:330, y:490, w:360, h:64, title:'Dash switches', sub:'',
+    terms:[T('fr.s','b',.08,'S','Fwd/Rev switch, signal side.'), T('fr.g','b',.18,'G','Fwd/Rev switch, ground side.'),
+           T('hl.s','b',.43,'S','High/Low switch, signal side.'), T('hl.g','b',.53,'G','High/Low switch, ground side.'),
+           T('mr.s','b',.79,'S','Manual/RC switch, signal side.'), T('mr.g','b',.89,'G','Manual/RC switch, ground side.')]},
+  {id:'drv1', kind:'driver', x:395, y:1100, w:230, h:120, title:'BTS7960 #1', sub:'rear drive driver',
+    terms:[...HDR('t'),
+           T('B+','l',.35,'B+','Power input +12V (thick wire from the +12V bus).'), T('B-','l',.72,'B−','Power input ground (thick wire from the GND bus).'),
+           T('M+','b',.35,'M+','Motor output 1, to Wago #1 (both motors\' + side).'), T('M-','b',.7,'M−','Motor output 2, to Wago #2 (both motors\' − side).')]},
+  {id:'lmot', kind:'motor', x:150, y:1180, w:120, h:60, title:'Left rear motor', sub:'',
+    terms:[T('r','b',.3,'red','Left motor red lead. The color is only a label; direction gets verified at first power-up.'), T('k','b',.7,'blk','Left motor black lead.')]},
+  {id:'rmot', kind:'motor', x:730, y:1180, w:120, h:60, title:'Right rear motor', sub:'',
+    terms:[T('r','b',.3,'red','Right motor red lead.'), T('k','b',.7,'blk','Right motor black lead.')]},
+  {id:'wpos', kind:'wago', x:180, y:1300, w:126, h:38, title:'WAGO #1', sub:'motor +', ports:'t', bus:true,
+    terms:[1,2,3].map((n,i)=>T('p'+n,'t',.2+i*.3,String(n),'Wago #1 port '+n+' (the "red club"). All 3 holes are joined inside.'))},
+  {id:'wneg', kind:'wago', x:740, y:1300, w:110, h:38, title:'WAGO #2', sub:'motor −', ports:'t', bus:true, gnd:true,
+    terms:[1,2,3].map((n,i)=>T('p'+n,'t',.2+i*.3,String(n),'Wago #2 port '+n+' (the "black club"). All 3 holes are joined inside.'))},
+  {id:'max', kind:'matrix', x:440, y:1368, w:150, h:100, title:'MAX7219 tail light', sub:'8×8 red',
+    terms:[T('CLK','r',.12,'CLK','Clock (SPI SCK).'), T('CS','r',.31,'CS','Chip select / LOAD.'),
+           T('DIN','r',.5,'DIN','Data in (SPI MOSI).'), T('GND','r',.69,'GND','Ground.'),
+           T('VCC','r',.88,'VCC','5V supply. 64 LEDs need more current than the 3V3 pin can give.')]},
+];
+
+const COMP = {}; const TERMS = {};
+for (const c of COMPS){
+  COMP[c.id] = c;
+  for (const t of c.terms){
+    let x, y, nx=0, ny=0;
+    if (t.side==='t'){ x=c.x+c.w*t.at; y=c.y; ny=-1; }
+    if (t.side==='b'){ x=c.x+c.w*t.at; y=c.y+c.h; ny=1; }
+    if (t.side==='l'){ x=c.x; y=c.y+c.h*t.at; nx=-1; }
+    if (t.side==='r'){ x=c.x+c.w; y=c.y+c.h*t.at; nx=1; }
+    TERMS[c.id+'.'+t.id] = {...t, fid:c.id+'.'+t.id, comp:c, x, y, nx, ny};
+  }
+}
+const heavyKinds = new Set(['driver']);
+function isHeavy(fid){ const t=TERMS[fid]; return t.comp.kind==='driver' && /^(B|M)[+-]$/.test(t.id); }
+
+/* Phases & steps. Wire step: a, b = terminal ids; c = color key; g = stroke width; cat = layer */
+const PHASES = [
+  {n:0, name:'Prep & safety', short:'Prep'}, {n:1, name:'Rear motors → Wagos → driver', short:'Motors'}, {n:2, name:'Battery, fuse, switch & buses', short:'12V power'},
+  {n:3, name:'Buck converter → ESP32 power', short:'5V'}, {n:4, name:'ESP32 → rear driver logic', short:'Logic'}, {n:5, name:'First power-up test', short:'1st test'},
+  {n:6, name:'Tail light (MAX7219)', short:'Tail light'}, {n:7, name:'Pedal & dash switches', short:'Cockpit'}, {n:8, name:'Steering by wire', short:'Steering'}, {n:9, name:'Finished', short:'Done'},
+];
+
+const S = [];
+const info = (ph,id,title,body,focus) => S.push({t:'info',ph,id,title,body,focus});
+const check = (ph,id,title,body,items,focus) => S.push({t:'check',ph,id,title,body,items,focus});
+const quiz = (ph,id,title,q,opts,ans,expl,focus) => S.push({t:'quiz',ph,id,title,q,opts,ans,expl,focus});
+const sim = (ph,id,title,body,which,focus) => S.push({t:'sim',ph,id,title,body,which,focus});
+const wire = (ph,id,a,b,c,g,cat,name,real,why,extra={}) => S.push({t:'wire',ph,id,a,b,c,g,cat,name,real,why,...extra});
+
+/* ---------- Phase 0 ---------- */
+info(0,'intro','How this works',
+ `<p>Every wire in the build is one step. Read the card, then <b>click the two ends of the wire on the map</b> (either order). Wrong clicks cost nothing; they tell you what that terminal actually is. Stuck? Use <b>Hint</b>. Progress saves in this browser.</p>
+  <p>The map is a top-down view of the car: nose at the top, rear wing at the bottom. Parts are spread out so the wires are easy to follow, so it is <b>not to scale</b>. Scroll to zoom and drag to pan. The ◎ button refocuses on the current step.</p>
+  <p>The order follows how you'd actually build it, and it fixes a few things from the original plan (look for the purple <b>Change from the original plan</b> boxes).</p>`, null);
+check(0,'safety','Safety setup (do this for real)',
+ `<p>Tick each one when it's true in the garage, not just in the game.</p>`,
+ ['The battery is <b>unplugged</b> at its connector and stays unplugged until Phase 5.',
+  'The car is on a box or stand so the <b>rear wheels are off the ground</b> for every power test.',
+  'You photographed the stock board and every connector before cutting anything, and labeled each wire with tape (e.g. "L-MOTOR red").',
+  'The stock control board is bagged and kept, so you can always go back.',
+  'Tools are on hand: wire strippers, a small screwdriver for the BTS7960 terminals, your 18 AWG wire, and the starter kit\'s jumper wires. <b>No multimeter yet? Get a cheap one before Phase 3</b>; you can\'t safely check the 5V output without it.'], null);
+quiz(0,'q-mirror','Quick check: motors are mirror images',
+ 'The left and right rear motors face opposite directions. If you join red-to-red and black-to-black, what can happen when you press go?',
+ ['Both wheels always go forward. Colors guarantee it.',
+  'One wheel might spin backward, so the car spins in place. You test it at first power-up.',
+  'The motor driver burns out.'], 1,
+ 'Wire colors are only labels. Because the motors are mounted mirrored, the factory may or may not have swapped one motor\'s leads. You\'ll find out with the wheels off the ground in Phase 5, and the fix is just swapping that motor\'s two wires at the Wagos.', null);
+
+/* ---------- Phase 1 ---------- */
+info(1,'p1-intro','Phase 1: yes, the motors go to the driver through the Wagos',
+ `<p>This is exactly what your Phase 1 diagram shows, and it's correct. Four motor wires become two: both <b>red</b> wires meet in Wago #1, both <b>black</b> wires meet in Wago #2, and one thick jumper from each Wago lands on the driver's <b>M+</b> / <b>M−</b> screw terminals.</p>
+  <p><b>Wago technique:</b> strip 11 mm (there's a strip gauge printed on the side), lift the orange lever, push the wire in until it bottoms out, snap the lever down, then give it a firm tug. Stranded wire is fine, and you don't need to twist or tin it.</p>`, ['lmot','rmot','wpos','wneg','drv1']);
+wire(1,'m1','lmot.r','wpos.p1','red',6,'hv','Left motor red → Wago #1',
+ 'Strip 11 mm off the left motor\'s red wire. Lift a lever on Wago #1, insert fully, lever down, tug test.',
+ 'Wago #1 becomes the shared + side of both motors.');
+wire(1,'m2','rmot.r','wpos.p2','red',6,'hv','Right motor red → Wago #1',
+ 'Same thing with the right motor\'s red wire, into a second hole of the same Wago.',
+ 'Both reds now touch inside the Wago, so electrically they are one wire.');
+wire(1,'m3','lmot.k','wneg.p2','blk',6,'gnd','Left motor black → Wago #2',
+ 'Left motor black wire into Wago #2.',
+ 'Wago #2 is the shared − side of both motors.');
+wire(1,'m4','rmot.k','wneg.p3','blk',6,'gnd','Right motor black → Wago #2',
+ 'Right motor black wire into Wago #2.',
+ 'Now the two motors are in <b>parallel</b>: each one sits across the same two points, so each gets the full voltage and they always get the same command.');
+wire(1,'m5','wpos.p3','drv1.M+','red',8,'hv','Wago #1 → driver M+',
+ 'Best: reuse a thick red wire salvaged from the stock harness (the factory battery and motor leads are usually thicker than 18 AWG). With only 18 AWG, cut <b>two</b> 20 cm red pieces and twist them tightly together so they act as one thicker wire. One end goes into Wago #1\'s last hole. Strip the other end 8 mm, clamp it in the BTS7960\'s <b>M+</b> screw terminal, and tug.',
+ 'This single jumper carries the current for BOTH motors, which is why it should be thicker than each motor\'s own wire.',
+ {warn:'WAGO 221 is rated 20A (UL) / 32A (IEC). That\'s fine here with soft-start firmware and the fuse from Phase 2. Don\'t skip the fuse.'});
+wire(1,'m6','wneg.p1','drv1.M-','blk',8,'gnd','Wago #2 → driver M−',
+ 'Same with black (stock wire or doubled 18 AWG): Wago #2\'s free hole to the <b>M−</b> screw terminal.',
+ 'Motor side done. The driver can now push current either way through both motors, which is how it does forward and reverse.');
+quiz(1,'q-par','Quick check: parallel motors',
+ 'You just put the two motors in parallel. What does each motor get?',
+ ['Half the battery voltage each', 'The full voltage from the driver, the same as the other motor', 'Only the current the other motor doesn\'t use'], 1,
+ 'Parallel means both motors connect across the same two points (M+ and M−), so both see the full output voltage. Series would split it. The driver supplies the sum of both motors\' current.', ['wpos','wneg','drv1']);
+sim(1,'sim-mirror','Preview: the direction test',
+ '<p>You\'ll do this for real in Phase 5. For now, practice: the motors\' natural directions are randomized below, just like in real life. Pulse the motors, see what the car does, and fix it with the swaps until it drives straight forward.</p>','mirror',['lmot','rmot','wpos','wneg']);
+
+/* ---------- Phase 2 ---------- */
+info(2,'p2-intro','Phase 2: battery power',
+ `<p>The battery feeds a <b>fuse</b>, then the <b>power switch</b>, then a 5-port Wago <b>+12V bus</b>. Battery − feeds a matching <b>GND bus</b>. The rear driver, the buck converter, and later the steering driver all tap off those two buses.</p>
+  <div class="box fix"><b>Change from the original plan</b>Your diagram ran the battery straight to B+/B− and spliced the buck off the same wire. That works electrically, but it puts two wires in one screw terminal, has no main switch, and has no separate small fuse for the electronics. The buses fix all of that with parts you already have (Wagos).</div>
+  <p>Work on the <b>car side</b> of the battery connector. The battery stays unplugged.</p>`, ['bat','fuse','sw','w12','wg']);
+wire(2,'p1','bat.+','fuse.in','red',9,'hv','Battery + → main fuse',
+ 'If the stock harness already has an inline fuse or thermal breaker on the battery lead, keep it; that\'s this part. If not, add a <b>20A inline blade fuse holder</b> within 15 cm of battery +. (20A suits doubled 18 AWG; this is the one part you may need to buy.)',
+ 'The fuse protects the <b>wire</b>. If anything downstream shorts, a 12V battery can dump hundreds of amps and set insulation on fire. The fuse goes first, as close to the battery as possible.');
+wire(2,'p2','fuse.out','sw.in','red',9,'hv','Fuse → power switch',
+ 'Reuse the car\'s power switch if it carries the motor current today. Otherwise use a 30A rocker or key switch.',
+ 'One switch kills the whole car: motors and electronics. That is non-negotiable on a kid\'s car.');
+wire(2,'p3','sw.out','w12.p1','red',9,'hv','Switch → +12V bus',
+ 'Stock thick wire or doubled 18 AWG, red, from the switch into port 1 of a 5-port Wago (221-415).',
+ 'The 5-port Wago is your power strip: one feed in, up to four outputs (rear driver, buck, steering driver, spare).');
+wire(2,'p4','w12.p2','drv1.B+','red',8,'hv','+12V bus → rear driver B+',
+ 'Stock thick wire or doubled 18 AWG, red, from bus port 2 into the BTS7960\'s <b>B+</b> screw terminal.',
+ 'This is the heavy current path for the rear motors.',
+ {warn:'The BTS7960 has <b>no reverse-polarity protection</b>. B+ and B− swapped for even a second will kill it. Red goes to B+, always.'});
+wire(2,'p5','bat.-','wg.p1','blk',9,'gnd','Battery − → GND bus',
+ 'Stock thick wire or doubled 18 AWG, black, from battery − into port 1 of the second 5-port Wago.',
+ 'Only the + side gets a fuse. Ground is the shared return path for everything.');
+wire(2,'p6','wg.p2','drv1.B-','blk',8,'gnd','GND bus → rear driver B−',
+ 'Stock thick wire or doubled 18 AWG, black, from GND bus port 2 to the BTS7960\'s <b>B−</b> screw terminal.',
+ 'The heavy side of the rear drive is now complete: battery → fuse → switch → driver → motors.');
+quiz(2,'q-fuse','Quick check: the fuse',
+ 'Where should the main fuse be?',
+ ['Next to the motors, where the current is used', 'On battery +, before everything else, as close to the battery as you can', 'On the ground wire'], 1,
+ 'A fuse protects every wire after it. Put it right at the battery and every inch of wire downstream is protected. Put it near the motors and the long wire from the battery is unprotected.', ['bat','fuse']);
+
+/* ---------- Phase 3 ---------- */
+info(3,'p3-intro','Phase 3: 5V for the brains',
+ `<p>The Mzhou buck turns 12V into a steady 5V for the ESP32 and the tail light. It has <b>pigtail leads</b> (red/black in, red/black out). Join them to other wires with small Wagos or butt splices. In the game, the lead ends are the terminals.</p>`, ['w12','wg','fuse2','buck','esp']);
+wire(3,'b1','w12.p3','fuse2.in','red',4,'hv','+12V bus → 2A fuse',
+ 'Small inline blade fuse holder with a <b>2A</b> fuse, fed from bus port 3. Single 18 AWG is plenty here.',
+ 'The buck draws well under 1A from 12V. A small fuse means a pinched thin wire just blows a 2A fuse instead of melting.');
+wire(3,'b2','fuse2.out','buck.in+','red',4,'hv','2A fuse → buck IN+ (red input lead)',
+ 'Join the fuse holder\'s other end to the buck\'s <b>red input</b> lead with the kit\'s inline Wago (221-2401) or a 2-port 221-412.',
+ 'Fused 12V now reaches the buck.');
+wire(3,'b3','wg.p3','buck.in-','blk',4,'gnd','GND bus → buck IN− (black input lead)',
+ 'From GND bus port 3 to the buck\'s <b>black input</b> lead.',
+ 'The buck\'s input is complete. Note: this buck wants at least 10V in, and a 12V battery sags under hard acceleration. Soft-start firmware avoids brownouts; a 470 µF+ capacitor rated 25V or more across the buck input adds margin.');
+check(3,'meter','Measure before you trust it',
+ `<p>Never connect a regulator to a microcontroller without measuring its output first.</p>`,
+ ['<b>Lift the B+ wire out of the rear driver</b> for this test, since its logic isn\'t wired yet and it shouldn\'t be powered.',
+  'Buck output leads are not connected to anything, and their bare ends are not touching.',
+  'Plug in the battery, switch ON. Multimeter on DC volts across the buck\'s red and black <b>output</b> leads: <b>4.9–5.2V</b>.',
+  'Switch OFF, unplug the battery, put the B+ wire back.'], ['buck','w12','wg','drv1']);
+wire(3,'b4','buck.out+','esp.5V','org',4,'lv','Buck 5V → ESP32 5V/VIN',
+ 'Red output lead to the <b>5V</b> pin (some boards print <b>VIN</b>). On a screw-terminal breakout, just clamp it.',
+ 'The ESP32 runs on 3.3V internally and makes it from this 5V with its own regulator.',
+ {warn:'Never put 5V on a 3V3 pin, and never feed 12V to the ESP32 anywhere.',
+  tip:'When flashing over USB, switch the car OFF first. The ground stays connected, which is fine.'});
+wire(3,'b5','buck.out-','esp.GND','blk',4,'gnd','Buck GND → ESP32 GND',
+ 'Black output lead to a <b>GND</b> pin.',
+ 'Now the logic ground and the battery ground are the same <b>common ground</b>. Every signal voltage is measured against it, so it\'s mandatory.');
+
+/* ---------- Phase 4 ---------- */
+info(4,'p4-intro','Phase 4: the ESP32 talks to the rear driver',
+ `<p>The BTS7960 board has an 8-pin header: <span class="kbd">RPWM LPWM R_EN L_EN R_IS L_IS VCC GND</span>. Those are small 3.3V signals on the starter kit's dupont jumpers. The driver header and the S3's pins are both male, so you need jumpers with <b>female</b> ends (female-female, or male-female into a breadboard). R_IS / L_IS stay empty for now.</p>
+  <div class="box tip"><b>Vibration tip</b>Dupont jumpers wiggle loose in a bouncing car. For the bench, a breadboard is perfect. For the car, move to a <b>screw-terminal breakout</b> (or solder to perfboard), and secure the driver header with a dab of hot glue once everything works.</div>`, ['esp','drv1']);
+check(4,'bench','Bench rehearsal with the starter kit (recommended)',
+ `<p>Before touching the driver, prove the firmware on your desk with zero risk: the S3 on the breadboard, powered by USB only, no battery anywhere.</p>`,
+ ['LED + 220 Ω resistor from GPIO4 to GND, and another from GPIO5 to GND (long LED leg toward the GPIO).',
+  'Flash a sketch that fades GPIO4 up over about 1 s, then GPIO5. Those LED ramps are exactly what the motors will get.',
+  'A starter-kit pushbutton between GPIO13 and GND is your fake pedal (INPUT_PULLUP). The LED only ramps while it\'s held.',
+  'The starter-kit 10k pot: outer legs to 3V3 and GND, middle leg to GPIO1. Print the reading: about 0 at one end, about 4095 at the other. That\'s your future steering sensor.'], ['esp']);
+wire(4,'l1','esp.3V3b','drv1.VCC','yel',3,'lv','ESP32 3V3 → driver VCC',
+ 'Jumper from a 3V3 pin to the driver\'s <b>VCC</b> pin.',
+ 'The driver board has a 74HC244 buffer chip on its inputs. Powered at 5V, it wants about 3.5V to see a HIGH, but the ESP32 only outputs 3.3V, so it works sometimes and glitches other times. At 3.3V, the ESP32\'s signals are solid HIGHs.',
+ {fix:'The original diagram powered driver VCC from 5V. Use 3.3V instead.'});
+wire(4,'l2','esp.GNDb','drv1.GND','blk',3,'gnd','ESP32 GND → driver GND',
+ 'Jumper from a GND pin to the driver\'s <b>GND</b> header pin.',
+ 'This is the reference for the signal pins. Without it, the driver can\'t read "HIGH" and "LOW" correctly.');
+wire(4,'l3','drv1.R_EN','drv1.L_EN','grn',3,'sig','Jumper R_EN ↔ L_EN',
+ 'A short jumper between the two enable pins on the header, so they always move together.',
+ 'Both half-bridges must be enabled to drive. Tying them lets one GPIO control both.');
+wire(4,'l4','esp.IO6','drv1.R_EN','grn',3,'sig','GPIO6 → enables',
+ 'Jumper from GPIO6 to R_EN (which now also feeds L_EN).',
+ 'With EN on a GPIO, firmware can cut the motors instantly (e-stop, lost remote, crash). With EN LOW, the motor just coasts.',
+ {fix:'The original plan tied R_EN/L_EN to 3.3V ("always on"). Put them on a GPIO so the software has a kill switch.'});
+wire(4,'l5','drv1.R_EN','drv1.GND','brn',2,'sig','10 kΩ pull-down: EN → GND',
+ 'A <b>10 kΩ resistor</b> from the EN pins to GND on the header. Solder it across the header pins, or tuck it into the dupont housing.',
+ 'While the ESP32 boots, its pins float for about half a second. The pull-down guarantees the motors are OFF until your code explicitly says go.', {res:true});
+wire(4,'l6','esp.IO4','drv1.RPWM','blu',3,'sig','GPIO4 → RPWM (forward)',
+ 'Jumper from GPIO4 to <b>RPWM</b>.',
+ 'PWM on RPWM = forward. Duty cycle = speed: 20% duty ≈ 20% power.');
+wire(4,'l7','esp.IO5','drv1.LPWM','pur',3,'sig','GPIO5 → LPWM (reverse)',
+ 'Jumper from GPIO5 to <b>LPWM</b>.',
+ 'PWM on LPWM = reverse. Firmware must never drive both at once except deliberately (both HIGH = electrical brake).',
+ {warn:'Pins to avoid on the S3: <b>0, 3, 45, 46</b> (boot strapping), <b>19/20</b> (USB), <b>43/44</b> (serial), <b>35–37</b> (PSRAM on N8R8/N16R8 boards) and the on-board RGB LED pin (38 or 48).'});
+quiz(4,'q-en','Quick check: boot safety',
+ 'The ESP32 is rebooting and GPIO6 is floating. What do the rear motors do?',
+ ['Spin at full speed until the code starts', 'Nothing: the 10 kΩ pull-down holds EN LOW, so the driver outputs are off', 'Brake hard'], 1,
+ 'That\'s the whole point of the pull-down. Hardware keeps the car safe before the software is even running.', ['drv1','esp']);
+
+/* ---------- Phase 5 ---------- */
+check(5,'first','First power-up (for real)',
+ `<p>The rear drive is fully wired. Time for a careful first test. Flash a test sketch first: EN LOW at boot, then 10% forward for 1 second.</p>`,
+ ['Rear wheels are <b>off the ground</b>. Nobody is in the seat.',
+  'Test firmware is flashed: EN LOW at boot, duty capped at about 20%.',
+  'Visually confirmed: <b>red bus → B+</b>, <b>black bus → B−</b>.',
+  'Battery plugged in, switch ON. For 30 seconds, nothing is hot, smoking or smelling.',
+  'Buck output still reads 4.9–5.2V with the ESP32 running.'], ['bat','fuse','sw','w12','wg','buck','esp','drv1']);
+check(5,'dir','Direction test',
+ `<p>Run the 10% forward pulse and watch both rear wheels.</p>
+  <ul class="tight"><li><b>Both forward:</b> done.</li>
+  <li><b>One backward:</b> switch OFF, swap <b>that motor's</b> red and black at the Wagos.</li>
+  <li><b>Both backward:</b> swap the two jumpers at M+/M−, or just swap forward/reverse in firmware.</li></ul>`,
+ ['Both rear wheels turn forward at 10% duty.', 'Reverse (LPWM) turns both wheels backward.', 'Pulling EN LOW (or killing the sketch) stops the motors.'], ['lmot','rmot','wpos','wneg','drv1']);
+
+/* ---------- Phase 6 ---------- */
+info(6,'p6-intro','Phase 6: the tail light',
+ `<p>The MAX7219 module uses SPI: three data wires plus power. Use the <b>input</b> header (VCC GND DIN CS CLK). The DOUT side is only for chaining more matrices.</p>
+  <p>The tail light sits at the very back, so these are your longest logic wires. Dupont jumpers won't reach, so solder extensions (thin stranded wire is ideal; 18 AWG works, it's just bulky) and twist each signal with a ground wire if you can.</p>`, ['esp','max']);
+wire(6,'t1','esp.5Vb','max.VCC','org',3,'lv','5V → MAX7219 VCC',
+ 'From the 5V rail to the matrix <b>VCC</b>.',
+ '64 red LEDs at full brightness can pull 300 mA or more, far more than the 3V3 pin should supply. The buck has 3A to spare.');
+wire(6,'t2','esp.GNDb','max.GND','blk',3,'gnd','GND → MAX7219 GND',
+ 'Ground to the matrix <b>GND</b>.', 'Common ground again; every module needs it.');
+wire(6,'t3','esp.IO11','max.DIN','cyn',3,'sig','GPIO11 → DIN',
+ 'GPIO11 to <b>DIN</b>.', 'Data in: the pixel bits shift in here.',
+ {tip:'The MAX7219 datasheet asks for 3.5V as a HIGH and the ESP32 gives 3.3V. It usually works. If you see random dots, add a 74AHCT125 level shifter, slow the SPI clock, or shorten the wires.'});
+wire(6,'t4','esp.IO10','max.CS','lim',3,'sig','GPIO10 → CS',
+ 'GPIO10 to <b>CS</b> (sometimes printed LOAD).', 'CS tells the chip "the data I just sent is for you, latch it now."');
+wire(6,'t5','esp.IO12','max.CLK','tea',3,'sig','GPIO12 → CLK',
+ 'GPIO12 to <b>CLK</b>.', 'The clock: one pulse per data bit. GPIO11/12/10 are the S3\'s default hardware SPI (FSPI) pins, so this is fast and glitch-free.');
+sim(6,'sim-drive','Drive + tail light simulator',
+ '<p>This is how the firmware should behave once everything is in: soft-start ramps, direction changes only at zero speed, and the tail light state machine. Hold the pedal (or press <span class="kbd">Space</span>), then let go and watch the brake light.</p>','drive',['esp','drv1','max']);
+
+/* ---------- Phase 7 ---------- */
+check(7,'harness','Disconnect the cockpit from 12V first',
+ `<p>The stock car runs 12V through the pedal and switches. In the new design they carry only tiny ESP32 signals.</p>`,
+ ['The pedal and every dash switch are <b>fully disconnected from the stock 12V harness</b>. 12V on any ESP32 pin destroys it instantly.',
+  'If the Fwd/Rev shifter has <b>thick wires going to the motors</b>, it was switching motor power directly. Those wires are bypassed now; you only reuse the switch as a signal.',
+  'Continuity test on the multimeter: pedal pressed = beep, released = silent. Same for each switch position.'], ['ped','dash']);
+wire(7,'c1','ped.s','esp.IO13','wht',3,'sig','Pedal → GPIO13',
+ 'One pedal contact to GPIO13. Run 18 AWG from the cockpit and solder a female jumper end on for the ESP32 side.',
+ 'Firmware uses INPUT_PULLUP: the pin floats HIGH through an internal resistor, and pressing the pedal pulls it to ground (LOW). A broken wire reads as "not pressed," so it fails safe.');
+wire(7,'c2','esp.GND','ped.g','blk',3,'gnd','GND → pedal',
+ 'The other pedal contact to a GND pin.', 'This ground also starts a daisy chain through the dash switches.');
+wire(7,'c3','dash.fr.s','esp.IO14','pnk',3,'sig','Fwd/Rev → GPIO14',
+ 'Fwd/Rev switch signal side to GPIO14.',
+ 'All four input pins have internal pull-ups and stay clear of the S3\'s special pins: 0, 3, 45, 46 (boot strapping) and 19/20 (USB).');
+wire(7,'c4','dash.hl.s','esp.IO17','pnk',3,'sig','High/Low → GPIO17', 'High/Low switch signal side to GPIO17.', 'Firmware reads it and caps max duty (for example 50% on Low).');
+wire(7,'c5','dash.mr.s','esp.IO18','pnk',3,'sig','Manual/RC → GPIO18', 'Manual/RC switch signal side to GPIO18.', 'Lets you lock the car into parent-only control if you want.');
+wire(7,'c6','ped.g','dash.fr.g','blk',3,'gnd','Ground daisy chain → Fwd/Rev', 'Short black jumper from the pedal\'s ground contact to the Fwd/Rev switch\'s ground side.',
+ 'Daisy-chaining: one ground wire runs to the cockpit and hops switch to switch, instead of four separate wires going back to the ESP32.');
+wire(7,'c7','dash.fr.g','dash.hl.g','blk',3,'gnd','Ground chain → High/Low', 'Jumper from Fwd/Rev ground to High/Low ground.', 'Same ground, next switch.');
+wire(7,'c8','dash.hl.g','dash.mr.g','blk',3,'gnd','Ground chain → Manual/RC', 'Jumper from High/Low ground to Manual/RC ground.', 'Every cockpit switch now pulls its GPIO to ground when closed.',
+ {tip:'Long wires near motors pick up noise. Add a 100 nF capacitor from each input to GND at the ESP32, and debounce in firmware (20–50 ms).'});
+
+/* ---------- Phase 8 ---------- */
+info(8,'p8-intro','Phase 8: steering by wire',
+ `<p>The stock steering motor gets its own <b>second BTS7960</b>. A <b>10k pot</b> on the steering column tells the ESP32 the real wheel angle, and a PID loop turns the dumb motor into a smooth servo you can also switch off.</p>
+  <div class="box fix"><b>Change from the original plan</b>Use a second BTS7960, not an L298N. The L298N wastes about 2V as heat and tops out around 2A, which a stalled steering motor can exceed. Two identical drivers also means one pinout to learn.</div>
+  <div class="box fix"><b>Change: when does steering go limp?</b>The doc says "joystick centered = limp." But when you center the stick to drive straight, the wheels would go floppy. Better: an explicit RC/Manual mode (dash switch or remote button). In RC mode, center means <i>hold straight</i>. Optionally go limp after a few seconds of no remote input. Try both in the simulator.</div>`, ['smot','drv2','pot','esp']);
+wire(8,'s1','smot.a','drv2.M+','red',5,'hv','Steering motor A → driver #2 M+',
+ 'Cut the steering motor leads from the stock board and extend them with 18 AWG to M+.', 'Same idea as the rear: the driver pushes current either way to turn left or right.');
+wire(8,'s2','smot.b','drv2.M-','blk',5,'gnd','Steering motor B → driver #2 M−', 'Other lead to M−.', 'If left/right come out backward later, swap these two (or flip it in firmware).');
+wire(8,'s3','w12.p4','drv2.B+','red',5,'hv','+12V bus → driver #2 B+', '18 AWG red from bus port 4. Optional: a 10A inline fuse.', 'The steering motor draws far less than the drive motors, so thinner wire is fine.',
+ {warn:'Red to B+, every time. No reverse-polarity protection on this board either.'});
+wire(8,'s4','wg.p4','drv2.B-','blk',5,'gnd','GND bus → driver #2 B−', '18 AWG black from GND bus port 4.', 'Steering power is done.');
+wire(8,'s5','esp.3V3','drv2.VCC','yel',3,'lv','3V3 → driver #2 VCC', 'Same as the rear driver: 3.3V to VCC.', 'Clean 3.3V logic levels.');
+wire(8,'s6','esp.GND','drv2.GND','blk',3,'gnd','GND → driver #2 GND', 'GND to the header GND.', 'Common ground.');
+wire(8,'s7','drv2.R_EN','drv2.L_EN','grn',3,'sig','Jumper R_EN ↔ L_EN', 'Short jumper between the enable pins.', 'One GPIO controls both halves.');
+wire(8,'s8','esp.IO16','drv2.R_EN','grn',3,'sig','GPIO16 → steering enable', 'GPIO16 to R_EN.',
+ 'This is the "limp" switch. EN LOW = the motor is disconnected, so the driver can steer by hand.');
+wire(8,'s9','drv2.R_EN','drv2.GND','brn',2,'sig','10 kΩ pull-down: EN → GND', '10 kΩ from EN to GND on the header.', 'Steering stays limp while the ESP32 boots or crashes.', {res:true});
+wire(8,'s10','esp.IO7','drv2.RPWM','blu',3,'sig','GPIO7 → RPWM', 'GPIO7 to RPWM.', 'PWM here turns the wheels one way.');
+wire(8,'s11','esp.IO15','drv2.LPWM','pur',3,'sig','GPIO15 → LPWM', 'GPIO15 to LPWM.', 'PWM here turns them the other way.');
+wire(8,'s12','pot.1','esp.3V3b','yel',3,'lv','Pot outer leg → 3V3',
+ 'One outer leg of the pot to 3.3V. 3D-print the PETG bracket so the pot body can\'t rotate and the shaft turns with the column.', 'The pot is a voltage divider: 0V at one end, 3.3V at the other.',
+ {warn:'3.3V, not 5V. The ESP32\'s ADC tops out around 3.1V, and over-voltage can damage the pin.'});
+wire(8,'s13','pot.3','esp.GNDb','blk',3,'gnd','Pot other outer leg → GND', 'Other outer leg to GND.', 'If the angle reads backward, swap the two outer legs (or flip it in firmware).');
+wire(8,'s14','pot.w','esp.IO1','tea',3,'sig','Pot wiper → GPIO1',
+ 'Middle leg (wiper) to GPIO1. A 100 nF cap from GPIO1 to GND smooths the reading.',
+ 'GPIO1 is on ADC1, which keeps working while Bluetooth/Wi-Fi run. ADC2 pins don\'t.',
+ {tip:'Steering only turns about ±40° but a pot sweeps about 270°. That\'s fine. Calibrate in firmware: record the raw reading at full left, center and full right, and add soft end-stops a few degrees before the hard ones.'});
+quiz(8,'q-limp','Quick check: going limp',
+ 'The driver grabs the wheel. What makes the steering motor go limp?',
+ ['Setting both PWM pins to 0', 'Pulling EN LOW so the driver outputs float', 'Cutting the +12V bus'], 1,
+ 'Both PWM = 0 turns on both low-side switches, which shorts the motor terminals together. That\'s an electrical brake, and the steering feels stiff. EN LOW disconnects the motor; only gear friction remains.', ['drv2','esp']);
+sim(8,'sim-steer','Steering simulator',
+ '<p>Compare the stock "bang-bang" relay steering with closed-loop PID + ramping, then flip to Manual and steer by hand.</p>','steer',['smot','pot','drv2']);
+
+/* ---------- Done ---------- */
+info(9,'done','Everything is wired',
+ `<p>That's the full car: rear drive, power, logic, tail light, cockpit inputs and steering by wire. Open the <b>Pin map</b> tab and print it; it's your real-world checklist. The <b>Explore</b> tab shows every wire at once, with layers you can turn on and off.</p>
+  <p>Not covered here, worth doing later:</p>
+  <ul class="tight"><li>Battery voltage sense: a 100k / 22k divider into GPIO2 (ADC1), so the car can slow down when the battery is low.</li>
+  <li>Current sense: R_IS/L_IS into ADC pins to detect a stalled motor or the steering hitting its stop.</li>
+  <li>Firmware failsafes: a Bluetooth disconnect ramps to stop, a watchdog, a parent e-stop that overrides the pedal, and a speed cap.</li>
+  <li>Bluetooth gamepad through <b>Bluepad32</b>. The ESP32-S3 only speaks Bluetooth Low Energy, so use an <b>Xbox Wireless controller</b> (Series X|S, or Xbox One with updated firmware) or another BLE pad. PlayStation controllers won't pair with an S3.</li></ul>`, null);
+
+const STEPS = S;
+const WIRES = S.filter(s=>s.t==='wire');
+const PH_STEPS = PHASES.map(p => STEPS.map((s,i)=>s.ph===p.n?i:-1).filter(i=>i>=0));
+
+/* =====================================================================
+   STATE
+   ===================================================================== */
+const KEY = 'mclaren-wiring-academy-v1';
+let state = {i:0, done:{}, checks:{}, quiz:{}, real:{}, layers:{hv:true,gnd:true,lv:true,sig:true}};
+try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = {...state, ...s, layers:{...state.layers, ...(s.layers||{})}}; } catch(e){}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){} }
+let mode = 'learn';
+let sel = null;           // first clicked terminal in current wire step
+let hintLevel = 0;
+let lastNewWire = null;
+
+/* =====================================================================
+   SVG helpers
+   ===================================================================== */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('svg');
+function el(tag, attrs, parent){ const e = document.createElementNS(NS, tag); if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function txt(parent, x, y, s, attrs){ const t = el('text', {x, y, ...attrs}, parent); t.textContent = s; return t; }
+
+const defs = el('defs', null, svg);
+defs.innerHTML = `
+ <linearGradient id="gMetal" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#cfd8dc"/><stop offset=".5" stop-color="#78909c"/><stop offset="1" stop-color="#b0bec5"/></linearGradient>
+ <linearGradient id="gBody" x1="0" x2="1"><stop offset="0" stop-color="#ff8000" stop-opacity=".16"/><stop offset=".5" stop-color="#ff8000" stop-opacity=".07"/><stop offset="1" stop-color="#ff8000" stop-opacity=".16"/></linearGradient>
+ <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#1a2735" stroke-width="1"/></pattern>`;
+
+const gBg = el('g', null, svg), gWires = el('g', null, svg), gComps = el('g', null, svg), gTerms = el('g', null, svg), gOver = el('g', null, svg);
+el('rect', {x:-2000, y:-2000, width:5000, height:5500, fill:'url(#grid)'}, gBg);
+
+function drawCar(){
+  const g = el('g', {opacity:.95}, gBg);
+  const st = {fill:'url(#gBody)', stroke:'#ff8000', 'stroke-opacity':.45, 'stroke-width':2};
+  // front wing
+  el('rect', {x:160, y:28, width:680, height:44, rx:14, ...st}, g);
+  // nose + body + sidepods
+  el('path', {d:'M462 72 Q500 52 538 72 L590 390 L700 470 Q760 520 760 640 L760 1060 Q760 1180 700 1290 L640 1370 L360 1370 L300 1290 Q240 1180 240 1060 L240 640 Q240 520 300 470 L410 390 Z', ...st}, g);
+  // cockpit
+  el('ellipse', {cx:510, cy:620, rx:92, ry:78, fill:'#0b1118', stroke:'#ff8000', 'stroke-opacity':.35, 'stroke-width':2}, g);
+  // steering wheel + column
+  el('line', {x1:500, y1:600, x2:500, y2:180, stroke:'#607d8b', 'stroke-width':6, 'stroke-opacity':.5, 'stroke-linecap':'round'}, g);
+  el('rect', {x:468, y:584, width:64, height:28, rx:12, fill:'#263238', stroke:'#90a4ae', 'stroke-width':2}, g);
+  txt(g, 500, 637, 'steering wheel', {fill:'#78909c', 'font-size':11, 'text-anchor':'middle'});
+  txt(g, 512, 380, 'column', {fill:'#607d8b', 'font-size':11, transform:'rotate(-90 512 380)', 'text-anchor':'middle'});
+  // wheels
+  const wheel = (x,y,w,h) => { el('rect', {x, y, width:w, height:h, rx:22, fill:'#111', stroke:'#37474f', 'stroke-width':3}, g); for (let k=1;k<6;k++) el('line', {x1:x+6, x2:x+w-6, y1:y+h*k/6, y2:y+h*k/6, stroke:'#263238', 'stroke-width':3}, g); };
+  wheel(50,150,110,190); wheel(840,150,110,190);
+  wheel(20,1250,120,210); wheel(860,1250,120,210);
+  // suspension arms
+  for (const [x1,y1,x2,y2] of [[160,215,455,200],[160,290,440,300],[840,215,545,200],[840,290,560,300],[140,1300,270,1270],[860,1300,730,1270]])
+    el('line', {x1, y1, x2, y2, stroke:'#ff8000', 'stroke-opacity':.25, 'stroke-width':3}, g);
+  // rear wing
+  el('rect', {x:170, y:1475, width:660, height:20, rx:6, ...st}, g);
+  // electronics bay
+  txt(g, 500, 18, '▲ FRONT', {fill:'#ff8000', 'fill-opacity':.6, 'font-size':12, 'text-anchor':'middle', 'letter-spacing':3});
+  txt(g, 950, 760, 'not to scale', {fill:'#4a6a8a', 'font-size':11, 'text-anchor':'end'});
+}
+
+function drawComp(c){
+  const g = el('g', {class:'comp', 'data-id':c.id}, gComps);
+  const {x,y,w,h} = c;
+  const body = (fill, stroke, rx=10) => el('rect', {class:'body', x, y, width:w, height:h, rx, fill, stroke, 'stroke-width':2}, g);
+  const title = (s, yy, size=14, fill='#fff') => txt(g, x+w/2, yy, s, {'text-anchor':'middle', 'font-size':size, 'font-weight':700, fill});
+  const sub = (s, yy, fill='#b0bec5') => s && txt(g, x+w/2, yy, s, {'text-anchor':'middle', 'font-size':11, fill});
+  switch (c.kind){
+    case 'battery':
+      body('#263238','#90a4ae',8);
+      el('rect', {x:x+28, y:y-8, width:24, height:10, rx:2, fill:'#e53935'}, g);
+      el('rect', {x:x+100, y:y-8, width:24, height:10, rx:2, fill:'#424242'}, g);
+      title(c.title, y+60, 15); sub(c.sub, y+78); sub('UNPLUGGED while wiring', y+96, '#ffb74d');
+      txt(g, x+45, y+h-14, '+', {'font-size':22, fill:'#e53935', 'font-weight':800, 'text-anchor':'middle'});
+      txt(g, x+112, y+h-14, '−', {'font-size':22, fill:'#bdbdbd', 'font-weight':800, 'text-anchor':'middle'});
+      break;
+    case 'fuse':
+      body(c.small?'#3e2723':'#4e342e','#ffb74d',6);
+      el('rect', {x:x+w/2-(c.small?8:14), y:y+8, width:c.small?16:28, height:h-16, rx:3, fill:'#ffca28', opacity:.85}, g);
+      if (c.small) txt(g, x+w+6, y+h/2+4, '2A fuse', {'font-size':11, fill:'#ffcc80'});
+      else { txt(g, x+w+8, y+16, c.title, {'font-size':12, fill:'#fff', 'font-weight':700}); txt(g, x+w+8, y+31, c.sub, {'font-size':10.5, fill:'#b0bec5'}); }
+      break;
+    case 'switch':
+      body('#37474f','#90a4ae',8);
+      el('rect', {x:x+18, y:y+10, width:w-36, height:h-20, rx:5, fill:'#e53935'}, g);
+      txt(g, x+w+8, y+18, c.title, {'font-size':12, fill:'#fff', 'font-weight':700}); txt(g, x+w+8, y+33, c.sub, {'font-size':10.5, fill:'#b0bec5'});
+      break;
+    case 'wago': {
+      body('#cfd8dc22', c.gnd?'#9e9e9e':'#ef9a9a', 6);
+      for (const t of c.terms){
+        const tt = TERMS[c.id+'.'+t.id];
+        if (c.ports==='r') el('rect', {x:tt.x-26, y:tt.y-9, width:20, height:18, rx:3, fill:'#ff9800'}, g);
+        else el('rect', {x:tt.x-9, y:tt.y+6, width:18, height:20, rx:3, fill:'#ff9800'}, g);
+      }
+      if (c.ports==='r'){ txt(g, x+w/2-12, y-22, c.title, {'font-size':12, 'font-weight':700, fill:'#fff', 'text-anchor':'middle'}); txt(g, x+w/2-12, y-8, c.sub, {'font-size':10, fill:'#b0bec5', 'text-anchor':'middle'}); }
+      else { txt(g, x+w/2, y+h+16, c.title+' · '+c.sub, {'font-size':12, 'font-weight':700, fill:'#fff', 'text-anchor':'middle'}); }
+      break; }
+    case 'buck':
+      body('#111','#78909c',8);
+      title(c.title, y+24, 14); sub(c.sub, y+40);
+      break;
+    case 'esp': {
+      body('#10161c','#607d8b',8);
+      el('rect', {x:x+w/2-28, y:y+40, width:56, height:120, rx:4, fill:'url(#gMetal)', opacity:.85}, g);
+      txt(g, x+w/2, y+100, 'ESP32-S3-WROOM-1', {'font-size':9.5, fill:'#263238', 'text-anchor':'middle', transform:`rotate(-90 ${x+w/2} ${y+100})`, 'font-weight':700});
+      for (const [dx,lab] of [[-38,'COM'],[10,'USB']]){ el('rect', {x:x+w/2+dx, y:y+h-14, width:28, height:20, rx:3, fill:'#90a4ae'}, g); txt(g, x+w/2+dx+14, y+h+22, lab, {'font-size':10, fill:'#78909c', 'text-anchor':'middle'}); }
+      title('ESP32-S3', y-24, 15); sub('DevKitC-1 · the long board', y-9);
+      break; }
+    case 'driver': {
+      body('#5d1414','#e57373',8);
+      // heatsink fins
+      for (let k=0;k<7;k++) el('rect', {x:x+w*0.2+k*(w*0.6/7), y:y+h*0.3, width:w*0.6/7-4, height:h*0.4, fill:'#9e9e9e', opacity:.55}, g);
+      title(c.title, y+h/2-2, 14); sub(c.sub, y+h/2+14, '#ffcdd2');
+      break; }
+    case 'motor':
+      el('rect', {class:'body', x, y, width:w, height:h, rx:h/2, fill:'url(#gMetal)', stroke:'#455a64', 'stroke-width':2}, g);
+      title(c.title, c.sub? y+h/2-1 : y+24, 13, '#102027'); sub(c.sub, y+h/2+14, '#263238');
+      break;
+    case 'pot':
+      body('#1a237e55','#7986cb',8);
+      el('circle', {cx:x+24, cy:y+h/2-4, r:14, fill:'#9fa8da', stroke:'#303f9f', 'stroke-width':2}, g);
+      el('line', {x1:x+24, y1:y+h/2-4, x2:x+24, y2:y+h/2-16, stroke:'#1a237e', 'stroke-width':3}, g);
+      txt(g, x+70, y+24, c.title, {'font-size':13, 'font-weight':700, fill:'#fff', 'text-anchor':'middle'});
+      txt(g, x+70, y+38, 'on column', {'font-size':10, fill:'#c5cae9', 'text-anchor':'middle'});
+      break;
+    case 'pedal':
+      body('#263238','#90a4ae',10);
+      el('rect', {x:x+14, y:y+8, width:w-28, height:12, rx:5, fill:'#546e7a'}, g);
+      title(c.title, y+33, 12.5);
+      break;
+    case 'dash': {
+      body('#1c252e','#78909c',10);
+      const sws = [['FWD/REV',.13],['HI/LO',.48],['MAN/RC',.84]];
+      for (const [n,f] of sws){ const cx = x+w*f; el('rect', {x:cx-16, y:y+10, width:32, height:20, rx:4, fill:'#37474f', stroke:'#b0bec5'}, g); el('rect', {x:cx-3, y:y+12, width:6, height:16, rx:2, fill:'#eceff1'}, g); txt(g, cx, y+44, n, {'font-size':10.5, fill:'#cfd8dc', 'text-anchor':'middle', 'font-weight':700}); }
+      txt(g, x+w+8, y+18, 'Dash', {'font-size':12, 'font-weight':700, fill:'#fff'}); txt(g, x+w+8, y+32, 'switches', {'font-size':12, 'font-weight':700, fill:'#fff'});
+      break; }
+    case 'matrix': {
+      body('#0d47a1','#64b5f6',6);
+      const cell = 8.5, ox = x+16, oy = y+h/2-4*cell;
+      const mg = el('g', {id:'matrixLeds'}, g);
+      for (let r=0;r<8;r++) for (let k=0;k<8;k++) el('circle', {cx:ox+k*cell+cell/2, cy:oy+r*cell+cell/2, r:3.2, fill:'#5d1010'}, mg);
+      txt(g, x+w/2, y+h+16, c.title, {'font-size':12, 'font-weight':700, fill:'#fff', 'text-anchor':'middle'});
+      break; }
+  }
+  // terminal labels (inside edges)
+  for (const t of c.terms){
+    const tt = TERMS[c.id+'.'+t.id];
+    if (c.kind==='wago') continue;
+    const lab = t.label; const fs = 10.5; const fill = '#eceff1';
+    if (c.kind==='esp'){
+      if (t.side==='l') txt(g, tt.x+10, tt.y+4, lab, {'font-size':fs, fill:pinColor(t.id), 'font-family':'ui-monospace,Menlo,monospace'});
+      else txt(g, tt.x-10, tt.y+4, lab, {'font-size':fs, fill:pinColor(t.id), 'text-anchor':'end', 'font-family':'ui-monospace,Menlo,monospace'});
+      continue;
+    }
+    if (c.kind==='driver' && (t.side==='t'||t.side==='b') && !/^(B|M)[+-]$/.test(t.id)){
+      if (t.side==='t') txt(g, tt.x+3.5, tt.y+10, lab, {'font-size':9.5, fill, transform:`rotate(90 ${tt.x+3.5} ${tt.y+10})`, 'font-family':'ui-monospace,Menlo,monospace'});
+      else txt(g, tt.x+3.5, tt.y-10, lab, {'font-size':9.5, fill, transform:`rotate(-90 ${tt.x+3.5} ${tt.y-10})`, 'font-family':'ui-monospace,Menlo,monospace'});
+      continue;
+    }
+    const hv = isHeavy(c.id+'.'+t.id);
+    if (t.side==='t') txt(g, tt.x, tt.y+(hv?24:16), lab, {'font-size':fs, fill, 'text-anchor':'middle', 'font-weight':700});
+    if (t.side==='b') txt(g, tt.x, tt.y-(hv?15:8), lab, {'font-size':fs, fill, 'text-anchor':'middle', 'font-weight':700});
+    if (t.side==='l') txt(g, tt.x+16, tt.y+4, lab, {'font-size':fs, fill, 'font-weight':700});
+    if (t.side==='r') txt(g, tt.x-16, tt.y+4, lab, {'font-size':fs, fill, 'text-anchor':'end', 'font-weight':700});
+  }
+}
+function pinColor(id){
+  if (/5V/.test(id)) return '#ffb74d'; if (/3V3/.test(id)) return '#fff176'; if (/GND/.test(id)) return '#b0bec5'; return '#80deea';
+}
+
+const termEls = {};
+function drawTerms(){
+  for (const fid in TERMS){
+    const t = TERMS[fid];
+    const g = el('g', {class:'term', 'data-fid':fid}, gTerms);
+    const heavy = isHeavy(fid);
+    if (heavy){
+      el('rect', {class:'ring', x:t.x-10, y:t.y-10, width:20, height:20, rx:3, fill:'#cfd8dc', stroke:'#263238', 'stroke-width':2}, g);
+      el('line', {x1:t.x-5, y1:t.y+5, x2:t.x+5, y2:t.y-5, stroke:'#37474f', 'stroke-width':2.5}, g);
+    } else if (t.comp.kind==='wago'){
+      el('circle', {class:'ring', cx:t.x, cy:t.y, r:7, fill:'#eceff1', stroke:'#263238', 'stroke-width':2}, g);
+      el('circle', {cx:t.x, cy:t.y, r:3, fill:'#37474f'}, g);
+    } else {
+      el('circle', {class:'ring', cx:t.x, cy:t.y, r:6, fill:'#d4a017', stroke:'#1b1b1b', 'stroke-width':1.5}, g);
+    }
+    el('circle', {class:'hit', cx:t.x, cy:t.y, r:14}, g);
+    termEls[fid] = g;
+    g.addEventListener('click', e => { e.stopPropagation(); onTermClick(fid); });
+    g.addEventListener('pointerenter', e => showTip(e, fid));
+    g.addEventListener('pointermove', e => moveTip(e));
+    g.addEventListener('pointerleave', hideTip);
+  }
+}
+
+/* ---------- wire geometry ---------- */
+function roundedPolyline(p, r){
+  let d = `M${p[0][0]},${p[0][1]}`;
+  for (let i=1;i<p.length-1;i++){
+    const [x0,y0]=p[i-1],[x1,y1]=p[i],[x2,y2]=p[i+1];
+    const l1=Math.hypot(x1-x0,y1-y0)||1, l2=Math.hypot(x2-x1,y2-y1)||1, rr=Math.min(r,l1/2,l2/2);
+    d += ` L${x1+(x0-x1)/l1*rr},${y1+(y0-y1)/l1*rr} Q${x1},${y1} ${x1+(x2-x1)/l2*rr},${y1+(y2-y1)/l2*rr}`;
+  }
+  const L = p[p.length-1]; return d + ` L${L[0]},${L[1]}`;
+}
+function wirePath(w){
+  const A = TERMS[w.a], B = TERMS[w.b];
+  if (w.via){
+    const pts = [[A.x,A.y],[A.x+A.nx*16,A.y+A.ny*16], ...w.via, [B.x+B.nx*16,B.y+B.ny*16],[B.x,B.y]];
+    return roundedPolyline(pts, 14);
+  }
+  const d = Math.hypot(B.x-A.x, B.y-A.y);
+  let k = Math.min(170, Math.max(36, d*0.42));
+  if (A.comp===B.comp) k = Math.max(30, d*0.5);
+  if (w.k) k = w.k;
+  return `M${A.x},${A.y} C${A.x+A.nx*k},${A.y+A.ny*k} ${B.x+B.nx*k},${B.y+B.ny*k} ${B.x},${B.y}`;
+}
+// hand-tuned routes for the long ones (keeps the map readable)
+const VIA = {
+  p3:[[75,815],[122,815],[122,853]],
+  p5:[[142.5,640],[200,640],[200,1030],[122,1030],[122,1058]],
+  p4:[[225,889],[225,1142]],
+  p6:[[180,1094],[180,1186]],
+  b1:[[240,925],[240,770],[282,770]],
+  b3:[[262,1130],[262,784],[321.5,784]],
+  s3:[[212,961],[212,283]],
+  s4:[[118,1166],[118,1236],[14,1236],[14,327]],
+  s12:[[562,322],[637,322],[637,771]],
+  s13:[[628,744]],
+  s14:[[595,314],[649,314],[649,812]],
+  t1:[[720,717],[720,1456]],
+  t2:[[705,744],[705,1437]],
+  t3:[[690,853],[690,1418]],
+  t4:[[675,880],[675,1399]],
+  t5:[[660,907],[660,1380]],
+};
+for (const w of WIRES) if (VIA[w.id]) w.via = VIA[w.id];
+for (const id of ['l1','l2','l4','l6','l7']) WIRES.find(w=>w.id===id).k = 26;
+
+const wireEls = {};
+function drawWire(w, animate){
+  const g = el('g', {class:'wiregrp', 'data-id':w.id}, gWires);
+  const d = wirePath(w);
+  const black = w.c==='blk';
+  el('path', {class:'wire', d, stroke:black?'#8a9aaa':'#000', 'stroke-width':w.g+2.5, 'stroke-opacity':black?.9:.6}, g);
+  const p = el('path', {class:'wire', d, stroke:COL[w.c], 'stroke-width':w.g}, g);
+  el('path', {d, stroke:'transparent', 'stroke-width':Math.max(14, w.g+10), fill:'none'}, g);
+  if (animate){
+    const len = p.getTotalLength();
+    for (const q of g.querySelectorAll('path.wire')){ q.style.setProperty('--len', len); q.setAttribute('stroke-dasharray', len); q.classList.add('new'); setTimeout(()=>{ q.removeAttribute('stroke-dasharray'); q.classList.remove('new'); }, 900); }
+    const f = el('path', {class:'flow', d, 'stroke-width':Math.max(1.5, w.g*0.35)}, g); setTimeout(()=>f.remove(), 2600);
+  }
+  if (w.res){
+    const len = p.getTotalLength(); const m = p.getPointAtLength(len/2);
+    const rg = el('g', {transform:`translate(${m.x},${m.y})`}, g);
+    el('rect', {x:-13, y:-5.5, width:26, height:11, rx:5, fill:'#d7ccc8', stroke:'#4e342e'}, rg);
+    for (const [xx,c] of [[-6,'#795548'],[-1,'#000'],[4,'#ff9800']]) el('rect', {x:xx, y:-5.5, width:3, height:11, fill:c}, rg);
+    txt(rg, 0, -9, '10k', {'font-size':9.5, fill:'#d7ccc8', 'text-anchor':'middle'});
+  }
+  g.addEventListener('click', e => { e.stopPropagation(); onWireClick(w); });
+  g.addEventListener('pointerenter', e => showWireTip(e, w));
+  g.addEventListener('pointermove', moveTip);
+  g.addEventListener('pointerleave', hideTip);
+  wireEls[w.id] = g;
+}
+
+function renderWires(){
+  gWires.innerHTML = ''; for (const k in wireEls) delete wireEls[k];
+  for (const w of WIRES){
+    const show = mode==='explore' ? state.layers[w.cat] : (mode==='learn' ? !!state.done[w.id] : !!state.done[w.id]);
+    if (show) drawWire(w, mode==='learn' && w.id===lastNewWire);
+  }
+  lastNewWire = null;
+}
+
+/* ---------- highlights ---------- */
+function stepTerms(s){ return s && s.t==='wire' ? [s.a, s.b] : []; }
+function stepFocusComps(s){
+  if (!s) return null;
+  if (s.t==='wire') return [TERMS[s.a].comp.id, TERMS[s.b].comp.id];
+  return s.focus || null;
+}
+function applyHighlights(){
+  const s = mode==='learn' ? STEPS[state.i] : null;
+  const fc = s ? stepFocusComps(s) : null;
+  for (const g of gComps.children){ g.classList.toggle('dim', !!(fc && !fc.includes(g.dataset.id))); }
+  for (const fid in termEls){
+    const g = termEls[fid];
+    g.classList.remove('target','sel');
+    const compDim = fc && !fc.includes(TERMS[fid].comp.id);
+    g.style.opacity = compDim ? .3 : 1;
+  }
+  if (s && s.t==='wire' && !state.done[s.id]){
+    if (hintLevel>=2) for (const f of stepTerms(s)) if (f!==sel) termEls[f].classList.add('target');
+    if (sel) termEls[sel].classList.add('sel');
+  }
+}
+
+/* ---------- camera ---------- */
+let vb = {x:0, y:0, w:W, h:H};
+function setVB(v){ vb = v; svg.setAttribute('viewBox', `${v.x} ${v.y} ${v.w} ${v.h}`); }
+let tween = null;
+function tweenVB(to, ms=500){
+  const from = {...vb}; let t0 = null; cancelAnimationFrame(tween);
+  const step = now => { if (t0===null) t0 = now; const k = Math.max(0, Math.min(1, (now-t0)/ms)), e = k<.5 ? 2*k*k : 1-Math.pow(-2*k+2,2)/2;
+    setVB({x:from.x+(to.x-from.x)*e, y:from.y+(to.y-from.y)*e, w:from.w+(to.w-from.w)*e, h:from.h+(to.h-from.h)*e}); if (k<1) tween = requestAnimationFrame(step); };
+  tween = requestAnimationFrame(step);
+  const gen = ++tweenGen; clearTimeout(tweenSnap);
+  tweenSnap = setTimeout(() => { if (gen===tweenGen) { cancelAnimationFrame(tween); setVB(to); } }, ms+120); // fallback if frames are throttled
+}
+let tweenSnap, tweenGen = 0;
+function aspect(){ const r = svg.getBoundingClientRect(); if (r.width<50 || r.height<50) return 1; return Math.min(4, Math.max(.25, r.width/r.height)); }
+function fitBox(b, pad=70, minW=460){
+  let w = b.w+pad*2, h = b.h+pad*2; w = Math.max(w, minW); h = Math.max(h, minW*0.7);
+  const r = aspect(); if (w/h < r) w = h*r; else h = w/r;
+  tweenVB({x:b.x+b.w/2-w/2, y:b.y+b.h/2-h/2, w, h});
+}
+function fitAll(){ fitBox({x:0, y:0, w:W, h:H}, 10, 0); }
+function bboxOf(compIds, fids){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  const add=(x,y)=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);};
+  for (const id of compIds||[]){ const c = COMP[id]; add(c.x,c.y-30); add(c.x+c.w,c.y+c.h+20); }
+  for (const f of fids||[]){ const t = TERMS[f]; add(t.x,t.y); }
+  return {x:x0, y:y0, w:x1-x0, h:y1-y0};
+}
+function focusStep(){
+  const s = STEPS[state.i];
+  if (mode!=='learn' || !s) return fitAll();
+  if (s.t==='wire'){
+    const w = WIRES.find(x=>x.id===s.id); const fids=[s.a,s.b];
+    if (w.via) { const b = bboxOf([TERMS[s.a].comp.id, TERMS[s.b].comp.id], fids); for (const [x,y] of w.via){ b.w = Math.max(b.x+b.w,x)-Math.min(b.x,x); b.x=Math.min(b.x,x); b.h=Math.max(b.y+b.h,y)-Math.min(b.y,y); b.y=Math.min(b.y,y);} return fitBox(b); }
+    return fitBox(bboxOf([TERMS[s.a].comp.id, TERMS[s.b].comp.id], fids));
+  }
+  if (s.focus) return fitBox(bboxOf(s.focus, []), 60);
+  fitAll();
+}
+function svgPoint(e){ const p = svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+function zoomAt(f, cx, cy){ cancelAnimationFrame(tween); tweenGen++; const w = Math.min(Math.max(vb.w*f, 150), 3000), h = w/(vb.w/vb.h); setVB({x:cx-(cx-vb.x)*(w/vb.w), y:cy-(cy-vb.y)*(h/vb.h), w, h}); }
+svg.addEventListener('wheel', e => { e.preventDefault(); const p = svgPoint(e); zoomAt(Math.exp(e.deltaY*0.0015), p.x, p.y); }, {passive:false});
+let pan = null;
+svg.addEventListener('pointerdown', e => { if (e.target.closest('.term')||e.target.closest('.wiregrp')) return; pan = {x:e.clientX, y:e.clientY, vb:{...vb}, moved:false}; svg.setPointerCapture(e.pointerId); });
+svg.addEventListener('pointermove', e => {
+  if (pan){ const r = svg.getBoundingClientRect(); const s = Math.max(pan.vb.w/r.width, pan.vb.h/r.height); const dx=(e.clientX-pan.x)*s, dy=(e.clientY-pan.y)*s; if (Math.abs(dx)+Math.abs(dy)>3) pan.moved=true; cancelAnimationFrame(tween); tweenGen++; setVB({...pan.vb, x:pan.vb.x-dx, y:pan.vb.y-dy}); }
+  if (sel && rubber){ const p = svgPoint(e); rubber.setAttribute('x2', p.x); rubber.setAttribute('y2', p.y); }
+});
+svg.addEventListener('pointerup', e => { if (pan && !pan.moved) onBgClick(); pan = null; });
+document.getElementById('zin').onclick = () => zoomAt(0.75, vb.x+vb.w/2, vb.y+vb.h/2);
+document.getElementById('zout').onclick = () => zoomAt(1.33, vb.x+vb.w/2, vb.y+vb.h/2);
+document.getElementById('zfit').onclick = fitAll;
+document.getElementById('zfocus').onclick = focusStep;
+
+/* ---------- tooltip / toast ---------- */
+const tipEl = document.getElementById('tip');
+function showTip(e, fid){ const t = TERMS[fid]; tipEl.innerHTML = `<b>${t.comp.title} · ${t.label}</b><br>${t.desc}${connList(fid)}`; tipEl.style.display='block'; moveTip(e); }
+function showWireTip(e, w){ tipEl.innerHTML = `<b>${w.name}</b><br><span style="color:#8fa3b8">${COLNAME[w.c]} wire · ${gaugeText(w)}</span>`; tipEl.style.display='block'; moveTip(e); }
+function moveTip(e){ const x = Math.min(e.clientX+14, innerWidth-320), y = Math.min(e.clientY+14, innerHeight-120); tipEl.style.left=x+'px'; tipEl.style.top=y+'px'; }
+function hideTip(){ tipEl.style.display='none'; }
+function connList(fid){
+  const ws = WIRES.filter(w => (w.a===fid||w.b===fid) && (mode==='explore' || state.done[w.id]));
+  if (!ws.length) return '';
+  return '<br><span style="color:#8fa3b8">Connected: ' + ws.map(w => { const o = w.a===fid?w.b:w.a; const t = TERMS[o]; return t.comp.title+' '+t.label; }).join(', ') + '</span>';
+}
+let toastT;
+function toast(html, kind=''){ const t = document.getElementById('toast'); t.innerHTML = html; t.className = 'show '+kind; clearTimeout(toastT); toastT = setTimeout(()=>t.className='', 3800); }
+function gaugeText(w){ if (w.res) return '10 kΩ resistor'; if (w.g>=8) return 'stock thick wire or 2× 18 AWG'; if (w.g>=4) return '18 AWG'; return 'dupont jumper'; }
+
+/* ---------- interactions ---------- */
+let rubber = null;
+function clearSel(){ sel = null; if (rubber){ rubber.remove(); rubber = null; } }
+function onBgClick(){ if (sel){ clearSel(); applyHighlights(); renderPanelStatus(); } }
+function onTermClick(fid){
+  hideTip();
+  if (mode==='explore'){ highlightNet(fid); return; }
+  if (mode!=='learn') return;
+  const s = STEPS[state.i];
+  if (!s || s.t!=='wire' || state.done[s.id]){ const t = TERMS[fid]; toast(`<b>${t.comp.title} · ${t.label}</b>: ${t.desc}`); return; }
+  const pair = [s.a, s.b];
+  if (!sel){
+    if (pair.includes(fid)){
+      sel = fid; const t = TERMS[fid];
+      rubber = el('line', {x1:t.x, y1:t.y, x2:t.x, y2:t.y, stroke:COL[s.c]==='#1c1c1c'?'#9aa':COL[s.c], 'stroke-width':3, 'stroke-dasharray':'6 5', 'pointer-events':'none'}, gOver);
+      toast(`Good: <b>${t.comp.title} · ${t.label}</b>. Now click the other end.`, 'good');
+    } else wrong(fid, s);
+  } else {
+    if (fid===sel){ clearSel(); }
+    else if (pair.includes(fid)){ complete(s); return; }
+    else wrong(fid, s);
+  }
+  applyHighlights(); renderPanelStatus();
+}
+function wrong(fid, s){
+  const t = TERMS[fid];
+  const g = termEls[fid]; g.classList.add('flash'); setTimeout(()=>g.classList.remove('flash'), 600);
+  let extra = '';
+  if (hintLevel===0) extra = ` <span style="color:#8fa3b8">Tip: press Hint.</span>`;
+  toast(`Not that one. That's <b>${t.comp.title} · ${t.label}</b>: ${t.desc}${extra}`, 'bad');
+}
+function complete(s){
+  state.done[s.id] = true; save(); clearSel(); lastNewWire = s.id; hintLevel = 0;
+  renderWires(); applyHighlights(); renderPanel();
+  toast(`✓ ${s.name}`, 'good');
+}
+function highlightNet(fid){
+  // BFS through wires + internal bus connections
+  const seen = new Set([fid]), q = [fid], wires = new Set();
+  const internal = f => { const t = TERMS[f], c = t.comp; const out=[];
+    if (c.bus) for (const tt of c.terms) out.push(c.id+'.'+tt.id);
+    if (c.id==='esp'){ const grp = [['5V','5Vb'],['GND','GNDb'],['3V3','3V3b']].find(gp=>gp.includes(t.id)); if (grp) grp.forEach(x=>out.push('esp.'+x)); }
+    if (c.id==='buck' && /-/.test(t.id)) out.push('buck.in-','buck.out-');
+    return out; };
+  while (q.length){ const f = q.shift();
+    for (const w of WIRES){ if (!state.layers[w.cat]) continue; if (w.res) continue; if (w.a===f||w.b===f){ wires.add(w.id); const o = w.a===f?w.b:w.a; if (!seen.has(o)){ seen.add(o); q.push(o);} } }
+    for (const o of internal(f)) if (!seen.has(o)){ seen.add(o); q.push(o); } }
+  for (const id in wireEls){ wireEls[id].classList.toggle('faded', !wires.has(id)); wireEls[id].classList.toggle('hl', wires.has(id)); }
+  const t = TERMS[fid];
+  const names = [...seen].map(f=>TERMS[f]).filter(x=>x.comp.kind!=='wago').map(x=>x.comp.title+' '+x.label);
+  renderExplore(`<div class="card"><h2>${t.comp.title} · ${t.label}</h2><p>${t.desc}</p><h3>Everything on this node</h3><p>${[...new Set(names)].join(' · ')||'Nothing connected yet.'}</p><button class="btn small" id="clrNet">Clear highlight</button></div>`);
+  document.getElementById('clrNet').onclick = () => { for (const id in wireEls){ wireEls[id].classList.remove('faded','hl'); } renderExplore(); };
+}
+function onWireClick(w){
+  if (mode==='explore'){ highlightNet(w.a); return; }
+  if (mode==='learn'){ const i = STEPS.findIndex(s=>s.id===w.id); toast(`<b>${w.name}</b>: step ${i+1}. ${stripTags(w.why)}`); }
+}
+function stripTags(s){ const d=document.createElement('div'); d.innerHTML=s; return d.textContent; }
+
+/* =====================================================================
+   PANEL
+   ===================================================================== */
+const panel = document.getElementById('panel');
+function stepDone(s){
+  if (s.t==='wire') return !!state.done[s.id];
+  if (s.t==='check') return s.items.every((_,k)=>state.checks[s.id+':'+k]);
+  if (s.t==='quiz') return state.quiz[s.id]===s.ans;
+  if (s.t==='sim') return !!state.done[s.id];
+  return true;
+}
+function progressPct(){ const req = STEPS.filter(s=>s.t!=='info'); return Math.round(100*req.filter(stepDone).length/req.length); }
+
+function phaseChips(){
+  return `<div class="phase-chips">${PHASES.map(p=>{ const idx = PH_STEPS[p.n]; const req = idx.filter(i=>STEPS[i].t!=='info'); const done = req.length ? req.every(i=>stepDone(STEPS[i])) : state.i>=idx[idx.length-1]; const cur = STEPS[state.i].ph===p.n;
+    return `<span class="chip ${cur?'cur':''} ${done?'done':''}" data-ph="${p.n}" title="${p.name}">${done?'✓ ':''}${p.n}. ${p.short}</span>`; }).join('')}</div>`;
+}
+
+function renderPanel(){
+  if (mode==='learn') renderLearn();
+  else if (mode==='explore') renderExplore();
+  else if (mode==='sim') renderSims();
+  else if (mode==='pins') renderPins();
+  else if (mode==='review') renderReview();
+}
+
+function renderLearn(){
+  const s = STEPS[state.i]; const ph = PHASES[s.ph]; const inPh = PH_STEPS[s.ph]; const k = inPh.indexOf(state.i)+1;
+  let h = `<div class="meta">Overall progress · ${progressPct()}%</div><div class="progress"><i style="width:${progressPct()}%"></i></div>${phaseChips()}`;
+  h += `<div class="meta">Phase ${ph.n}: ${ph.name} · step ${k} of ${inPh.length}</div>`;
+  h += `<div class="card"><h2>${s.t==='wire'?'🔌 ':''}${s.t==='wire'?s.name:s.title}</h2>`;
+  if (s.t==='wire'){
+    h += `<div class="wirechip"><i style="height:${Math.max(3,s.g)}px;background:${COL[s.c]};${s.c==='blk'?'outline:1px solid #8a9aaa':''}"></i>${s.res?'10 kΩ resistor':COLNAME[s.c]+' · '+gaugeText(s)}</div>`;
+    h += `<h3>In real life</h3><p>${s.real}</p><h3>Why</h3><p>${s.why}</p>`;
+    if (s.fix) h += `<div class="box fix"><b>Change from the original plan</b>${s.fix}</div>`;
+    if (s.warn) h += `<div class="box warn"><b>⚠ Careful</b>${s.warn}</div>`;
+    if (s.tip) h += `<div class="box tip"><b>Tip</b>${s.tip}</div>`;
+    h += `<div class="status" id="status"></div>`;
+  } else if (s.t==='info'){
+    h += s.body;
+  } else if (s.t==='check'){
+    h += s.body + s.items.map((it,k)=>`<label class="check"><input type="checkbox" data-ck="${s.id}:${k}" ${state.checks[s.id+':'+k]?'checked':''}><span>${it}</span></label>`).join('');
+  } else if (s.t==='quiz'){
+    const ans = state.quiz[s.id];
+    h += `<p><b>${s.q}</b></p>` + s.opts.map((o,k)=>`<button class="quizopt ${ans===k?(k===s.ans?'right':'wrong'):''}" data-q="${k}">${o}</button>`).join('');
+    if (ans!==undefined) h += `<div class="box ${ans===s.ans?'tip':'warn'}"><b>${ans===s.ans?'✓ Right':'Not quite. Try again.'}</b>${ans===s.ans?s.expl:''}</div>`;
+  } else if (s.t==='sim'){
+    h += s.body + `<div id="simHost"></div>`;
+  }
+  h += `</div><div class="navrow">
+    <button class="btn" id="back" ${state.i===0?'disabled':''}>← Back</button>
+    ${s.t==='wire'&&!state.done[s.id]?`<button class="btn" id="hint">Hint</button><button class="btn" id="showme">Show me</button>`:''}
+    <span class="spacer" style="flex:1"></span>
+    <button class="btn primary" id="next" ${stepDone(s)||s.t==='info'?'':'disabled'}>${state.i===STEPS.length-1?'Finish':'Next →'}</button></div>
+    <div class="navrow noprint"><button class="btn small" id="reset">Reset progress</button><span class="meta">Saved in this browser</span></div>`;
+  panel.innerHTML = h;
+  panel.querySelectorAll('.chip').forEach(c => c.onclick = () => goto(PH_STEPS[+c.dataset.ph][0]));
+  panel.querySelector('#back').onclick = () => goto(state.i-1);
+  panel.querySelector('#next').onclick = () => { if (state.i<STEPS.length-1) goto(state.i+1); else { toast('🏁 Done! Print the pin map and go build it.', 'good'); setMode('pins'); } };
+  panel.querySelector('#reset').onclick = () => { if (confirm('Reset all tutorial progress?')){ state.done={}; state.checks={}; state.quiz={}; state.i=0; save(); clearSel(); renderWires(); goto(0); } };
+  const hb = panel.querySelector('#hint'); if (hb) hb.onclick = () => { hintLevel = Math.min(2, hintLevel+1); applyHighlights(); renderPanelStatus(); focusStep(); };
+  const sm = panel.querySelector('#showme'); if (sm) sm.onclick = () => complete(s);
+  panel.querySelectorAll('input[data-ck]').forEach(c => c.onchange = () => { state.checks[c.dataset.ck] = c.checked; save(); panel.querySelector('#next').disabled = !stepDone(s); });
+  panel.querySelectorAll('.quizopt').forEach(b => b.onclick = () => { state.quiz[s.id] = +b.dataset.q; save(); renderLearn(); });
+  if (s.t==='sim'){ const host = panel.querySelector('#simHost'); SIMS[s.which](host, () => { state.done[s.id] = true; save(); panel.querySelector('#next').disabled = false; }); if (s.which!=='mirror'){ state.done[s.id]=true; save(); panel.querySelector('#next').disabled=false; } }
+  renderPanelStatus();
+}
+function renderPanelStatus(){
+  const st = panel.querySelector('#status'); if (!st) return; const s = STEPS[state.i];
+  if (state.done[s.id]){ st.className='status ok'; st.innerHTML = '✓ Connected. On to the next one.'; return; }
+  st.className = 'status';
+  const A = TERMS[s.a], B = TERMS[s.b];
+  if (sel){ const o = TERMS[sel===s.a?s.b:s.a]; st.innerHTML = `Holding the wire at <b>${TERMS[sel].comp.title} · ${TERMS[sel].label}</b>. Click the other end${hintLevel>=1?`: <b>${o.comp.title} · ${o.label}</b>`:''}. (Click empty space to let go.)`; return; }
+  if (hintLevel===0) st.innerHTML = 'Click one end of this wire on the map.';
+  if (hintLevel===1) st.innerHTML = `Hint: one end is <b>${A.comp.title} · ${A.label}</b>, the other is <b>${B.comp.title} · ${B.label}</b>. (Press Hint again to make them glow.)`;
+  if (hintLevel===2) st.innerHTML = `The two glowing terminals: <b>${A.comp.title} · ${A.label}</b> and <b>${B.comp.title} · ${B.label}</b>.`;
+}
+function goto(i){
+  state.i = Math.max(0, Math.min(STEPS.length-1, i)); save(); clearSel(); hintLevel = 0;
+  renderPanel(); applyHighlights(); focusStep();
+}
+
+/* ---------- explore ---------- */
+function renderLegend(){
+  const L = document.getElementById('legend');
+  const cats = [['hv','12V power & motors',COL.red],['gnd','Ground',COL.blk],['lv','5V / 3.3V logic power',COL.org],['sig','Signals',COL.blu]];
+  if (mode==='explore'){
+    L.innerHTML = `<div style="margin-bottom:4px;color:#e6edf3"><b>Layers</b> · click any terminal to trace its node</div><div class="row">` + cats.map(([k,n,c])=>`<label><input type="checkbox" data-layer="${k}" ${state.layers[k]?'checked':''}><span class="sw" style="background:${c};${k==='gnd'?'outline:1px solid #8a9aaa':''}"></span>${n}</label>`).join('') + '</div>';
+    L.querySelectorAll('input').forEach(i => i.onchange = () => { state.layers[i.dataset.layer] = i.checked; save(); renderWires(); });
+  } else {
+    L.innerHTML = `<div class="row">` + cats.map(([k,n,c])=>`<span><span class="sw" style="background:${c};${k==='gnd'?'outline:1px solid #8a9aaa':''}"></span> ${n}</span>`).join('') + `</div><div style="margin-top:4px">Hover a terminal for what it is · scroll = zoom · drag = pan</div>`;
+  }
+}
+function renderExplore(extra){
+  panel.innerHTML = `<div class="card"><h2>Explore the finished car</h2><p>Every wire is drawn. <b>Click a terminal or wire</b> to trace everything electrically connected to it, through Wagos and shared pins. Toggle layers bottom-left.</p>
+  <p class="meta">${WIRES.length} wires total · ${WIRES.filter(w=>w.cat==='hv').length} heavy 12V · ${WIRES.filter(w=>w.cat==='sig').length} signal</p></div>` + (extra||'') +
+  `<div class="card"><h3>Good nodes to trace</h3><div class="navrow">
+   ${[['wpos.p1','Motor +'],['bat.-','Ground'],['w12.p1','+12V bus'],['esp.3V3','3.3V'],['esp.5V','5V'],['drv1.R_EN','Rear enable']].map(([f,n])=>`<button class="btn small" data-trace="${f}">${n}</button>`).join('')}</div></div>`;
+  panel.querySelectorAll('[data-trace]').forEach(b => b.onclick = () => highlightNet(b.dataset.trace));
+}
+
+/* ---------- pin map ---------- */
+function renderPins(){
+  let h = `<div class="card"><h2>Pin map & build checklist</h2><p>Every connection in build order. Tick the box when it's done <b>in the real car</b> (separate from the game). <button class="btn small noprint" onclick="window.print()">Print</button></p>
+  <table class="pins"><tr><th></th><th>From</th><th>To</th><th>Wire</th></tr>`;
+  for (const p of PHASES){
+    const ws = WIRES.filter(w=>w.ph===p.n); if (!ws.length) continue;
+    h += `<tr class="grp"><td colspan="4">Phase ${p.n}: ${p.name}</td></tr>`;
+    for (const w of ws){ const A=TERMS[w.a], B=TERMS[w.b];
+      h += `<tr><td><input type="checkbox" data-real="${w.id}" ${state.real[w.id]?'checked':''}></td><td>${A.comp.title} <b>${A.label}</b></td><td>${B.comp.title} <b>${B.label}</b></td><td><span class="sw" style="background:${COL[w.c]};${w.c==='blk'?'outline:1px solid #8a9aaa':''}"></span> ${w.res?'10k resistor':gaugeText(w)}</td></tr>`; }
+  }
+  h += `</table></div>
+  <div class="card"><h2>ESP32 pin assignments</h2><table class="pins"><tr><th>Pin</th><th>Use</th><th>Mode</th></tr>
+  ${[['GPIO4','Rear RPWM (forward)','PWM out (LEDC ~20 kHz)'],['GPIO5','Rear LPWM (reverse)','PWM out'],['GPIO6','Rear R_EN+L_EN','Digital out, 10k pull-down'],
+     ['GPIO7','Steering RPWM','PWM out'],['GPIO15','Steering LPWM','PWM out'],['GPIO16','Steering R_EN+L_EN','Digital out, 10k pull-down'],['GPIO1','Steering pot wiper','ADC1 in'],
+     ['GPIO11','MAX7219 DIN','FSPI MOSI'],['GPIO12','MAX7219 CLK','FSPI SCK'],['GPIO10','MAX7219 CS','FSPI CS'],
+     ['GPIO13','Pedal','INPUT_PULLUP (LOW = pressed)'],['GPIO14','Fwd/Rev','INPUT_PULLUP'],['GPIO17','High/Low','INPUT_PULLUP'],['GPIO18','Manual/RC','INPUT_PULLUP'],
+     ['GPIO2','(later) battery voltage, 100k/22k divider','ADC1 in'],['GPIO8, 9, 21, 39–42, 47','Spare','']].map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td class="meta">${r[2]}</td></tr>`).join('')}
+  </table><p class="meta">Pins are for the ESP32-S3 DevKitC-1 (the long board). Go by the printed labels. Avoid 0, 3, 45, 46 (strapping), 19/20 (USB), 43/44 (serial) and 35–37 (PSRAM).</p></div>
+  <div class="card"><h2>Firmware pin header</h2><pre style="white-space:pre-wrap;font-size:12px;background:#0f1720;padding:10px;border-radius:8px;border:1px solid var(--line)">// pins.h — McLaren ECU (ESP32-S3 DevKitC-1)
+#define PIN_REAR_RPWM    4
+#define PIN_REAR_LPWM    5
+#define PIN_REAR_EN      6   // HIGH = enabled, 10k pull-down
+#define PIN_STEER_RPWM   7
+#define PIN_STEER_LPWM  15
+#define PIN_STEER_EN    16   // LOW = limp (manual steering)
+#define PIN_STEER_POT    1   // ADC1_CH0
+#define PIN_MAX_DIN     11   // FSPI MOSI
+#define PIN_MAX_CLK     12   // FSPI SCK
+#define PIN_MAX_CS      10   // FSPI CS
+#define PIN_PEDAL       13   // INPUT_PULLUP, LOW = pressed
+#define PIN_FWD_REV     14
+#define PIN_HIGH_LOW    17
+#define PIN_MANUAL_RC   18
+#define PIN_VBAT         2   // later: 100k/22k divider, ADC1_CH1</pre></div>`;
+  panel.innerHTML = h;
+  panel.querySelectorAll('[data-real]').forEach(c => c.onchange = () => { state.real[c.dataset.real] = c.checked; save(); });
+}
+
+/* ---------- review ---------- */
+function renderReview(){
+  panel.innerHTML = `<div class="card"><h2>Does the plan make sense?</h2>
+  <p><b>Yes, the core idea is right.</b> Remove the stock board, let an ESP32 make the decisions, and let two BTS7960 drivers do the heavy lifting. Your Phase 1 (motors → Wagos → driver M+/M−) is correct.</p>
+  <h3>Fix before building</h3>
+  <p><span class="sev h">HIGH</span><b>Driver VCC on 3.3V, not 5V.</b> At 5V the driver board's input buffer can miss the ESP32's 3.3V HIGHs.</p>
+  <p><span class="sev h">HIGH</span><b>Enable pins on a GPIO with a 10k pull-down,</b> not hard-wired to 3.3V. That gives you a software kill switch and motors that stay off during boot.</p>
+  <p><span class="sev h">HIGH</span><b>Fuse + main switch + buses.</b> The diagram has no switch, and the buck shares the B+ screw terminal. Use fuse → switch → 5-port Wago buses, with a 2A fuse for the buck.</p>
+  <p><span class="sev h">HIGH</span><b>Cut the pedal and switches off 12V completely</b>, and check whether the stock Fwd/Rev switch carries motor current. If it does, bypass it.</p>
+  <p><span class="sev m">MED</span><b>Motor direction isn't guaranteed by wire color.</b> Test with the wheels off the ground; swap one motor at the Wagos if needed.</p>
+  <p><span class="sev m">MED</span><b>Steering "limp when stick centered" fights driving straight.</b> Use an explicit RC/Manual mode, with an optional idle timeout.</p>
+  <p><span class="sev m">MED</span><b>Use a second BTS7960 for steering</b> rather than an L298N.</p>
+  <p><span class="sev m">MED</span><b>Board: the long ESP32-S3 (DevKitC-1 style) runs the car.</b> Pins are remapped for it. The small S3 doesn't have enough free pins for all 14 signals. The S3 only pairs with BLE gamepads: an Xbox Wireless controller works, PlayStation doesn't.</p>
+  <p><span class="sev m">MED</span><b>18 AWG is fine everywhere except the four heavy runs</b> (battery → driver and Wagos → driver). Salvage the stock harness wire or double up 18 AWG, and use a 20A main fuse.</p>
+  <p><span class="sev l">LOW</span><b>MAX7219 at 3.3V logic</b> is slightly out of spec (it wants 3.5V). It usually works; add a 74AHCT125 if the display glitches.</p>
+  <p><span class="sev l">LOW</span><b>Pot on 3.3V and ADC1</b> (GPIO1), not 5V.</p>
+  <p><span class="sev l">LOW</span><b>Vibration:</b> use a screw-terminal ESP32 breakout; dupont jumpers shake loose.</p>
+  <p><span class="sev l">LOW</span>The doc says manual steering has "no mechanical resistance." There will still be gear drag. Normal, but don't expect a free-spinning wheel.</p>
+  <h3>Firmware must-haves (for your firmware agent)</h3>
+  <ul class="tight"><li>EN LOW at boot; only enable after the inputs read sane.</li><li>Soft-start ramp (~1 s to full), with direction changes only at zero speed.</li><li>Remote disconnect → ramp to stop. Parent e-stop overrides the pedal.</li><li>Speed cap on Low, and a global max set for the driver.</li><li>PWM ~16–20 kHz (quiet), and never drive both RPWM and LPWM unless braking on purpose.</li></ul>
+  <h3>Already right in the doc</h3>
+  <p><span class="sev g">OK</span>Wago parallel splice · BTS7960 for the rear · Mzhou buck for 5V · MAX7219 on hardware SPI · pedal/switches as pull-up inputs · keeping the back-drivable stock steering gearbox · pot + PID instead of a hobby servo.</p></div>`;
+}
+
+/* ---------- simulators ---------- */
+let simTab = 'drive';
+function renderSims(){
+  panel.innerHTML = `<div class="card"><h2>Simulators</h2><div class="seg" id="simtabs">
+   <button data-s="mirror" class="${simTab==='mirror'?'on':''}">Motor direction</button><button data-s="drive" class="${simTab==='drive'?'on':''}">Drive + tail light</button><button data-s="steer" class="${simTab==='steer'?'on':''}">Steering</button></div>
+   <div id="simHost" style="margin-top:10px"></div></div>`;
+  panel.querySelectorAll('#simtabs button').forEach(b => b.onclick = () => { simTab = b.dataset.s; renderSims(); });
+  SIMS[simTab](panel.querySelector('#simHost'), ()=>{});
+}
+
+const SIMS = {};
+
+/* ---- Motor direction puzzle ---- */
+SIMS.mirror = function(host, onSolved){
+  const nat = {L: Math.random()<.5?1:-1, R: Math.random()<.5?1:-1};
+  if (nat.L===1 && nat.R===1) nat[Math.random()<.5?'L':'R'] = -1;
+  const sw = {L:1, R:1, D:1};
+  host.innerHTML = `<svg viewBox="0 0 400 240" style="width:100%;background:#0f1720;border-radius:10px;border:1px solid var(--line)">
+    <g id="mcar" transform="translate(200 130)">
+      <rect x="-40" y="-80" width="80" height="150" rx="26" fill="#ff800033" stroke="#ff8000"/>
+      <text x="0" y="-55" fill="#ff8000" font-size="11" text-anchor="middle">FRONT ▲</text>
+      <rect x="-70" y="20" width="26" height="50" rx="8" fill="#111" stroke="#455a64"/><rect x="44" y="20" width="26" height="50" rx="8" fill="#111" stroke="#455a64"/>
+      <rect x="-70" y="-70" width="26" height="44" rx="8" fill="#111" stroke="#455a64"/><rect x="44" y="-70" width="26" height="44" rx="8" fill="#111" stroke="#455a64"/>
+      <text id="aL" x="-57" y="52" font-size="22" text-anchor="middle" fill="#9e9e9e">•</text><text id="aR" x="57" y="52" font-size="22" text-anchor="middle" fill="#9e9e9e">•</text>
+    </g></svg>
+    <div class="simgrid">
+      <label class="check"><input type="checkbox" id="swL"><span>Swap <b>left</b> motor's red/black at the Wagos</span></label>
+      <label class="check"><input type="checkbox" id="swR"><span>Swap <b>right</b> motor's red/black at the Wagos</span></label>
+      <label class="check" style="grid-column:span 2"><input type="checkbox" id="swD"><span>Swap the two jumpers at the driver's <b>M+ / M−</b></span></label>
+    </div>
+    <button class="btn primary" id="pulse" style="width:100%">Pulse forward (10% for 1 s)</button>
+    <div class="status" id="mres">Press pulse to see what the car does.</div>`;
+  const car = host.querySelector('#mcar'), aL = host.querySelector('#aL'), aR = host.querySelector('#aR'), res = host.querySelector('#mres');
+  for (const k of ['L','R','D']) host.querySelector('#sw'+k).onchange = e => { sw[k] = e.target.checked?-1:1; aL.textContent='•'; aR.textContent='•'; aL.setAttribute('fill','#9e9e9e'); aR.setAttribute('fill','#9e9e9e'); car.setAttribute('transform','translate(200 130)'); };
+  host.querySelector('#pulse').onclick = () => {
+    const dL = nat.L*sw.L*sw.D, dR = nat.R*sw.R*sw.D;
+    aL.textContent = dL>0?'▲':'▼'; aR.textContent = dR>0?'▲':'▼';
+    aL.setAttribute('fill', dL>0?'#66bb6a':'#ef5350'); aR.setAttribute('fill', dR>0?'#66bb6a':'#ef5350');
+    let t0 = null;
+    const anim = now => { if (!host.isConnected) return; if (t0===null) t0 = now; const k = Math.min(1,(now-t0)/1000); let tr;
+      if (dL===dR) tr = `translate(200 ${130 - dL*k*45})`; else tr = `translate(200 130) rotate(${(dL>0?1:-1)*k*70})`;
+      car.setAttribute('transform', tr); if (k<1) requestAnimationFrame(anim); else setTimeout(()=>{ if(host.isConnected) car.setAttribute('transform','translate(200 130)'); }, 700); };
+    requestAnimationFrame(anim);
+    if (dL>0 && dR>0){ res.className='status ok'; res.innerHTML = '✓ Both wheels forward: the car drives straight. In the real car, write down which (if any) swaps you needed.'; onSolved(); }
+    else if (dL<0 && dR<0){ res.className='status'; res.innerHTML = 'Both wheels went <b>backward</b>: the car reverses. Fix: swap the M+/M− jumpers at the driver (or swap forward/reverse in firmware).'; }
+    else { res.className='status'; res.innerHTML = `The <b>${dL<0?'left':'right'}</b> wheel spun backward, so the car <b>spins in place</b>. Fix: swap <b>that motor's</b> two wires at the Wagos.`; }
+  };
+};
+
+/* ---- Drive + tail light ---- */
+const PAT = {
+  up:   ['00011000','00111100','01111110','11111111','00011000','00011000','00011000','00011000'],
+  down: ['00011000','00011000','00011000','00011000','11111111','01111110','00111100','00011000'],
+  full: Array(8).fill('11111111'),
+  off:  Array(8).fill('00000000'),
+};
+SIMS.drive = function(host){
+  host.innerHTML = `
+   <svg viewBox="0 0 400 150" style="width:100%;background:#0f1720;border-radius:10px;border:1px solid var(--line)">
+     <g transform="translate(110 75)"><circle r="44" fill="#111" stroke="#455a64" stroke-width="4"/><g id="spokes">${[0,60,120].map(a=>`<line x1="-40" y1="0" x2="40" y2="0" stroke="#78909c" stroke-width="5" transform="rotate(${a})"/>`).join('')}</g><circle r="8" fill="#ff8000"/></g>
+     <text x="110" y="140" font-size="11" fill="#8fa3b8" text-anchor="middle">rear wheel</text>
+     <g id="mx" transform="translate(230 20)"></g>
+     <text id="tstate" x="290" y="140" font-size="12" fill="#fff" text-anchor="middle" font-weight="700">STOPPED</text>
+   </svg>
+   <div class="simgrid">
+     <div class="readout">Speed<b id="rSpd">0%</b></div><div class="readout">Driver enable (EN)<b id="rEn">LOW</b></div>
+     <div class="readout">RPWM duty (forward)<b id="rR">0%</b><canvas id="scR" height="28"></canvas></div>
+     <div class="readout">LPWM duty (reverse)<b id="rL">0%</b><canvas id="scL" height="28"></canvas></div>
+   </div>
+   <button class="bigbtn" id="pedal">HOLD = PEDAL (or Space)</button>
+   <div class="navrow">
+     <span class="seg" id="dir"><button data-v="1" class="on">FWD</button><button data-v="-1">REV</button></span>
+     <span class="seg" id="spd"><button data-v="0.5" class="on">LOW</button><button data-v="1">HIGH</button></span>
+     <span class="seg" id="soft"><button data-v="1" class="on">Soft-start</button><button data-v="0">Stock jerk</button></span>
+   </div>
+   <div class="navrow"><button class="btn estop" id="estop">PARENT E-STOP</button><button class="btn" id="link">Remote link: OK</button></div>
+   <h3 style="margin:10px 0 2px;font-size:12px;color:var(--muted)">SPEED (line) & ACCELERATION "NECK SNAP" (bars), last 8 s</h3>
+   <canvas id="hist" height="90" style="background:#0f1720;border-radius:8px;border:1px solid var(--line)"></canvas>
+   <div class="box tip" id="dnote"><b>What to notice</b>Soft-start spreads acceleration over about a second. Switch to "Stock jerk" and compare the red bars. Flip FWD→REV while moving: the firmware ramps to zero first.</div>`;
+  const q = s => host.querySelector(s);
+  const mx = q('#mx'); const leds = [];
+  for (let r=0;r<8;r++) for (let k=0;k<8;k++) leds.push(el('circle', {cx:k*13+6, cy:r*13+6, r:5, fill:'#3a0b0b'}, mx));
+  const st = {pedal:false, dir:1, max:.5, soft:true, estop:false, link:true, d:0, v:0, ang:0, hist:[], prevV:0, t:0};
+  const segs = (id, key, conv=Number) => q(id).querySelectorAll('button').forEach(b => b.onclick = () => { q(id).querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); st[key] = conv(b.dataset.v); });
+  segs('#dir','dir'); segs('#spd','max'); segs('#soft','soft', v=>v==='1');
+  const pd = q('#pedal');
+  const press = v => { st.pedal = v; pd.classList.toggle('down', v); };
+  pd.addEventListener('pointerdown', e => { e.preventDefault(); press(true); pd.setPointerCapture(e.pointerId); });
+  pd.addEventListener('pointerup', () => press(false)); pd.addEventListener('pointercancel', () => press(false));
+  const kd = e => { if (e.code==='Space' && host.isConnected){ e.preventDefault(); press(true); } };
+  const ku = e => { if (e.code==='Space'){ press(false); } };
+  addEventListener('keydown', kd); addEventListener('keyup', ku);
+  q('#estop').onclick = () => { st.estop = !st.estop; q('#estop').classList.toggle('on', st.estop); q('#estop').textContent = st.estop?'E-STOP ACTIVE (click to reset)':'PARENT E-STOP'; };
+  q('#link').onclick = () => { st.link = !st.link; q('#link').textContent = 'Remote link: '+(st.link?'OK':'LOST'); q('#link').classList.toggle('danger', !st.link); };
+  const scope = (cv, duty, t) => { const c = cv.getContext('2d'); const w = cv.width = cv.clientWidth*devicePixelRatio, h = cv.height = 28*devicePixelRatio; c.clearRect(0,0,w,h); c.strokeStyle = duty>0?'#42a5f5':'#37474f'; c.lineWidth = 2*devicePixelRatio; c.beginPath(); const P = 26*devicePixelRatio; const off = (t*60*devicePixelRatio)%P; for (let x=-P; x<w+P; x+=P){ const x0 = x-off; const hi = Math.max(0, Math.min(1, duty))*P; const yH = 4*devicePixelRatio, yL = h-4*devicePixelRatio; if (duty<=0){ c.moveTo(x0,yL); c.lineTo(x0+P,yL); continue; } if (duty>=1){ c.moveTo(x0,yH); c.lineTo(x0+P,yH); continue; } c.moveTo(x0,yL); c.lineTo(x0,yH); c.lineTo(x0+hi,yH); c.lineTo(x0+hi,yL); c.lineTo(x0+P,yL);} c.stroke(); };
+  let last = null;
+  function frame(now){
+    if (last===null) last = now;
+    if (!host.isConnected){ removeEventListener('keydown', kd); removeEventListener('keyup', ku); return; }
+    const dt = Math.max(0, Math.min(.05, (now-last)/1000)); last = now; st.t += dt;
+    let tgt = (st.pedal && !st.estop && st.link) ? st.dir*st.max : 0;
+    if (tgt!==0 && Math.sign(tgt)!==Math.sign(st.d) && Math.abs(st.d)>0.01) tgt = 0; // stop before reversing
+    let en = !st.estop;
+    if (st.estop){ st.d = 0; }
+    else if (st.soft){ const up = Math.abs(tgt)>Math.abs(st.d) && (Math.sign(tgt)===Math.sign(st.d) || Math.abs(st.d)<0.01); const rate = up ? 1/1.0 : (!st.link ? 1/0.5 : 1/0.7); const diff = tgt-st.d; st.d += Math.sign(diff)*Math.min(Math.abs(diff), rate*dt); }
+    else st.d = tgt;
+    if (!st.link && Math.abs(st.d)<0.01) en = false;
+    if (Math.abs(st.d)<0.001 && Math.abs(st.v)<0.02 && !st.pedal) en = false;
+    const prev = st.v;
+    if (en) st.v += (st.d - st.v)*Math.min(1, dt/0.25); else st.v -= st.v*Math.min(1, dt*1.2);
+    const acc = dt>0 ? (st.v-prev)/dt : 0;
+    st.ang += st.v*dt*900; q('#spokes').setAttribute('transform', `rotate(${st.ang})`);
+    // tail light state machine
+    let stName, pat, bright;
+    const slowing = Math.abs(tgt) < Math.abs(st.d)-0.02 || (!en && Math.abs(st.v)>0.03) || (Math.abs(st.v)>0.03 && Math.abs(st.d)<Math.abs(st.v)-0.04);
+    if (Math.abs(st.v)<0.03 && Math.abs(st.d)<0.02){ stName='STOPPED · solid'; pat=PAT.full; bright=1; }
+    else if (slowing){ stName='SLOWING · flicker'; pat = (Math.floor(st.t*10)%2) ? PAT.full : PAT.off; bright=1; }
+    else { stName = st.d>=0?'DRIVING · arrow':'REVERSE · arrow'; pat = st.d>=0?PAT.up:PAT.down; bright=.45; }
+    leds.forEach((c,i)=>{ const on = pat[Math.floor(i/8)][i%8]==='1'; c.setAttribute('fill', on ? `rgba(255,${40*bright|0},${30*bright|0},${bright})` : '#3a0b0b'); });
+    q('#tstate').textContent = stName;
+    q('#rSpd').textContent = Math.round(Math.abs(st.v)*100)+'%'+(st.v<-0.01?' (rev)':'');
+    q('#rEn').textContent = en?'HIGH':'LOW'; q('#rEn').style.color = en?'#66bb6a':'#ef5350';
+    const r = Math.max(0, st.d), l = Math.max(0, -st.d);
+    q('#rR').textContent = Math.round(r*100)+'%'; q('#rL').textContent = Math.round(l*100)+'%';
+    scope(q('#scR'), en?r:0, st.t); scope(q('#scL'), en?l:0, st.t);
+    st.hist.push([st.t, st.v, acc]); while (st.hist.length && st.hist[0][0] < st.t-8) st.hist.shift();
+    const cv = q('#hist'), c = cv.getContext('2d'); const w = cv.width = cv.clientWidth*devicePixelRatio, h = cv.height = 90*devicePixelRatio; c.clearRect(0,0,w,h);
+    c.strokeStyle='#2a3a4c'; c.beginPath(); c.moveTo(0,h/2); c.lineTo(w,h/2); c.stroke();
+    for (const [t,,a] of st.hist){ const x = (t-(st.t-8))/8*w; const bh = Math.min(h/2, Math.abs(a)/12*(h/2)); c.fillStyle = Math.abs(a)>4?'#ef5350':'#ef535066'; c.fillRect(x, a>0?h/2-bh:h/2, 2*devicePixelRatio, bh); }
+    c.strokeStyle='#ffb74d'; c.lineWidth=2*devicePixelRatio; c.beginPath(); st.hist.forEach(([t,v],i)=>{ const x=(t-(st.t-8))/8*w, y=h/2 - v*(h/2-4); i?c.lineTo(x,y):c.moveTo(x,y); }); c.stroke();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+};
+
+/* ---- Steering ---- */
+SIMS.steer = function(host){
+  host.innerHTML = `
+   <svg viewBox="0 0 400 170" style="width:100%;background:#0f1720;border-radius:10px;border:1px solid var(--line)">
+     <line x1="80" y1="70" x2="320" y2="70" stroke="#607d8b" stroke-width="6"/>
+     <g id="wl" transform="translate(80 70)"><rect x="-14" y="-34" width="28" height="68" rx="9" fill="#111" stroke="#90a4ae" stroke-width="2"/></g>
+     <g id="wr" transform="translate(320 70)"><rect x="-14" y="-34" width="28" height="68" rx="9" fill="#111" stroke="#90a4ae" stroke-width="2"/></g>
+     <line x1="200" y1="70" x2="200" y2="125" stroke="#607d8b" stroke-width="5"/>
+     <g id="sw" transform="translate(200 132)"><rect x="-34" y="-11" width="68" height="22" rx="10" fill="#263238" stroke="#b0bec5" stroke-width="2"/></g>
+     <text x="200" y="22" text-anchor="middle" font-size="11" fill="#ff8000">▲ FRONT</text>
+     <g transform="translate(360 135)"><circle r="20" fill="#9fa8da" stroke="#303f9f" stroke-width="2"/><line id="potn" x1="0" y1="0" x2="0" y2="-17" stroke="#1a237e" stroke-width="3"/></g>
+     <text x="360" y="167" text-anchor="middle" font-size="10" fill="#8fa3b8">pot</text>
+     <text id="bang" x="200" y="100" text-anchor="middle" font-size="22" font-weight="900" fill="#ef5350" opacity="0">BANG!</text>
+   </svg>
+   <div class="navrow"><span class="seg" id="smode"><button data-v="rc" class="on">RC (parent)</button><button data-v="man">Manual (driver)</button></span>
+     <span class="seg" id="salg"><button data-v="pid" class="on">PID + ramp</button><button data-v="bang">Stock bang-bang</button></span></div>
+   <div id="rcCtl"><h3 style="font-size:12px;color:var(--muted);margin:10px 0 0">PARENT JOYSTICK</h3><input type="range" id="joy" min="-100" max="100" value="0">
+     <div class="navrow"><button class="btn small" id="center">Center stick</button><button class="btn small" id="flick">Flick full left→right</button>
+     <label class="check" style="padding:2px"><input type="checkbox" id="idle"><span>Go limp after 3 s idle</span></label></div></div>
+   <div id="manCtl" style="display:none"><h3 style="font-size:12px;color:var(--muted);margin:10px 0 0">DRIVER TURNS THE WHEEL</h3><input type="range" id="manualInput" min="-100" max="100" value="0"></div>
+   <div class="simgrid">
+     <div class="readout">Target / actual angle<b id="sAng">0° / 0°</b></div><div class="readout">Pot voltage → ADC<b id="sPot">1.65 V</b></div>
+     <div class="readout">Steering EN<b id="sEn">HIGH</b></div><div class="readout">Motor PWM<b id="sPwm">0%</b></div>
+   </div>
+   <canvas id="sh" height="100" style="background:#0f1720;border-radius:8px;border:1px solid var(--line)"></canvas>
+   <div class="meta">Dashed = where you asked the wheels to go · solid = where they actually are · 6 s window · end stops at ±35°</div>
+   <div class="box tip" id="snote"></div>`;
+  const q = s => host.querySelector(s);
+  const st = {mode:'rc', alg:'pid', joy:0, manualInput:0, th:0, om:0, u:0, en:true, hist:[], t:0, idleT:0, bangs:0, bangT:-9, idle:false};
+  const notes = {
+    pid:'<b>PID + ramp</b>The motor power drops as the wheels approach the target, so they glide in and stop. Power is also rate-limited (about 200 ms to full), so a flicked stick moves the wheels more gradually.',
+    bang:'<b>Stock bang-bang</b>Any stick input means 100% power until the wheels slam into the end stop. That\'s the jerk you feel today. There\'s no feedback, so it can\'t stop halfway.',
+    man:'<b>Manual</b>EN is LOW, so the driver outputs float and the motor is disconnected. The driver only feels gear drag. Note it isn\'t zero: the motor acts as a small generator when back-driven.'};
+  const setNote = () => q('#snote').innerHTML = st.mode==='man' ? notes.man : notes[st.alg];
+  const seg = (id, key, after) => q(id).querySelectorAll('button').forEach(b => b.onclick = () => { q(id).querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); st[key] = b.dataset.v; after&&after(); setNote(); });
+  seg('#smode','mode', () => { q('#rcCtl').style.display = st.mode==='rc'?'':'none'; q('#manCtl').style.display = st.mode==='man'?'':'none'; q('#manualInput').value = Math.round(st.th/35*100); st.manualInput = +q('#manualInput').value; });
+  seg('#salg','alg');
+  q('#joy').oninput = e => { st.joy = +e.target.value; st.idleT = 0; };
+  q('#manualInput').oninput = e => st.manualInput = +e.target.value;
+  q('#center').onclick = () => { q('#joy').value = 0; st.joy = 0; st.idleT = 0; };
+  q('#idle').onchange = e => st.idle = e.target.checked;
+  q('#flick').onclick = () => { q('#joy').value = -100; st.joy = -100; st.idleT=0; setTimeout(()=>{ if(!host.isConnected) return; q('#joy').value = 100; st.joy = 100; }, 900); setTimeout(()=>{ if(!host.isConnected) return; q('#joy').value = 0; st.joy = 0; }, 1900); };
+  setNote();
+  const LIM = 35, K = 1800, B = 12;
+  let last = null;
+  function frame(now){
+    if (last===null) last = now;
+    if (!host.isConnected) return;
+    const dt = Math.max(0.0001, Math.min(.03, (now-last)/1000)); last = now; st.t += dt;
+    let target = st.th, u = 0;
+    if (st.mode==='man'){ st.en = false; target = st.manualInput/100*LIM; st.om = (target-st.th)/0.12; st.th += st.om*dt; u = 0; }
+    else {
+      if (Math.abs(st.joy) < 5) st.idleT += dt; else st.idleT = 0;
+      target = st.joy/100*30;
+      if (st.alg==='pid'){
+        st.en = !(st.idle && st.idleT>3);
+        const e = target-st.th; let want = st.en ? Math.max(-1, Math.min(1, 0.06*e - 0.006*st.om)) : 0;
+        if (Math.abs(e)<0.6 && Math.abs(st.om)<4) want = 0;
+        const slew = 5*dt; u = st.u + Math.max(-slew, Math.min(slew, want-st.u));
+      } else { st.en = true; u = Math.abs(st.joy)>10 ? Math.sign(st.joy) : 0; target = Math.abs(st.joy)>10 ? Math.sign(st.joy)*LIM : st.th; }
+      st.om += (K*u - B*st.om - (u===0? Math.sign(st.om)*Math.min(Math.abs(st.om), 400*dt)/dt*0 : 0))*dt;
+      if (!st.en) st.om -= st.om*Math.min(1, 6*dt);
+      st.th += st.om*dt;
+    }
+    if (Math.abs(st.th) > LIM){ if (Math.abs(st.om) > 60){ st.bangs++; st.bangT = st.t; } st.th = Math.sign(st.th)*LIM; st.om = 0; }
+    st.u = u;
+    q('#wl').setAttribute('transform', `translate(80 70) rotate(${st.th})`); q('#wr').setAttribute('transform', `translate(320 70) rotate(${st.th})`);
+    q('#sw').setAttribute('transform', `translate(200 132) rotate(${st.th*2.2})`);
+    const potV = 1.65 + st.th/LIM*0.75; q('#potn').setAttribute('transform', `rotate(${st.th*2})`);
+    q('#bang').setAttribute('opacity', Math.max(0, 1-(st.t-st.bangT)*2));
+    q('#sAng').textContent = `${Math.round(st.mode==='man'?st.th:target)}° / ${Math.round(st.th)}°`;
+    q('#sPot').textContent = potV.toFixed(2)+' V';
+    q('#sEn').textContent = st.en?'HIGH (driving)':'LOW (limp)'; q('#sEn').style.color = st.en?'#66bb6a':'#ffb74d';
+    q('#sPwm').textContent = Math.round(Math.abs(u)*100)+'% '+(u>0.01?'RPWM':u<-0.01?'LPWM':'') + (st.bangs?` · ${st.bangs} bang${st.bangs>1?'s':''}`:'');
+    st.hist.push([st.t, target, st.th]); while (st.hist.length && st.hist[0][0] < st.t-6) st.hist.shift();
+    const cv = q('#sh'), c = cv.getContext('2d'); const w = cv.width = cv.clientWidth*devicePixelRatio, h = cv.height = 100*devicePixelRatio; c.clearRect(0,0,w,h);
+    const Y = a => h/2 - a/40*(h/2-4);
+    c.strokeStyle='#2a3a4c'; c.lineWidth=1; for (const a of [-35,0,35]){ c.beginPath(); c.moveTo(0,Y(a)); c.lineTo(w,Y(a)); c.stroke(); }
+    const line = (idx, col, dash) => { c.strokeStyle=col; c.lineWidth=2*devicePixelRatio; c.setLineDash(dash?[6*devicePixelRatio,5*devicePixelRatio]:[]); c.beginPath(); st.hist.forEach((p,i)=>{ const x=(p[0]-(st.t-6))/6*w; i?c.lineTo(x,Y(p[idx])):c.moveTo(x,Y(p[idx])); }); c.stroke(); c.setLineDash([]); };
+    line(1,'#8fa3b8',true); line(2,'#ff8000',false);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+};
+
+/* =====================================================================
+   MODES + BOOT
+   ===================================================================== */
+function setMode(m){
+  mode = m; clearSel(); hideTip();
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.mode===m));
+  renderWires(); renderLegend(); renderPanel(); applyHighlights();
+  if (m==='learn') focusStep(); else fitAll();
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => setMode(t.dataset.mode));
+addEventListener('keydown', e => {
+  if (mode!=='learn' || e.target.tagName==='INPUT') return;
+  if (e.key==='ArrowRight'){ const s = STEPS[state.i]; if (stepDone(s)||s.t==='info') goto(state.i+1); }
+  if (e.key==='ArrowLeft') goto(state.i-1);
+  if (e.key==='Escape') onBgClick();
+});
+addEventListener('resize', () => { if (mode==='learn') focusStep(); else fitAll(); });
+
+drawCar(); COMPS.forEach(drawComp); drawTerms();
+{ const h = location.hash.slice(1).split(':'); // e.g. #explore, #learn:12, #sim:steer
+  if (h[0]==='learn' && h[1]) state.i = Math.min(STEPS.length-1, +h[1]||0);
+  if (h[0]==='sim' && h[1]) simTab = h[1];
+  setMode(['learn','explore','sim','pins','review'].includes(h[0]) ? h[0] : 'learn'); }
+</script>
+</body>
+</html>
