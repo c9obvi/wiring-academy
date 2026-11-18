@@ -135,7 +135,7 @@ ul.tight{margin:4px 0;padding-left:18px}ul.tight li{margin:3px 0}
   #mapWrap{flex:none;height:55vh}
   #panel{width:100%;max-width:none;border-left:0;border-top:1px solid var(--line)}
 }
-#sheetBar,.zoomrow{display:none}
+#sheetBar,#showPanel,.zoomrow{display:none}
 #mobileBtn{margin-left:10px;white-space:nowrap}
 /* ---- phone layout: map on top, instructions in a bottom sheet ---- */
 body.mobile{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;font-size:16px;-webkit-text-size-adjust:100%}
@@ -152,7 +152,9 @@ body.mobile #mobileBtn{margin-left:0;min-height:36px}
 body.mobile main{flex:1;min-height:0;height:auto;flex-direction:column}
 body.mobile #mapWrap{flex:1;min-height:0;height:auto}
 body.mobile #panel{flex:none;width:100%;max-width:none;height:50%;border:0;padding:10px 12px 0;overscroll-behavior:contain}
-body.mobile[data-sheet=peek] #panel{height:216px}
+body.mobile[data-sheet=peek] #panel,
+body.mobile[data-sheet=peek] #sheetBar{display:none}
+body.mobile[data-sheet=peek] #showPanel{display:block;position:absolute;left:8px;top:8px;z-index:1}
 body.mobile[data-sheet=full] #panel{flex:1;height:auto}
 body.mobile[data-sheet=full] #mapWrap{display:none}
 body.mobile #sheetBar{display:flex;flex:none;justify-content:center;padding:5px;background:var(--panel);border-top:1px solid var(--line)}
@@ -162,7 +164,6 @@ body.mobile .card{padding:12px;margin:8px 0}
 body.mobile .card h2{font-size:18px}
 body.mobile .meta{font-size:13px}
 body.mobile .lhead>.meta:first-child{display:none}
-body.mobile[data-sheet=peek] .lhead{display:none}
 body.mobile .phase-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:6px 0 8px}
 body.mobile .chip{white-space:nowrap;flex:none;font-size:13px;padding:6px 10px}
 body.mobile .card.step{display:flex;flex-direction:column}
@@ -217,6 +218,7 @@ body.mobile .term{transform-box:fill-box;transform-origin:center;transform:scale
       <button id="zfocus" title="Focus on current step">◎</button>
     </div>
     <div class="legend" id="legend"></div>
+    <button class="btn" id="showPanel" aria-controls="panel">Show panel</button>
   </div>
   <div id="sheetBar"><span class="seg" id="sheetSeg"><button data-sheet="peek">Map</button><button data-sheet="half">Split</button><button data-sheet="full">Text</button></span></div>
   <aside id="panel"></aside>
@@ -562,7 +564,7 @@ info(8,'p8-intro','Phase 8: steering by wire',
   <div class="box fix"><b>Change from the original plan</b>Use a second BTS7960, not an L298N. The L298N wastes about 2V as heat and tops out around 2A, which a stalled steering motor can exceed. Two identical drivers also means one pinout to learn.</div>
   <div class="box fix"><b>Change: when does steering go limp?</b>The doc says "joystick centered = limp." But when you center the stick to drive straight, the wheels would go floppy. Better: an explicit RC/Manual mode (dash switch or remote button). In RC mode, center means <i>hold straight</i>. Optionally go limp after a few seconds of no remote input. Try both in the simulator.</div>`, ['smot','drv2','pot','esp']);
 wire(8,'s1','smot.a','drv2.M+','red',5,'hv','Steering motor A → driver #2 M+',
- 'Cut the steering motor leads from the stock board and extend them with 18 AWG to M+.', 'Same idea as the rear: the driver pushes current either way to turn left or right.');
+ 'On this car the steering motor is the small 2-pin plug with <b>blue and brown</b> wires (top socket on the stock board\'s right edge). Unplug it and extend one wire with 18 AWG to M+.', 'Same idea as the rear: the driver pushes current either way to turn left or right.');
 wire(8,'s2','smot.b','drv2.M-','blk',5,'gnd','Steering motor B → driver #2 M−', 'Other lead to M−.', 'If left/right come out backward later, swap these two (or flip it in firmware).');
 wire(8,'s3','w12.p4','drv2.B+','red',5,'hv','+12V bus → driver #2 B+', '18 AWG red from bus port 4. Optional: a 10A inline fuse.', 'The steering motor draws far less than the drive motors, so thinner wire is fine.',
  {warn:'Red to B+, every time. No reverse-polarity protection on this board either.'});
@@ -1189,7 +1191,7 @@ function renderLearn(){
     h += `<div class="status" id="status"></div>`;
   } else if (s.t==='info'){
     h += s.body;
-    if (s.id==='intro' && isMobile()) h += `<div class="box tip"><b>On your phone</b>Pinch to zoom and drag to move the map. Tap on or near a terminal to pick it. <b>Map / Split / Text</b> above resizes this panel, and <b>Zoom to</b> jumps to either end of the wire.</div>`;
+    if (s.id==='intro' && isMobile()) h += `<div class="box tip"><b>On your phone</b>Pinch to zoom and drag to move the map. Tap on or near a terminal to pick it. <b>Map</b> hides this panel. <b>Show panel</b> brings it back. <b>Zoom to</b> jumps to either end of the wire.</div>`;
   } else if (s.t==='check'){
     h += s.body + s.items.map((it,k)=>`<label class="check"><input type="checkbox" data-ck="${s.id}:${k}" ${state.checks[s.id+':'+k]?'checked':''}><span>${it}</span></label>`).join('');
   } else if (s.t==='quiz'){
@@ -1726,7 +1728,21 @@ function applyMobile(){
   document.querySelectorAll('#sheetSeg button').forEach(x => x.classList.toggle('on', x.dataset.sheet===b.dataset.sheet));
 }
 document.getElementById('mobileBtn').onclick = () => { state.mobile = !isMobile(); save(); applyMobile(); refocus(); };
-document.querySelectorAll('#sheetSeg button').forEach(x => x.onclick = () => { state.sheet = x.dataset.sheet; save(); applyMobile(); refocus(); });
+function setSheet(sheet){
+  state.sheet = sheet;
+  save();
+  applyMobile();
+  refocus();
+}
+const showPanel = document.getElementById('showPanel');
+showPanel.onclick = () => {
+  setSheet('half');
+  document.querySelector('#sheetSeg [data-sheet=half]').focus();
+};
+document.querySelectorAll('#sheetSeg button').forEach(button => button.onclick = () => {
+  setSheet(button.dataset.sheet);
+  if (button.dataset.sheet === 'peek') showPanel.focus();
+});
 
 function setMode(m){
   if (m!=='stages') stopStagePlay();

@@ -16,7 +16,7 @@ Uses only parts you own, plus a fuse if the car doesn't already have one.
 
 The stock board can keep doing just one job, steering, while the ESP32 takes over everything else.
 
-- **Stays on the stock board:** its battery feed (Wago it onto the +12V and GND buses, so it's behind the main fuse) and the steering motor. Its receiver for the stock remote is built in.
+- **Stays on the stock board:** its battery feed (Wago it onto the +12V and GND buses, so it's behind the main fuse) and the steering motor (the small 2-pin plug with **blue and brown** wires, in the top socket on the board's right edge). Its receiver for the stock remote is built in.
 - **Moves to the ESP32:** both rear motors (through BTS7960 #1), the pedal, Fwd/Rev and High/Low. Unplug them from the stock board, and cap each now-unused stock-board motor lead on its own Wago, so nothing bare can touch.
 - **Important:** the stock remote's go and stop buttons now do nothing, because the rear motors aren't on that board anymore. **Your phone's E-STOP is the parent stop.** Use the stock remote for steering only.
 - Check after the swap that the stock remote still steers. Some stock boards won't respond without their pedal connected; if yours is one, use manual steering until stage 1.

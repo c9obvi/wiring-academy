@@ -47,6 +47,21 @@ S3, avoid: 0, 3, 45, 46 (strapping) · 19/20 (USB) · 43/44 (serial) · 35–37 
 
 Power: battery+ → 20A fuse → switch → +12V bus → (rear B+, steering B+, 2A fuse → buck IN+). Battery− → GND bus → (rear B−, steering B−, buck IN−). Buck 5V → 3-port Wago → ESP32 5V and MAX7219 VCC. ESP32 3V3 → both driver VCC pins and the pot (via a breadboard rail).
 
+## Stock harness map (from the car)
+
+Stock board: **JR1630RX-RM2-12V** (12V, max 20A load, 2.4 GHz remote). Everything plugs in; nothing is soldered to the car.
+
+| Plug | Wires | What it is | How we know |
+|---|---|---|---|
+| Small 2-pin, top socket on the board's right edge | blue + brown | **Steering motor** (remote steering) | Unplugged it: everything still worked except remote steering |
+| Big white 2-pin | red (via the breaker box) + black | Battery feed to the board; becomes the new system's power source | Traced by hand |
+| Big white 2-pin ×2 | orange + white on one motor, red + black on the other | Rear motors | Seen in photos; which is left/right still to label |
+| Small multi-pin, bottom-left of the board | yellow, orange, blue, green, white, red, black… | Dash bundle: pedal, Fwd/Rev, High/Low, power button, dial | Seen; pin-by-pin map still to do |
+
+Battery: its leads are sealed to the battery, so the battery plug is the only disconnect and the battery half of it is always live. Battery red → small black box (probably a self-resetting breaker; rating not read yet) → splits to the charge port and the board. Leave the box and the charge-port wire alone.
+
+Still unknown: the breaker's rating, the yellow tag text, the multi-pin wire order, what the round dash dial does, and whether the red power button carries main current.
+
 ## Firmware must-haves
 
 EN LOW at boot · soft-start ramp (~1 s) · direction change only at zero speed · remote disconnect → ramp to stop · parent e-stop overrides the pedal · speed cap · never drive RPWM and LPWM together unless braking deliberately · steering soft end-stops from pot calibration.
