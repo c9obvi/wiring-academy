@@ -53,6 +53,8 @@ EN LOW at boot · soft-start ramp (~1 s) · direction change only at zero speed 
 
 ## Parts status (2026-11-17)
 
+Update 2026-11-19: on hand now: a second BTS7960 and the 14 AWG red/black wire. The fuse kit and heat shrink arrive today. The buck converter has its own protection, so the separate 2A fuse is optional.
+
 Have: WAGO 221 28-pc assortment (221-2401 inline, 221-412, 221-413, 221-415 5-port), HiLetgo BTS7960 (IBT-2), ESP32-S3 (a small board + a long DevKitC-1-style board), 10–60V→5V 3A IP67 buck, MAX7219, Arduino starter kit (10k resistors, 220 Ω, LEDs, pushbuttons, 10k pot, breadboard, jumpers), 18 AWG wire, solder, multimeter.
 
 ### Shopping basket (ordered for stage 1)

@@ -335,11 +335,11 @@ wire(1,'m4','rmot.k','wneg.p3','blk',6,'gnd','Right motor black → Wago #2',
  'Right motor black wire into Wago #2.',
  'Now the two motors are in <b>parallel</b>: each one sits across the same two points, so each gets the full voltage and they always get the same command.');
 wire(1,'m5','wpos.p3','drv1.M+','red',8,'hv','Wago #1 → driver M+',
- 'Best: reuse a thick red wire salvaged from the stock harness (the factory battery and motor leads are usually thicker than 18 AWG). With only 18 AWG, cut <b>two</b> 20 cm red pieces and twist them tightly together so they act as one thicker wire. One end goes into Wago #1\'s last hole. Strip the other end 8 mm, clamp it in the BTS7960\'s <b>M+</b> screw terminal, and tug.',
+ 'Cut about 20 cm of your <b>red 14 AWG</b>. One end goes into Wago #1\'s last hole. Strip the other end 8 mm, clamp it in the BTS7960\'s <b>M+</b> screw terminal, and tug.',
  'This single jumper carries the current for BOTH motors, which is why it should be thicker than each motor\'s own wire.',
  {warn:'WAGO 221 is rated 20A (UL) / 32A (IEC). That\'s fine here with soft-start firmware and the fuse from Phase 2. Don\'t skip the fuse.'});
 wire(1,'m6','wneg.p1','drv1.M-','blk',8,'gnd','Wago #2 → driver M−',
- 'Same with black (stock wire or doubled 18 AWG): Wago #2\'s free hole to the <b>M−</b> screw terminal.',
+ 'Same with <b>black 14 AWG</b>: Wago #2\'s free hole to the <b>M−</b> screw terminal.',
  'Motor side done. The driver can now push current either way through both motors, which is how it does forward and reverse.');
 quiz(1,'q-par','Quick check: parallel motors',
  'You just put the two motors in parallel. What does each motor get?',
@@ -354,23 +354,23 @@ info(2,'p2-intro','Phase 2: battery power',
   <div class="box fix"><b>Change from the original plan</b>Your diagram ran the battery straight to B+/B− and spliced the buck off the same wire. That works electrically, but it puts two wires in one screw terminal, has no main switch, and has no separate small fuse for the electronics. The buses fix all of that with parts you already have (Wagos).</div>
   <p>Work on the <b>car side</b> of the battery connector. The battery stays unplugged.</p>`, ['bat','fuse','sw','w12','wg']);
 wire(2,'p1','bat.+','fuse.in','red',9,'hv','Battery + → main fuse',
- 'If the stock harness already has an inline fuse or thermal breaker on the battery lead, keep it; that\'s this part. If not, add a <b>20A inline blade fuse holder</b> within 15 cm of battery +. (20A suits doubled 18 AWG; this is the one part you may need to buy.)',
+ 'If the stock harness already has an inline fuse or thermal breaker on the battery lead, keep it; that\'s this part. If not, add a <b>20A inline blade fuse holder</b> within 15 cm of battery +. (20A suits your 14 AWG wire.)',
  'The fuse protects the <b>wire</b>. If anything downstream shorts, a 12V battery can dump hundreds of amps and set insulation on fire. The fuse goes first, as close to the battery as possible.');
 wire(2,'p2','fuse.out','sw.in','red',9,'hv','Fuse → power switch',
- 'Reuse the car\'s power switch if it carries the motor current today. Otherwise use a 30A rocker or key switch.',
+ 'Reuse the car\'s power switch if it carries the motor current today. Otherwise use a 30A rocker or key switch. <b>No switch yet?</b> Run the fuse straight to the +12V Wago for now; unplugging the battery is your off switch.',
  'One switch kills the whole car: motors and electronics. That is non-negotiable on a kid\'s car.');
 wire(2,'p3','sw.out','w12.p1','red',9,'hv','Switch → +12V bus',
- 'Stock thick wire or doubled 18 AWG, red, from the switch into port 1 of a 5-port Wago (221-415).',
+ '14 AWG red from the switch into port 1 of a 5-port Wago (221-415).',
  'The 5-port Wago is your power strip: one feed in, up to four outputs (rear driver, buck, steering driver, spare).');
 wire(2,'p4','w12.p2','drv1.B+','red',8,'hv','+12V bus → rear driver B+',
- 'Stock thick wire or doubled 18 AWG, red, from bus port 2 into the BTS7960\'s <b>B+</b> screw terminal.',
+ '14 AWG red from bus port 2 into the BTS7960\'s <b>B+</b> screw terminal.',
  'This is the heavy current path for the rear motors.',
  {warn:'The BTS7960 has <b>no reverse-polarity protection</b>. B+ and B− swapped for even a second will kill it. Red goes to B+, always.'});
 wire(2,'p5','bat.-','wg.p1','blk',9,'gnd','Battery − → GND bus',
- 'Stock thick wire or doubled 18 AWG, black, from battery − into port 1 of the second 5-port Wago.',
+ '14 AWG black from battery − into port 1 of the second 5-port Wago.',
  'Only the + side gets a fuse. Ground is the shared return path for everything.');
 wire(2,'p6','wg.p2','drv1.B-','blk',8,'gnd','GND bus → rear driver B−',
- 'Stock thick wire or doubled 18 AWG, black, from GND bus port 2 to the BTS7960\'s <b>B−</b> screw terminal.',
+ '14 AWG black from GND bus port 2 to the BTS7960\'s <b>B−</b> screw terminal.',
  'The heavy side of the rear drive is now complete: battery → fuse → switch → driver → motors.');
 quiz(2,'q-fuse','Quick check: the fuse',
  'Where should the main fuse be?',
@@ -381,7 +381,7 @@ quiz(2,'q-fuse','Quick check: the fuse',
 info(3,'p3-intro','Phase 3: 5V for the brains',
  `<p>The Mzhou buck turns 12V into a steady 5V for the ESP32 and the tail light. It has <b>pigtail leads</b> (red/black in, red/black out). Join them to other wires with small Wagos or butt splices. In the game, the lead ends are the terminals.</p>`, ['w12','wg','fuse2','buck','esp']);
 wire(3,'b1','w12.p3','fuse2.in','red',4,'hv','+12V bus → 2A fuse',
- 'Small inline blade fuse holder with a <b>2A</b> fuse, fed from bus port 3. Single 18 AWG is plenty here.',
+ '<b>Optional:</b> your buck converter has its own protection, so you can skip this fuse and run 18 AWG from bus port 3 straight to its red input lead. If you do fit one, use a small inline holder with a <b>2A</b> fuse.',
  'The buck draws well under 1A from 12V. A small fuse means a pinched thin wire just blows a 2A fuse instead of melting.');
 wire(3,'b2','fuse2.out','buck.in+','red',4,'hv','2A fuse → buck IN+ (red input lead)',
  'Join the fuse holder\'s other end to the buck\'s <b>red input</b> lead with the kit\'s inline Wago (221-2401) or a 2-port 221-412.',
@@ -973,7 +973,7 @@ function connList(fid){
 }
 let toastT;
 function toast(html, kind=''){ const t = document.getElementById('toast'); t.innerHTML = html; t.className = 'show '+kind; clearTimeout(toastT); toastT = setTimeout(()=>t.className='', 3800); }
-function gaugeText(w){ if (w.res) return '10 kΩ resistor'; if (w.g>=8) return 'stock thick wire or 2× 18 AWG'; if (w.g>=4) return '18 AWG'; return 'dupont jumper'; }
+function gaugeText(w){ if (w.res) return '10 kΩ resistor'; if (w.g>=8) return '14 AWG'; if (w.g>=4) return '18 AWG'; return 'dupont jumper'; }
 
 /* ---------- interactions ---------- */
 let rubber = null;
@@ -1235,7 +1235,7 @@ function renderReview(){
   <p><span class="sev m">MED</span><b>Steering "limp when stick centered" fights driving straight.</b> Use an explicit RC/Manual mode, with an optional idle timeout.</p>
   <p><span class="sev m">MED</span><b>Use a second BTS7960 for steering</b> rather than an L298N.</p>
   <p><span class="sev m">MED</span><b>Board: the long ESP32-S3 (DevKitC-1 style) runs the car.</b> Pins are remapped for it. The small S3 doesn't have enough free pins for all 14 signals. The S3 only pairs with BLE gamepads: an Xbox Wireless controller works, PlayStation doesn't.</p>
-  <p><span class="sev m">MED</span><b>18 AWG is fine everywhere except the four heavy runs</b> (battery → driver and Wagos → driver). Salvage the stock harness wire or double up 18 AWG, and use a 20A main fuse.</p>
+  <p><span class="sev m">MED</span><b>14 AWG for the four heavy runs</b> (battery → driver and Wagos → driver), 18 AWG everywhere else, and a 20A main fuse.</p>
   <p><span class="sev l">LOW</span><b>MAX7219 at 3.3V logic</b> is slightly out of spec (it wants 3.5V). It usually works; add a 74AHCT125 if the display glitches.</p>
   <p><span class="sev l">LOW</span><b>Pot on 3.3V and ADC1</b> (GPIO1), not 5V.</p>
   <p><span class="sev l">LOW</span><b>Vibration:</b> use a screw-terminal ESP32 breakout; dupont jumpers shake loose.</p>
@@ -1250,15 +1250,16 @@ function renderReview(){
 const PARTS = {
   wago:   {name:'WAGO 221 kit (3-port + 5-port)', have:true},
   bts1:   {name:'BTS7960 #1 (rear motors)', have:true},
-  bts2:   {name:'BTS7960 #2 (steering motor)', have:false, buy:'Another HiLetgo BTS7960, same as the one you bought'},
+  bts2:   {name:'BTS7960 #2 (steering motor)', have:true, buy:'On hand. Label it STEERING and keep it bagged until stage 1'},
   buck:   {name:'12V→5V buck', have:true},
   esp:    {name:'ESP32-S3 (the long board)', have:true},
   max:    {name:'MAX7219 tail light', have:true},
   kit:    {name:'Starter kit: 10k resistors, jumpers, breadboard', have:true},
-  wire:   {name:'18 AWG wire (doubled for the heavy runs)', have:true},
+  wire:   {name:'14 AWG red/black (heavy runs) + 18 AWG (everything else)', have:true},
+  shrink: {name:'Heat shrink tubing', have:false, arriving:true, buy:'Arriving today. Needed before splicing the pedal and switch wires'},
   meter:  {name:'Multimeter', have:true},
-  fuse:   {name:'20A inline blade fuse + holder', have:false, maybe:true, buy:'Skip if the red battery wire already has a fuse or breaker'},
-  fuse2:  {name:'2A inline fuse for the buck', have:false, optional:true, buy:'Nice to have; the 20A fuse covers you to start'},
+  fuse:   {name:'20A inline blade fuse + holder', have:false, maybe:true, arriving:true, buy:'Arriving today. Or reuse the car\'s own, if the red battery wire already has one. The battery stays unplugged until a main fuse is in'},
+  fuse2:  {name:'2A inline fuse for the buck', have:false, optional:true, buy:'Skip it: your buck converter has its own protection'},
   fem:    {name:'Female-ended jumper wires', have:false, maybe:true, buy:'Only if your kit has male-male jumpers only'},
   pot:    {name:'10k pot for the steering column', have:true, buy:'The kit pot works to start; a shafted one mounts better'},
   bracket:{name:'3D-printed PETG pot bracket', have:false, maybe:true, buy:'You print this on the P1S'},
@@ -1276,7 +1277,7 @@ const GROUPS = {
            what:'3.3V logic power, the enable pin with its 10k pull-down, and the two PWM wires.'},
   tail:   {name:'Tail light matrix', wires:rng('t',1,5), parts:['max'],
            what:'5V power plus three data wires to the MAX7219.'},
-  cockpit:{name:'Pedal & dash switches', wires:rng('c',1,8), parts:['kit','wire'],
+  cockpit:{name:'Pedal & dash switches', wires:rng('c',1,8), parts:['kit','wire','shrink'],
            what:'The stock pedal and switches become plain inputs. This is what keeps the car driving like stock for the driver.'},
   steer:  {name:'Steering motor → driver #2', wires:rng('s',1,11), parts:['bts2'],
            what:'Remote steering like the stock remote: push the stick, the wheels turn. Without the sensor it works the way the stock board did (no position feedback), just with soft starts instead of slams.'},
@@ -1286,8 +1287,8 @@ const GROUPS = {
 const STAGES = [
   {id:'1a', name:'Stage 1a · today', sub:'Only parts you own', groups:['motors','power','five','logic','tail','cockpit'], verdict:'ok',
    summary:'<b>You can build this now.</b> The car drives from the pedal and your phone, Fwd/Rev and High/Low work, and the tail light runs. <b>The one gap: no remote steering.</b> The driver steers by hand and the steering motor is just unplugged, so you can stop the car remotely but not steer it. <b>Hybrid option:</b> leave the stock board in for steering only, so the stock remote still steers (see <span class="kbd">firmware/README.md</span>). Your phone\'s E-STOP becomes the parent stop.'},
-  {id:'1', name:'Stage 1 · brain swap', sub:'Does everything stock did', groups:['motors','power','five','logic','tail','cockpit','steer'], verdict:'need',
-   summary:'<b>You\'re one part short: a second BTS7960</b> (plus a fuse, if the car doesn\'t already have one). With it, the ESP32 replaces the stock board completely, including remote steering.'},
+  {id:'1', name:'Stage 1 · brain swap', sub:'Does everything stock did', groups:['motors','power','five','logic','tail','cockpit','steer'], verdict:'ok',
+   summary:'<b>You have the parts for this,</b> including the second BTS7960. The ESP32 replaces the stock board completely, including remote steering. Finish Stage 1a first; steering comes next.'},
   {id:'2', name:'Stage 2 · smooth steering', sub:'Adds the position sensor', groups:['motors','power','five','logic','tail','cockpit','steer','pot'], verdict:'ok',
    summary:'Better than stock: steering glides to the angle you ask for instead of slamming, and goes limp in manual mode. The kit pot works to start, and you 3D-print the bracket.'},
 ];
@@ -1323,8 +1324,8 @@ function focusStage(){
   for (const w of ws) for (const [x,y] of (w.via||[])){ const x1=Math.max(b.x+b.w,x), y1=Math.max(b.y+b.h,y); b.x=Math.min(b.x,x); b.y=Math.min(b.y,y); b.w=x1-b.x; b.h=y1-b.y; }
   fitBox(b, 50, 520);
 }
-function partBadge(k){ const p = PARTS[k]; if (p.have) return '✅'; return p.optional ? '➕' : p.maybe ? '❔' : '🛒'; }
-function groupNeeds(g, kind){ return GROUPS[g].parts.filter(k=>{ const p = PARTS[k]; return !p.have && !p.optional && (kind==='check' ? p.maybe : !p.maybe); }); }
+function partBadge(k){ const p = PARTS[k]; if (p.have) return '✅'; return p.arriving ? '🚚' : p.optional ? '➕' : p.maybe ? '❔' : '🛒'; }
+function groupNeeds(g, kind){ return GROUPS[g].parts.filter(k=>{ const p = PARTS[k]; if (p.have || p.optional) return false; if (kind==='arriving') return !!p.arriving; if (p.arriving) return false; return kind==='check' ? p.maybe : !p.maybe; }); }
 const shortName = k => PARTS[k].name.split(' (')[0];
 function showStage(){ renderWires(); applyHighlights(); renderStages(); focusStage(); stageSel.prev = stageSel.upto; }
 function stopStagePlay(){ clearInterval(stagePlayT); stagePlayT = null; }
@@ -1343,8 +1344,8 @@ function renderStages(){
    <div class="stagebtns">${STAGES.map(x=>`<button data-stage="${x.id}" class="${x.id===st.id?'on':''}"><b>${x.name}</b><small>${x.sub}</small></button>`).join('')}</div>
    <div class="box ${st.verdict}">${st.summary}</div>
    <div class="navrow"><button class="btn" id="sgPrev">◀</button><button class="btn primary" id="sgPlay">${stagePlayT?'⏸ Pause':'▶ Play'}</button><button class="btn" id="sgNext">▶</button><button class="btn" id="sgAll" ${all?'disabled':''}>Whole stage</button></div>
-   ${st.groups.map((g,i)=>{ const G = GROUPS[g], need = groupNeeds(g), chk = groupNeeds(g,'check'); const cls = all ? '' : i===stageSel.upto ? 'cur' : i>stageSel.upto ? 'future' : '';
-     return `<button class="grow ${cls}" data-g="${i}"><span class="n">${i+1}</span><span class="t">${G.name}<small>${G.wires.length} wires · ${need.length ? '🛒 needs '+need.map(shortName).join(', ') : chk.length ? '❔ check first: '+chk.map(shortName).join(', ') : '✅ parts on hand'}</small></span></button>`; }).join('')}
+   ${st.groups.map((g,i)=>{ const G = GROUPS[g], need = groupNeeds(g), chk = groupNeeds(g,'check'), arr = groupNeeds(g,'arriving'); const cls = all ? '' : i===stageSel.upto ? 'cur' : i>stageSel.upto ? 'future' : '';
+     return `<button class="grow ${cls}" data-g="${i}"><span class="n">${i+1}</span><span class="t">${G.name}<small>${G.wires.length} wires · ${need.length ? '🛒 needs '+need.map(shortName).join(', ') : arr.length ? '🚚 waiting on '+arr.map(shortName).join(', ') : chk.length ? '❔ check first: '+chk.map(shortName).join(', ') : '✅ parts on hand'}</small></span></button>`; }).join('')}
   </div>`;
   if (cur){
     h += `<div class="card"><h3>Group ${stageSel.upto+1}: ${cur.name}</h3><p>${cur.what}</p><table class="pins"><tr><th>From</th><th>To</th><th>Wire</th></tr>${cur.wires.map(id=>{ const w = WIRES.find(x=>x.id===id), A=TERMS[w.a], B=TERMS[w.b];
@@ -1352,10 +1353,10 @@ function renderStages(){
       <p class="meta">The Tutorial tab walks through each of these wires one at a time.</p></div>`;
   }
   h += `<div class="card"><h3>Parts for ${st.name}</h3><table class="pins">${parts.map(k=>{ const p = PARTS[k]; return `<tr><td>${partBadge(k)}</td><td>${p.name}${p.buy?`<br><span class="meta">${p.buy}</span>`:''}</td></tr>`; }).join('')}</table>
-   <p class="meta">✅ have · 🛒 need to buy · ❔ check first · ➕ optional</p></div>
+   <p class="meta">✅ have · 🚚 arriving · 🛒 need to buy · ❔ check first · ➕ optional</p></div>
    <div class="card"><h3>Stock board vs this stage</h3><table class="pins"><tr><th>What the stock board did</th><th>${st.name.split(' · ')[0]}</th></tr>${PARITY.map(r=>`<tr><td>${r[0]}</td><td>${r[col]}</td></tr>`).join('')}</table>
    <p class="meta">❓ The photos of the stock board will tell us whether it also ran sounds, music or lights. Anything it did, we either rewire or consciously drop.</p>
-   <div class="box tip"><b>Firmware status</b>Stage 1a is written (<span class="kbd">firmware/mclaren_ecu</span>): pedal, Fwd/Rev, High/Low, Manual/RC, phone control, rear motors and tail light. Still to add for Stage 1: steering and the Xbox controller.</div></div>`;
+   <div class="box tip"><b>Firmware status</b>Stage 1a is <b>flashed and running</b> on your classic ESP32 (<span class="kbd">firmware/mclaren_ecu</span>): pedal, Fwd/Rev, High/Low, Manual/RC, phone control, rear motors and tail light. Updates go over Wi-Fi. Still to add for Stage 1: steering and the Xbox controller.</div></div>`;
   panel.innerHTML = h;
   panel.querySelectorAll('[data-stage]').forEach(b => b.onclick = () => { stopStagePlay(); stageSel.stage = b.dataset.stage; stageSel.upto = null; showStage(); });
   panel.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { stopStagePlay(); stageSel.upto = +b.dataset.g; showStage(); });

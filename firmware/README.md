@@ -49,7 +49,7 @@ The table below uses S3 numbers; on a classic board, use the left column.
 
 ## Wiring for this milestone (battery unplugged the whole time)
 
-Heavy wires: use stock wire salvaged from the car, or two 18 AWG wires twisted together.
+Heavy wires: 14 AWG (red to +, black to −). Everything else: 18 AWG or jumpers.
 
 | From | To | Wire |
 |---|---|---|
