@@ -3,3 +3,4 @@
 
 # Car Wi-Fi password: local only, never commit
 firmware/**/secrets.h
+firmware/**/build/

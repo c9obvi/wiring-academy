@@ -1,9 +1,11 @@
-// Luka's McLaren F1 ECU, milestone 1: rear drive + tail light, driven from a phone.
-// Board: ESP32-S3 DevKitC-1 (the long board). Arduino-ESP32 core 2.x or 3.x.
+// Luka's McLaren F1 ECU, stage 1a: rear drive, tail light, pedal + dash switches, phone control.
+// Board: ESP32-S3 DevKitC-1 or a classic ESP32 DevKit (pins picked automatically). Arduino-ESP32 core 2.x or 3.x.
 //
-// The ESP32 makes its own Wi-Fi network. Join it from your phone, open http://192.168.4.1,
-// and hold the throttle pad. Let go = the car ramps to a stop. No commands for 0.5 s = stop.
-// Steering stays manual (Luka steers) until the steering driver is added.
+// The ESP32 makes its own Wi-Fi network. Join it from your phone and open http://192.168.4.1.
+// Luka drives with the pedal; the Fwd/Rev and High/Low switches work like stock.
+// Your phone overrides him: hold the throttle pad to drive, E-STOP to stop everything.
+// By default the pedal only works while your phone page is open (PEDAL_NEEDS_PHONE).
+// Steering stays manual (Luka steers) until the second driver arrives (stage 1).
 
 #if __has_include("secrets.h")
 #include "secrets.h"
@@ -15,13 +17,50 @@
 #include <WebServer.h>
 #include <ESPmDNS.h>
 
+// Garage mode: define HOME_WIFI_SSID in secrets.h and the car also joins your home Wi-Fi, so new
+// firmware can be sent over the air (no laptop at the car) and http://mclaren.local/status shows
+// live state. Driving still only works from the car's own Wi-Fi network.
+#if defined(HOME_WIFI_SSID)
+#include <ArduinoOTA.h>
+#define GARAGE_MODE 1
+#if !defined(OTA_PASSWORD)
+#error "Garage mode needs OTA_PASSWORD in secrets.h"
+#endif
+#else
+#define GARAGE_MODE 0
+#endif
+
+#define FW_VERSION "stage1a " __DATE__ " " __TIME__  // shows on /status, so you can tell which build is running
+
 // ---------------- pins (match the wiring tutorial) ----------------
+// One sketch, two boards: the right map is picked from the board you select in the IDE.
+#if defined(CONFIG_IDF_TARGET_ESP32S3)        // ESP32-S3 DevKitC-1 (the long board)
 const int PIN_REAR_RPWM = 4;   // forward PWM  -> BTS7960 RPWM
 const int PIN_REAR_LPWM = 5;   // reverse PWM  -> BTS7960 LPWM
 const int PIN_REAR_EN   = 6;   // R_EN + L_EN, 10k pull-down to GND on the driver side
 const int PIN_MAX_DIN   = 11;  // MAX7219 DIN
 const int PIN_MAX_CLK   = 12;  // MAX7219 CLK
 const int PIN_MAX_CS    = 10;  // MAX7219 CS/LOAD
+const int PIN_PEDAL     = 13;  // pedal switch to GND
+const int PIN_FWD_REV   = 14;  // Fwd/Rev switch to GND
+const int PIN_HIGH_LOW  = 17;  // High/Low switch to GND
+const int PIN_MANUAL_RC = 18;  // Manual/RC switch to GND (leave unwired if the car has none)
+#define BOARD_NAME "ESP32-S3"
+#elif defined(CONFIG_IDF_TARGET_ESP32)        // classic ESP32 DevKit (WROOM-32, DOIT V1 and clones)
+const int PIN_REAR_RPWM = 16;  // labeled RX2 on some 30-pin boards
+const int PIN_REAR_LPWM = 17;  // labeled TX2 on some 30-pin boards
+const int PIN_REAR_EN   = 4;
+const int PIN_MAX_DIN   = 23;
+const int PIN_MAX_CLK   = 18;
+const int PIN_MAX_CS    = 5;
+const int PIN_PEDAL     = 32;
+const int PIN_FWD_REV   = 33;
+const int PIN_HIGH_LOW  = 19;
+const int PIN_MANUAL_RC = 21;
+#define BOARD_NAME "classic ESP32"
+#else
+#error "Pin map is for ESP32-S3 or classic ESP32. Pick one of those boards in the IDE."
+#endif
 
 // ---------------- tuning ----------------
 const bool  INVERT_DRIVE     = false;  // both wheels spin backward on "forward"? set true
@@ -33,6 +72,15 @@ const uint32_t LINK_TIMEOUT_MS = 500;  // no phone command for this long = ramp 
 const uint32_t PWM_HZ        = 20000;  // above hearing range, so the motors don't whine
 const uint8_t  PWM_BITS      = 10;
 const uint32_t PWM_MAX       = (1u << PWM_BITS) - 1;
+
+// cockpit: "closed" = the switch connects the pin to GND. The phone page shows each switch
+// live, so flip these if a switch reads backwards.
+const bool  PEDAL_NEEDS_PHONE   = true;   // pedal works only while your phone page is connected (you're supervising)
+const bool  REVERSE_WHEN_CLOSED = true;   // Fwd/Rev: closed = reverse
+const bool  HIGH_WHEN_CLOSED    = true;   // High/Low: closed = high speed
+const bool  RC_ONLY_WHEN_CLOSED = true;   // Manual/RC: closed = parent only, pedal ignored
+const float LOW_GEAR_FACTOR     = 0.5f;   // Low = half of the max speed
+const float REVERSE_FACTOR      = 0.6f;   // reverse tops out slower than forward
 
 // tail light orientation, flip if the arrow points the wrong way once mounted
 const bool MATRIX_FLIP_ROWS = false;
@@ -52,6 +100,24 @@ uint32_t lastLoopUs = 0;
 
 enum TailState { TAIL_STOPPED, TAIL_SLOWING, TAIL_FWD, TAIL_REV };
 TailState tail = TAIL_STOPPED;
+enum Source { SRC_NONE, SRC_PHONE, SRC_PEDAL };
+Source source = SRC_NONE;
+
+// debounced switch input: closed = pin pulled to GND, stable for 3 samples (30 ms)
+struct Input {
+  int pin;
+  bool closed = false;
+  uint8_t count = 0;
+  void begin() { pinMode(pin, INPUT_PULLUP); closed = digitalRead(pin) == LOW; }
+  void update() {
+    bool now = digitalRead(pin) == LOW;
+    if (now == closed) { count = 0; return; }
+    if (++count >= 3) { closed = now; count = 0; }
+  }
+};
+Input inPedal{PIN_PEDAL}, inFwdRev{PIN_FWD_REV}, inHighLow{PIN_HIGH_LOW}, inMode{PIN_MANUAL_RC};
+bool pedalArmed = false;  // pedal must be seen released once after boot / e-stop before it can drive
+bool reverseSel = false, highSel = false, rcOnly = false;
 
 // ---------------- PWM (works on core 2.x and 3.x) ----------------
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
@@ -123,8 +189,25 @@ void updateTail(uint32_t now) {
 
 // ---------------- control loop ----------------
 void controlStep(uint32_t now, float dt) {
+  inPedal.update(); inFwdRev.update(); inHighLow.update(); inMode.update();
+  reverseSel = inFwdRev.closed == REVERSE_WHEN_CLOSED;
+  highSel    = inHighLow.closed == HIGH_WHEN_CLOSED;
+  rcOnly     = inMode.closed == RC_ONLY_WHEN_CLOSED;
+  if (!inPedal.closed && !estop) pedalArmed = true;
+
   bool linkOk = (now - lastCmdMs) < LINK_TIMEOUT_MS;
-  float t = (linkOk && !estop) ? throttle * maxDuty : 0;
+  bool phoneActive = linkOk && fabsf(throttle) > 0.02f;
+  bool pedalAllowed = pedalArmed && !rcOnly && (!PEDAL_NEEDS_PHONE || linkOk);
+  float t = 0;
+  source = SRC_NONE;
+  if (estop) {
+    t = 0;
+  } else if (phoneActive) {                       // parent overrides Luka
+    t = throttle * maxDuty; source = SRC_PHONE;
+  } else if (inPedal.closed && pedalAllowed) {
+    t = (reverseSel ? -1.0f : 1.0f) * maxDuty * (highSel ? 1.0f : LOW_GEAR_FACTOR); source = SRC_PEDAL;
+  }
+  if (t < 0) t *= REVERSE_FACTOR;
   // never flip direction while moving: come to a stop first
   if (t != 0 && duty != 0 && ((t > 0) != (duty > 0))) t = 0;
   target = t;
@@ -160,7 +243,7 @@ button{flex:1;font-size:18px;font-weight:700;padding:16px;border-radius:12px;bor
 input[type=range]{flex:1;accent-color:#ff8000}
 </style></head><body>
 <h1>Luka's McLaren F1</h1>
-<div id="stat">connecting...</div>
+<div id="stat">connecting...</div><div id="sw" style="font:13px ui-monospace,Menlo,monospace;color:#8fa3b8"></div>
 <div id="pad"><div class="lab" style="top:8px">FORWARD</div><div class="mid"></div><div class="lab" style="bottom:8px">REVERSE</div><div id="knob"></div></div>
 <div class="row"><span>Max speed</span><input id="max" type="range" min="10" max="80" value="30"><b id="maxv">30%</b></div>
 <div class="row"><button id="stop">E-STOP</button><button id="reset">Reset</button></div>
@@ -177,7 +260,8 @@ document.getElementById('stop').onclick=()=>fetch('/estop');
 document.getElementById('reset').onclick=()=>fetch('/reset');
 setInterval(async()=>{ if(busy) return; busy=true;
   try{ const r=await fetch(`/c?t=${Math.round(t*100)}&m=${mx.value}`,{cache:'no-store'}); const j=await r.json();
-    stat.textContent = j.busy ? 'another phone is driving' : `speed ${j.d}%  ${j.s}${j.e?'  E-STOP (press Reset)':''}`;
+    stat.textContent = j.busy ? 'another phone is driving' : `speed ${j.d}%  ${j.s}  (${j.src})${j.e?'  E-STOP (press Reset)':''}`;
+    document.getElementById('sw').textContent = `pedal ${j.p?'PRESSED':'up'}${j.p&&!j.arm?' (release first)':''} | ${j.rev?'REV':'FWD'} | ${j.hi?'HIGH':'LOW'} | ${j.rc?'parent only':'Luka can drive'}`;
   }catch(e){ stat.textContent='no link: car is stopping'; }
   busy=false; },100);
 </script></body></html>)rawliteral";
@@ -185,14 +269,25 @@ setInterval(async()=>{ if(busy) return; busy=true;
 const char* tailName() {
   switch (tail) { case TAIL_STOPPED: return "stopped"; case TAIL_SLOWING: return "slowing"; case TAIL_FWD: return "forward"; default: return "reverse"; }
 }
+const char* sourceName() { return source == SRC_PHONE ? "phone" : source == SRC_PEDAL ? "pedal" : "idle"; }
 void sendStatus(bool busy) {
-  char buf[96];
-  snprintf(buf, sizeof buf, "{\"d\":%d,\"s\":\"%s\",\"e\":%s,\"busy\":%s}",
-           (int)lroundf(duty * 100), tailName(), estop ? "true" : "false", busy ? "true" : "false");
+  char buf[280];
+  snprintf(buf, sizeof buf,
+           "{\"d\":%d,\"s\":\"%s\",\"e\":%s,\"busy\":%s,\"src\":\"%s\",\"p\":%d,\"arm\":%d,\"rev\":%d,\"hi\":%d,\"rc\":%d,\"fw\":\"%s\",\"board\":\"%s\"}",
+           (int)lroundf(duty * 100), tailName(), estop ? "true" : "false", busy ? "true" : "false",
+           sourceName(), inPedal.closed, pedalArmed, reverseSel, highSel, rcOnly, FW_VERSION, BOARD_NAME);
   server.sendHeader("Cache-Control", "no-store");
   server.send(200, "application/json", buf);
 }
+bool fromCarWifi() {
+#if GARAGE_MODE
+  return server.client().localIP() == WiFi.softAPIP();  // came in through the car's own network
+#else
+  return true;  // the car's own network is the only network
+#endif
+}
 void handleCmd() {
+  if (!fromCarWifi()) { server.send(403, "application/json", "{\"err\":\"drive only from the car's own Wi-Fi\"}"); return; }
   uint32_t now = millis();
   IPAddress ip = server.client().remoteIP();
   bool ownerActive = (now - lastCmdMs) < 3000;
@@ -214,22 +309,64 @@ void setup() {
   pwmSetup(PIN_REAR_LPWM, CH_L);
   maxInit();
   maxShow(PAT_FULL, 15);
+  inPedal.begin(); inFwdRev.begin(); inHighLow.begin(); inMode.begin();
 
   Serial.begin(115200);
+#if GARAGE_MODE
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.begin(HOME_WIFI_SSID, HOME_WIFI_PASSWORD);
+  for (uint32_t t0 = millis(); WiFi.status() != WL_CONNECTED && millis() - t0 < 12000;) delay(100);
+  bool home = WiFi.status() == WL_CONNECTED;
+  if (!home) {  // say why, so it can be fixed without guessing
+    int why = WiFi.status();  // 1 = network not found, 4 = connect failed (often a wrong password)
+    WiFi.disconnect();  // a scan can't run while a connection attempt is in progress
+    delay(200);
+    int n = WiFi.scanNetworks();
+    bool seen = false;
+    for (int i = 0; i < n; i++) if (WiFi.SSID(i) == HOME_WIFI_SSID) {
+      seen = true;
+      Serial.printf("Garage mode: %s visible on channel %d, signal %d dBm, but not connected (status %d)\n",
+                    HOME_WIFI_SSID, (int)WiFi.channel(i), (int)WiFi.RSSI(i), why);
+    }
+    for (int i = 0; i < n && !seen; i++) if (WiFi.SSID(i).equalsIgnoreCase(HOME_WIFI_SSID))
+      Serial.printf("Garage mode: no exact match, but \"%s\" is visible. Wi-Fi names are case-sensitive; check secrets.h\n", WiFi.SSID(i).c_str());
+    if (!seen) Serial.printf("Garage mode: %s not visible on 2.4 GHz (%d networks seen). This chip has no 5 GHz radio.\n", HOME_WIFI_SSID, n < 0 ? 0 : n);
+    WiFi.scanDelete();
+    WiFi.begin(HOME_WIFI_SSID, HOME_WIFI_PASSWORD);  // keep trying in the background
+  }
+  WiFi.softAP(WIFI_AP_NAME, WIFI_AP_PASSWORD, home ? WiFi.channel() : 1, 0, 2);  // AP must share the home channel
+  ArduinoOTA.setHostname("mclaren");
+  ArduinoOTA.setPassword(OTA_PASSWORD);
+  ArduinoOTA.onStart([] {  // never update with the motors live
+    estop = true; throttle = 0; duty = 0; target = 0; enabled = false; driveOutputs(); maxShow(PAT_OFF, 0);
+    Serial.println("OTA update starting, motors off");
+  });
+  ArduinoOTA.begin();  // also starts mDNS as mclaren.local
+  if (home) Serial.printf("Garage mode: home Wi-Fi %s, http://mclaren.local/status\n", WiFi.localIP().toString().c_str());
+  else Serial.println("Garage mode: home Wi-Fi not found, car network only (will keep trying)");
+#else
   WiFi.mode(WIFI_AP);
   WiFi.softAP(WIFI_AP_NAME, WIFI_AP_PASSWORD, 1, 0, 2);
   MDNS.begin("mclaren");
+#endif
   server.on("/", [] { server.send_P(200, "text/html", PAGE); });
   server.on("/c", handleCmd);
-  server.on("/estop", [] { estop = true; throttle = 0; sendStatus(false); Serial.println("E-STOP"); });
-  server.on("/reset", [] { estop = false; throttle = 0; sendStatus(false); Serial.println("reset"); });
+  server.on("/estop", [] { estop = true; throttle = 0; pedalArmed = false; sendStatus(false); Serial.println("E-STOP"); });
+  server.on("/reset", [] {  // only from the car's network: clearing an e-stop needs someone at the car
+    if (!fromCarWifi()) { server.send(403, "application/json", "{\"err\":\"reset only from the car's own Wi-Fi\"}"); return; }
+    estop = false; throttle = 0; sendStatus(false); Serial.println("reset");
+  });
+  server.on("/status", [] { sendStatus(false); });  // read-only, from either network
   server.begin();
-  Serial.printf("McLaren ECU up. Join Wi-Fi \"%s\", open http://192.168.4.1\n", WIFI_AP_NAME);
+  Serial.printf("McLaren ECU up on %s. Join Wi-Fi \"%s\", open http://192.168.4.1\n", BOARD_NAME, WIFI_AP_NAME);
   lastLoopUs = micros();
 }
 
 void loop() {
   server.handleClient();
+#if GARAGE_MODE
+  ArduinoOTA.handle();
+#endif
   uint32_t nowUs = micros();
   if (nowUs - lastLoopUs >= 10000) {  // 100 Hz control loop
     float dt = (nowUs - lastLoopUs) / 1e6f;
@@ -239,7 +376,10 @@ void loop() {
   static uint32_t lastLog = 0;
   if (millis() - lastLog > 500) {
     lastLog = millis();
-    Serial.printf("throttle %+.2f  target %+.2f  duty %+.2f  EN %d  tail %s%s\n",
-                  throttle, target, duty, enabled, tailName(), estop ? "  ESTOP" : "");
+    Serial.printf("src %-5s throttle %+.2f target %+.2f duty %+.2f EN %d tail %-7s | pedal %d%s %s %s %s%s\n",
+                  sourceName(), throttle, target, duty, enabled, tailName(),
+                  inPedal.closed, (inPedal.closed && !pedalArmed) ? "(release first)" : "",
+                  reverseSel ? "REV" : "FWD", highSel ? "HIGH" : "LOW", rcOnly ? "parent-only" : "luka-ok",
+                  estop ? "  ESTOP" : "");
   }
 }

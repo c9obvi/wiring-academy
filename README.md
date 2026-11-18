@@ -27,20 +27,23 @@ Changes before building:
 | Low | Pot on 3.3V, wiper to an ADC1 pin (GPIO1) | The ADC tops out around 3.1V, and ADC2 conflicts with the radio. |
 | Low | Screw-terminal ESP32 breakout, hot glue on headers | Vibration. |
 
-## Pin map (ESP32-S3 DevKitC-1)
+## Pin map
 
-| GPIO | Function | Notes |
-|---|---|---|
-| 4 / 5 | Rear RPWM / LPWM | ~16–20 kHz LEDC PWM |
-| 6 | Rear R_EN+L_EN | 10k pull-down to GND |
-| 7 / 15 | Steering RPWM / LPWM | |
-| 16 | Steering R_EN+L_EN | 10k pull-down; LOW = limp |
-| 1 | Steering pot wiper | ADC1_CH0, 100 nF to GND |
-| 11 / 12 / 10 | MAX7219 DIN / CLK / CS | FSPI default pins |
-| 13 / 14 / 17 / 18 | Pedal / Fwd-Rev / High-Low / Manual-RC | INPUT_PULLUP, switch to GND |
-| 2 | (later) battery voltage | 100k/22k divider, ADC1 |
+The firmware builds for either board and picks its pins automatically. The wiring page's **Board** selector switches every pin number on the page.
 
-Avoid: 0, 3, 45, 46 (strapping) · 19/20 (USB) · 43/44 (serial) · 35–37 (PSRAM on N8R8/N16R8) · the RGB LED pin (38 or 48). Spares: 8, 9, 21, 39–42, 47.
+| Function | Classic ESP32 (WROOM-32 / DOIT) | ESP32-S3 DevKitC-1 | Notes |
+|---|---|---|---|
+| Rear RPWM / LPWM | 16 / 17 | 4 / 5 | ~16–20 kHz LEDC PWM |
+| Rear R_EN+L_EN | 4 | 6 | 10k pull-down to GND |
+| Steering RPWM / LPWM | 25 / 26 | 7 / 15 | |
+| Steering R_EN+L_EN | 27 | 16 | 10k pull-down; LOW = limp |
+| Steering pot wiper | 34 | 1 | ADC1, 100 nF to GND |
+| MAX7219 DIN / CLK / CS | 23 / 18 / 5 | 11 / 12 / 10 | hardware SPI pins |
+| Pedal / Fwd-Rev / High-Low / Manual-RC | 32 / 33 / 19 / 21 | 13 / 14 / 17 / 18 | INPUT_PULLUP, switch to GND |
+| (later) battery voltage | 35 | 2 | 100k/22k divider, ADC1 |
+
+Classic, avoid: 6–11 (flash) · 0, 2, 12, 15 (strapping) · 1/3 (USB serial) · 34–39 for switches (no pull-ups).
+S3, avoid: 0, 3, 45, 46 (strapping) · 19/20 (USB) · 43/44 (serial) · 35–37 (PSRAM on N8R8/N16R8) · the RGB LED pin (38 or 48). Spares: 8, 9, 21, 39–42, 47.
 
 Power: battery+ → 20A fuse → switch → +12V bus → (rear B+, steering B+, 2A fuse → buck IN+). Battery− → GND bus → (rear B−, steering B−, buck IN−). Buck 5V → 3-port Wago → ESP32 5V and MAX7219 VCC. ESP32 3V3 → both driver VCC pins and the pot (via a breadboard rail).
 
@@ -48,13 +51,37 @@ Power: battery+ → 20A fuse → switch → +12V bus → (rear B+, steering B+, 
 
 EN LOW at boot · soft-start ramp (~1 s) · direction change only at zero speed · remote disconnect → ramp to stop · parent e-stop overrides the pedal · speed cap · never drive RPWM and LPWM together unless braking deliberately · steering soft end-stops from pot calibration.
 
-## Parts status (2026-11-16)
+## Parts status (2026-11-17)
 
-Have: WAGO 221 28-pc assortment (221-2401 inline, 221-412, 221-413, 221-415 5-port), HiLetgo BTS7960 (IBT-2), ESP32-S3 (a small board + a long DevKitC-1-style board), 10–60V→5V 3A IP67 buck, MAX7219, Arduino starter kit (10k resistors, 220 Ω, LEDs, pushbuttons, 10k pot, breadboard, jumpers), 18 AWG wire, solder.
+Have: WAGO 221 28-pc assortment (221-2401 inline, 221-412, 221-413, 221-415 5-port), HiLetgo BTS7960 (IBT-2), ESP32-S3 (a small board + a long DevKitC-1-style board), 10–60V→5V 3A IP67 buck, MAX7219, Arduino starter kit (10k resistors, 220 Ω, LEDs, pushbuttons, 10k pot, breadboard, jumpers), 18 AWG wire, solder, multimeter.
 
-Buy before first power-up: a multimeter, a 20A inline blade fuse holder + fuse (unless the stock harness has one), a 2A inline fuse, and female-ended dupont jumpers if the kit has only male-male. (The Wago kit already covers the two 5-port buses.)
-Buy for steering (Phase 8): a second BTS7960, plus a proper shafted 10k pot for the column (the kit pot is fine for bench testing).
-Optional: an Xbox Wireless controller (BLE) for the parent remote.
+### Shopping basket (ordered for stage 1)
+
+| # | Item | Why | Need? |
+|---|---|---|---|
+| 1 | [HiLetgo BTS7960 43A driver](https://www.amazon.com/HiLetgo-BTS7960-Driver-Arduino-Current/dp/B00WSN98DC) | Steering motor driver, identical to the one you have | **Must** |
+| 2 | [Newdeli 10× 14 AWG inline fuse holders + 100 fuses (2A–35A)](https://www.amazon.com/Newdeli-Waterproof-Standard-Assorted-Automotive/dp/B0CRYWCKXX) | 20A main fuse, 2A buck fuse, 10A steering fuse, plus spares | **Must** |
+| 3 | [BNTECHGO 14 AWG silicone wire, red + black, 10 ft](https://www.amazon.com/BNTECHGO-Flexible-Conductor-Resistant-Extension/dp/B08PBZG7QL) | The heavy runs: battery → fuse → buses → both drivers, and Wagos → M+/M− | **Must** |
+| 4 | [ELEGOO 120 dupont jumpers (M-M, M-F, F-F)](https://www.amazon.com/Elegoo-EL-CP-004-Multicolored-Breadboard-arduino/dp/B01EV70C78) | Female ends for the driver headers and ESP32 pins | Only if the kit is male-male only |
+| 5 | [30A on/off toggle switch, pre-wired, with boot](https://www.amazon.com/Toggle-Switch-12V-30A-Waterproof/dp/B0G4LNNGMY) | Main power switch; the pre-wired leads join with Wagos, so no crimping | If the car has no power switch that carries the main current |
+| 6 | [Heat shrink tubing, 2:1 polyolefin assortment](https://www.amazon.com/560PCS-Heat-Shrink-Tubing-Kit/dp/B09NLJ5FHN) | Insulates every soldered joint (harness wire → dupont jumper) | **Must** if you solder |
+
+Gauge notes: 14 AWG silicone is right for this car. It fits the Wago 221s (max 12 AWG) and the BTS7960 screw terminals, and comfortably carries the 20A fuse's current over these short runs. 12 AWG would be overkill and a tight squeeze in the driver terminals. Keep 18 AWG for the buck feed, the steering motor and the cockpit switches, and dupont jumpers for logic.
+
+### Connecting the car's existing harness
+
+Keep the car's wire runs; don't pull new ones through the car.
+
+1. **Photograph and label every wire first** (tape flags: "PEDAL A", "L MOTOR red", and so on).
+2. **Best: don't cut the connectors.** Unplug each harness connector from the stock board, identify its type (measure the pin pitch; it's often JST XH 2.54 mm or VH 3.96 mm), and buy matching pigtails. The harness then plugs into your adapters today and into your custom PCB later, with no cutting at all.
+3. **Fallback, if a connector is odd:** cut about 5 cm behind it, so the connector keeps a short tail. To go back to stock, you just Wago the tails back on.
+4. **Heavy wires (motors, battery):** Wagos, no solder.
+5. **Signal wires (pedal, switches):** solder each one to half of a female dupont jumper, heat-shrink it, then plug onto the ESP32 pin. Don't Wago dupont wire: it's thinner than the Wago 221's 24 AWG minimum and won't clamp reliably.
+6. **Strain relief:** zip-tie the harness near the board, so a yank pulls on the tie, not the joint.
+
+Fuse map: **20A** on battery + (main) · **2A** on the buck feed · **10A** on the steering driver's B+ (optional).
+
+Stage 2, later: a shafted 10k pot for the steering column (the kit pot is fine for bench testing) and a 3D-printed PETG bracket. Optional anytime: an Xbox Wireless controller (the S3 only pairs with BLE pads).
 
 ## Next
 

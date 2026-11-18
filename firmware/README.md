@@ -1,6 +1,25 @@
-# Milestone 1: drive it from your phone, with the tail light
+# Stage 1a: pedal, dash switches, phone control and tail light
 
-What you get: you hold a throttle pad on your phone, the rear wheels ramp up smoothly, letting go ramps to a stop, and the 8×8 tail light shows an arrow, a flicker while slowing, and solid when stopped. Luka steers by hand; the steering motor is just unplugged for now. Uses only parts you own, plus a fuse if the car doesn't already have one.
+What you get:
+- Luka drives with the **pedal**. The **Fwd/Rev** and **High/Low** switches work like stock (Low = half speed, reverse capped at 60%).
+- **Your phone overrides him.** Hold the throttle pad to drive, or press E-STOP to stop everything. By default the pedal only works while your phone page is open, so you're always supervising.
+- Soft-start and soft-stop ramps. The tail light shows an arrow while driving, flickers while slowing, and goes solid when stopped.
+- The phone page shows every switch live, so you can test the dashboard before the motors are even connected.
+
+Steering, two options until the second BTS7960 arrives (stage 1):
+- **Manual:** the steering motor is unplugged and Luka steers by hand.
+- **Hybrid (half old, half new):** the stock board stays in the car for steering only (see below), so the stock remote still steers.
+
+Uses only parts you own, plus a fuse if the car doesn't already have one.
+
+## Hybrid option: keep the stock board for steering
+
+The stock board can keep doing just one job, steering, while the ESP32 takes over everything else.
+
+- **Stays on the stock board:** its battery feed (Wago it onto the +12V and GND buses, so it's behind the main fuse) and the steering motor. Its receiver for the stock remote is built in.
+- **Moves to the ESP32:** both rear motors (through BTS7960 #1), the pedal, Fwd/Rev and High/Low. Unplug them from the stock board, and cap each now-unused stock-board motor lead on its own Wago, so nothing bare can touch.
+- **Important:** the stock remote's go and stop buttons now do nothing, because the rear motors aren't on that board anymore. **Your phone's E-STOP is the parent stop.** Use the stock remote for steering only.
+- Check after the swap that the stock remote still steers. Some stock boards won't respond without their pedal connected; if yours is one, use manual steering until stage 1.
 
 An Xbox controller comes next (milestone 2, via Bluepad32). The phone works with zero extra installs, so it goes first.
 
@@ -11,6 +30,22 @@ An Xbox controller comes next (milestone 2, via Bluepad32). The phone works with
   - If not: buy an **inline blade fuse holder (12 or 14 AWG)** and a **20A blade fuse** (any auto parts store, about $8).
   - The extra 2A fuse for the buck is a nice-to-have. Skip it for this milestone.
 - **Switch = a way to turn everything off.** For now, **unplugging the battery connector is your off switch**, and the phone's E-STOP is the instant software stop. Before Luka drives regularly, add a proper switch (the car's own, if it carries the main power, or a 30A rocker).
+
+## Which board?
+
+The firmware supports two boards and picks the right pins automatically when you build for one. The wiring page has a **Board** selector at the top, which switches every pin number on the page.
+
+| Signal | Classic ESP32 (WROOM-32 / DOIT) | ESP32-S3 DevKitC-1 |
+|---|---|---|
+| Rear RPWM / LPWM | **16 / 17** (may be printed RX2 / TX2) | 4 / 5 |
+| Rear enable (R_EN + L_EN) | **4** | 6 |
+| Tail light DIN / CLK / CS | **23 / 18 / 5** | 11 / 12 / 10 |
+| Pedal / Fwd-Rev / High-Low / Manual-RC | **32 / 33 / 19 / 21** | 13 / 14 / 17 / 18 |
+| Steering RPWM / LPWM / enable (stage 1) | **25 / 26 / 27** | 7 / 15 / 16 |
+| Steering pot (stage 2) | **34** | 1 |
+| 5V in | **VIN** (or 5V) | 5V |
+
+The table below uses S3 numbers; on a classic board, use the left column.
 
 ## Wiring for this milestone (battery unplugged the whole time)
 
@@ -40,17 +75,51 @@ Heavy wires: use stock wire salvaged from the car, or two 18 AWG wires twisted t
 | ESP32 **GPIO11** | MAX7219 **DIN** | jumper |
 | ESP32 **GPIO12** | MAX7219 **CLK** | jumper |
 | ESP32 **GPIO10** | MAX7219 **CS** | jumper |
+| Pedal contact 1 | ESP32 **GPIO13** | 18 AWG from the cockpit, female jumper end |
+| Fwd/Rev switch, one side | ESP32 **GPIO14** | 18 AWG |
+| High/Low switch, one side | ESP32 **GPIO17** | 18 AWG |
+| Manual/RC switch, one side (if the car has one) | ESP32 **GPIO18** | 18 AWG |
+| Other side of the pedal and every switch | ESP32 **GND** (daisy-chain one ground wire) | 18 AWG |
 
-The interactive tutorial (`../wiring-academy.html`) walks through each of these with pictures. This milestone is phases 1–4 and 6; skip 7 and 8 for now.
+**Before wiring the cockpit:** cut the pedal and switches completely off the stock 12V harness. 12V on any ESP32 pin kills it. If the Fwd/Rev shifter has thick wires running to the motors, it was switching motor power directly; bypass those and use only the switch itself.
 
-## Flash the ESP32-S3
+The interactive tutorial (`../wiring-academy.html`) walks through each of these with pictures. In the page's **Build stages** tab, this is **Stage 1a** (press Play to watch it go in).
 
-1. Install **Arduino IDE 2**. In Boards Manager, install **esp32 by Espressif Systems**.
-2. Open `mclaren_ecu/mclaren_ecu.ino`. `secrets.h` (your Wi-Fi password) is already in that folder. It's gitignored, so it never goes to GitHub. To change the password, edit it there.
-3. Tools → Board → **ESP32S3 Dev Module**. Plug into the board's **COM** USB port (or the **USB** port, with Tools → USB CDC On Boot → **Enabled** to see the serial log).
-4. Upload. Open Serial Monitor at 115200 and you'll see `McLaren ECU up`.
+## No laptop at the car: garage mode
+
+Firmware updates don't need a laptop at the car. In garage mode the car joins your home Wi-Fi as well as making its own network, so new firmware goes over the air from the Mac mini.
+
+1. Edit `mclaren_ecu/secrets.h` (on this Mac, gitignored). Fill in your home Wi-Fi name and password and uncomment those two lines. `OTA_PASSWORD` is already set. **Wi-Fi names are case-sensitive**, and the classic ESP32 only sees 2.4 GHz networks. If it can't connect, the serial log says which of those it is.
+2. Flash once over USB (below). After that, updates go over Wi-Fi while the car sits in the garage, as long as your home Wi-Fi reaches it.
+3. `http://mclaren.local/status` shows live state (speed, pedal, switches, firmware build, board) from any computer on your home network.
+
+Safety stays the same: **driving and E-STOP reset only work from the car's own Wi-Fi** (your phone). Home-network devices can read status and press E-STOP, but can't drive. Starting an update forces the motors off first.
+
+USB is only needed for the first flash, or if the car can't reach your home Wi-Fi.
+
+## Flash it
+
+One script does both kinds of flashing (it needs `arduino-cli` and the esp32 core, both installed on the Mac mini):
+
+```
+./flash.sh classic usb     # first flash over USB
+./flash.sh classic ota     # every update after that, over Wi-Fi (garage mode)
+./flash.sh s3 usb          # same for the ESP32-S3
+```
+
+`secrets.h` (the car's Wi-Fi password, your home Wi-Fi and the update password) is already in `mclaren_ecu/`. It's gitignored, so it never goes to GitHub.
+
+Prefer the Arduino IDE? Install **esp32 by Espressif Systems** in Boards Manager, open `mclaren_ecu/mclaren_ecu.ino`, and pick **ESP32 Dev Module** (classic) or **ESP32S3 Dev Module** (S3). Serial Monitor at 115200 shows `McLaren ECU up on <board>`.
 
 Do steps 1–4 with the ESP32 on USB and nothing else connected. The tail light can be connected; it's safe.
+
+## Test the dashboard (USB only, no battery)
+
+With the ESP32 on USB and the cockpit wired, join the car's Wi-Fi and open the page. The grey line under the speed shows each switch live:
+
+`pedal PRESSED | FWD | LOW | Luka can drive`
+
+Press the pedal and flip each switch, and watch it change. If one reads backwards (for example it says REV when the shifter is in forward), flip its setting at the top of the sketch: `REVERSE_WHEN_CLOSED`, `HIGH_WHEN_CLOSED` or `RC_ONLY_WHEN_CLOSED`. With no motor power connected, it's completely safe.
 
 ## First drive test
 
@@ -58,7 +127,7 @@ Do steps 1–4 with the ESP32 on USB and nothing else connected. The tail light 
 2. Multimeter: with the battery plugged in and the buck output disconnected, the buck output reads **4.9–5.2V**. Unplug the battery, then connect the buck output.
 3. Plug in the battery. The tail light goes solid (stopped). Nothing spins.
 4. Phone: join Wi-Fi **McLaren-F1** (password in `secrets.h`), then open **http://192.168.4.1**.
-5. Push the pad up a little. Both wheels should turn forward.
+5. Push the pad up a little. Both wheels should turn forward. Then let go and press the pedal: the wheels should ramp up on their own, at half speed in LOW.
    - **One wheel backward:** unplug the battery, swap that motor's red and black at the Wagos.
    - **Both backward:** set `INVERT_DRIVE = true` in the sketch and re-upload.
 6. Let go: the wheels ramp down, and the tail light flickers, then goes solid. Press **E-STOP**: everything stops instantly. Then **Reset**.
@@ -67,9 +136,11 @@ Do steps 1–4 with the ESP32 on USB and nothing else connected. The tail light 
 ## Safety built into the firmware
 
 - Motors are disabled before anything else runs at boot, and the 10k pull-down holds them off while the board starts.
+- A pedal held down at boot, or after an E-STOP, is ignored until Luka lets go once.
+- Your phone always beats the pedal. Set `PEDAL_NEEDS_PHONE = false` only when you want it to drive with no phone at all, like stock.
 - Speed is capped at 30% by default. The phone slider goes up to 80%, and `HARD_MAX_DUTY` is the ceiling the phone can't exceed.
 - Soft-start and soft-stop ramps. Forward/reverse changes only happen at zero speed.
 - No command from the phone for 0.5 s → ramp to stop. Letting go of the pad, locking the phone, or leaving the page → stop.
 - Only one phone can drive at a time. E-STOP works from any phone.
 
-Tuning knobs are at the top of the sketch: `DEFAULT_MAX_DUTY`, `ACCEL_PER_S`, `DECEL_PER_S`, `INVERT_DRIVE`, and the matrix flip flags.
+Tuning knobs are at the top of the sketch: `DEFAULT_MAX_DUTY`, `ACCEL_PER_S`, `DECEL_PER_S`, `INVERT_DRIVE`, `LOW_GEAR_FACTOR`, `REVERSE_FACTOR`, the switch polarity flags, and the matrix flip flags.
