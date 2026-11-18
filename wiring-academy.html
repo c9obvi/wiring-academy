@@ -135,6 +135,61 @@ ul.tight{margin:4px 0;padding-left:18px}ul.tight li{margin:3px 0}
   #mapWrap{flex:none;height:55vh}
   #panel{width:100%;max-width:none;border-left:0;border-top:1px solid var(--line)}
 }
+#sheetBar,.zoomrow{display:none}
+#mobileBtn{margin-left:10px;white-space:nowrap}
+/* ---- phone layout: map on top, instructions in a bottom sheet ---- */
+body.mobile{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;font-size:16px;-webkit-text-size-adjust:100%}
+body.mobile header{height:auto;min-height:0;flex:none;flex-wrap:wrap;gap:6px 8px;padding:6px 10px}
+body.mobile header h1{font-size:0}
+body.mobile header h1 span{font-size:15px}
+body.mobile .tabs{order:5;width:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+body.mobile .tabs::-webkit-scrollbar,body.mobile .phase-chips::-webkit-scrollbar{display:none}
+body.mobile .tab{white-space:nowrap;flex:none;padding:8px 12px}
+body.mobile .repo-link{display:none}
+body.mobile .boardsel{font-size:0;margin-left:auto}
+body.mobile .boardsel select{font-size:16px;max-width:30vw;margin-left:0;padding:6px}
+body.mobile #mobileBtn{margin-left:0;min-height:36px}
+body.mobile main{flex:1;min-height:0;height:auto;flex-direction:column}
+body.mobile #mapWrap{flex:1;min-height:0;height:auto}
+body.mobile #panel{flex:none;width:100%;max-width:none;height:50%;border:0;padding:10px 12px 0;overscroll-behavior:contain}
+body.mobile[data-sheet=peek] #panel{height:216px}
+body.mobile[data-sheet=full] #panel{flex:1;height:auto}
+body.mobile[data-sheet=full] #mapWrap{display:none}
+body.mobile #sheetBar{display:flex;flex:none;justify-content:center;padding:5px;background:var(--panel);border-top:1px solid var(--line)}
+body.mobile[data-mapless] #sheetBar{display:none}
+#sheetBar .seg button{padding:8px 18px;font-size:14px}
+body.mobile .card{padding:12px;margin:8px 0}
+body.mobile .card h2{font-size:18px}
+body.mobile .meta{font-size:13px}
+body.mobile .lhead>.meta:first-child{display:none}
+body.mobile[data-sheet=peek] .lhead{display:none}
+body.mobile .phase-chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:6px 0 8px}
+body.mobile .chip{white-space:nowrap;flex:none;font-size:13px;padding:6px 10px}
+body.mobile .card.step{display:flex;flex-direction:column}
+body.mobile .card.step>h2{order:-3}
+body.mobile .card.step>.zoomrow{order:-2}
+body.mobile .card.step>.status{order:-1;margin:2px 0 8px}
+body.mobile .wirechip{align-self:flex-start}
+body.mobile .zoomrow{display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px;align-items:center;margin:0 0 8px;color:var(--muted);font-size:13px}
+body.mobile .zoomrow>*{flex:none;white-space:nowrap}
+body.mobile .zoomrow::-webkit-scrollbar{display:none}
+body.mobile .btn{min-height:44px;padding:9px 14px;font-size:15px}
+body.mobile .btn.small{min-height:36px;padding:6px 10px;font-size:13.5px}
+body.mobile .stepnav{position:sticky;bottom:0;z-index:5;background:var(--panel);margin:8px -12px 0;padding:8px 12px;border-top:1px solid var(--line);flex-wrap:nowrap;gap:6px}
+body.mobile .stepnav .spacer{display:none}
+body.mobile .stepnav #next{flex:1}
+body.mobile .check{padding:10px 6px}
+body.mobile .check input{width:22px;height:22px;flex:none}
+body.mobile .quizopt{padding:13px 12px;font-size:15px}
+body.mobile table.pins{font-size:13.5px}
+body.mobile .mapbtns{right:8px;top:8px}
+body.mobile .mapbtns button{width:44px;height:44px;font-size:19px}
+body.mobile .legend{display:none}
+body.mobile[data-mode=explore] .legend{display:block;left:6px;bottom:6px;max-width:calc(100% - 64px);font-size:12px}
+body.mobile #tip{display:none!important}
+body.mobile #toast{left:10px;right:64px;top:calc(var(--hdr,96px) + 8px);max-width:none;font-size:14px;transform:translateY(-12px)}
+body.mobile #toast.show{transform:none}
+body.mobile .term{transform-box:fill-box;transform-origin:center;transform:scale(1.3)}
 </style>
 </head>
 <body>
@@ -149,6 +204,7 @@ ul.tight{margin:4px 0;padding-left:18px}ul.tight li{margin:3px 0}
     <button class="tab" data-mode="review">Plan review</button>
   </div>
   <label class="boardsel" title="Pick your microcontroller: pin numbers update everywhere">Board <select id="boardSel"><option value="classic">Classic ESP32 (WROOM-32 / DOIT)</option><option value="s3">ESP32-S3 DevKitC-1 (long board)</option></select></label>
+  <button class="btn small" id="mobileBtn" title="Switch to phone layout">📱 Mobile view</button>
   <a class="repo-link" href="https://github.com/c9obvi/wiring-academy">View on GitHub</a>
 </header>
 <main>
@@ -162,6 +218,7 @@ ul.tight{margin:4px 0;padding-left:18px}ul.tight li{margin:3px 0}
     </div>
     <div class="legend" id="legend"></div>
   </div>
+  <div id="sheetBar"><span class="seg" id="sheetSeg"><button data-sheet="peek">Map</button><button data-sheet="half">Split</button><button data-sheet="full">Text</button></span></div>
   <aside id="panel"></aside>
 </main>
 <div id="toast"></div>
@@ -550,7 +607,7 @@ const PH_STEPS = PHASES.map(p => STEPS.map((s,i)=>s.ph===p.n?i:-1).filter(i=>i>=
    STATE
    ===================================================================== */
 const KEY = 'mclaren-wiring-academy-v1';
-let state = {i:0, done:{}, checks:{}, quiz:{}, real:{}, layers:{hv:true,gnd:true,lv:true,sig:true}, board:'classic'};
+let state = {i:0, done:{}, checks:{}, quiz:{}, real:{}, layers:{hv:true,gnd:true,lv:true,sig:true}, board:'classic', sheet:'half'};
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = {...state, ...s, layers:{...state.layers, ...(s.layers||{})}}; } catch(e){}
 
 /* =====================================================================
@@ -586,7 +643,8 @@ const BOARDS = {
     spare:'GPIO8, 9, 21, 39–42, 47',
     note:'Pins are for the ESP32-S3 DevKitC-1 (the long board). Go by the printed labels. Avoid 0, 3, 45, 46 (strapping), 19/20 (USB), 43/44 (serial) and 35–37 (PSRAM).'},
 };
-{ const q = new URLSearchParams(location.search).get('board'); if (BOARDS[q]) state.board = q; }
+{ const q = new URLSearchParams(location.search); if (BOARDS[q.get('board')]) state.board = q.get('board');
+  if (q.has('mobile')) state.mobile = q.get('mobile')!=='0'; if (q.get('sheet')) state.sheet = q.get('sheet'); }
 if (!BOARDS[state.board]) state.board = 'classic';
 const BOARD = () => BOARDS[state.board];
 const pinOf = n => (BOARD().map && BOARD().map[n]) || n;
@@ -794,7 +852,7 @@ function drawTerms(){
     }
     el('circle', {class:'hit', cx:t.x, cy:t.y, r:14}, g);
     termEls[fid] = g;
-    g.addEventListener('click', e => { e.stopPropagation(); onTermClick(fid); });
+    g.addEventListener('click', e => { e.stopPropagation(); const f = tapRadius() ? tapPick(e.clientX, e.clientY, fid) : fid; if (f!=='zoom') onTermClick(f); });
     g.addEventListener('pointerenter', e => showTip(e, fid));
     g.addEventListener('pointermove', e => moveTip(e));
     g.addEventListener('pointerleave', hideTip);
@@ -866,7 +924,7 @@ function drawWire(w, animate, parent = gWires){
     txt(rg, 0, -9, '10k', {'font-size':9.5, fill:'#d7ccc8', 'text-anchor':'middle'});
   }
   if (parent !== gWires) return;
-  g.addEventListener('click', e => { e.stopPropagation(); onWireClick(w); });
+  g.addEventListener('click', e => { e.stopPropagation(); const f = mode==='learn' && tapRadius() ? tapPick(e.clientX, e.clientY) : null; if (f==='zoom') return; if (f) onTermClick(f); else onWireClick(w); });
   g.addEventListener('pointerenter', e => showWireTip(e, w));
   g.addEventListener('pointermove', moveTip);
   g.addEventListener('pointerleave', hideTip);
@@ -921,11 +979,13 @@ function tweenVB(to, ms=500){
 }
 let tweenSnap, tweenGen = 0;
 function aspect(){ const r = svg.getBoundingClientRect(); if (r.width<50 || r.height<50) return 1; return Math.min(4, Math.max(.25, r.width/r.height)); }
-function fitBox(b, pad=70, minW=460){
+function fitBox(b, pad=isMobile()?34:70, minW=isMobile()?300:460){
   let w = b.w+pad*2, h = b.h+pad*2; w = Math.max(w, minW); h = Math.max(h, minW*0.7);
-  const r = aspect(); if (w/h < r) w = h*r; else h = w/r;
-  tweenVB({x:b.x+b.w/2-w/2, y:b.y+b.h/2-h/2, w, h});
+  const rc = svg.getBoundingClientRect(), gut = isMobile() && rc.width>200 && rc.height>50 ? MAP_GUTTER : 0;   // phone: keep content clear of the zoom buttons
+  const r = gut ? Math.min(4, Math.max(.25, (rc.width-gut)/rc.height)) : aspect(); if (w/h < r) w = h*r; else h = w/r;
+  tweenVB({x:b.x+b.w/2-w/2, y:b.y+b.h/2-h/2, w:gut ? w*rc.width/(rc.width-gut) : w, h});
 }
+const MAP_GUTTER = 58;
 function fitAll(){ fitBox({x:0, y:0, w:W, h:H}, 10, 0); }
 function bboxOf(compIds, fids){
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
@@ -934,10 +994,12 @@ function bboxOf(compIds, fids){
   for (const f of fids||[]){ const t = TERMS[f]; add(t.x,t.y); }
   return {x:x0, y:y0, w:x1-x0, h:y1-y0};
 }
-function focusStep(){
+function focusStep(overview){
   const s = STEPS[state.i];
   if (mode!=='learn' || !s) return fitAll();
   if (s.t==='wire'){
+    // phone: open close-up on the end still to be tapped, so labels are readable; the whole wire shows once it's connected
+    if (isMobile() && overview!==true && !state.done[s.id]) return glideTo(sel ? (sel===s.a ? s.b : s.a) : s.a);
     const w = WIRES.find(x=>x.id===s.id); const fids=[s.a,s.b];
     if (w.via) { const b = bboxOf([TERMS[s.a].comp.id, TERMS[s.b].comp.id], fids); for (const [x,y] of w.via){ b.w = Math.max(b.x+b.w,x)-Math.min(b.x,x); b.x=Math.min(b.x,x); b.h=Math.max(b.y+b.h,y)-Math.min(b.y,y); b.y=Math.min(b.y,y);} return fitBox(b); }
     return fitBox(bboxOf([TERMS[s.a].comp.id, TERMS[s.b].comp.id], fids));
@@ -948,13 +1010,59 @@ function focusStep(){
 function svgPoint(e){ const p = svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
 function zoomAt(f, cx, cy){ cancelAnimationFrame(tween); tweenGen++; const w = Math.min(Math.max(vb.w*f, 150), 3000), h = w/(vb.w/vb.h); setVB({x:cx-(cx-vb.x)*(w/vb.w), y:cy-(cy-vb.y)*(h/vb.h), w, h}); }
 svg.addEventListener('wheel', e => { e.preventDefault(); const p = svgPoint(e); zoomAt(Math.exp(e.deltaY*0.0015), p.x, p.y); }, {passive:false});
-let pan = null;
-svg.addEventListener('pointerdown', e => { if (e.target.closest('.term')||e.target.closest('.wiregrp')) return; pan = {x:e.clientX, y:e.clientY, vb:{...vb}, moved:false}; svg.setPointerCapture(e.pointerId); });
+let pan = null, pinch = null, lastPinchEnd = 0;
+const ptrs = new Map();
+const tapRadius = () => isMobile() ? 30 : 0;   // px: on a phone, a tap picks the nearest terminal within this distance
+// Phone: turn a tap into a terminal. If the two nearest terminals are too close together for a finger
+// to tell apart, zoom in around the tap instead and let the user tap again. Returns a terminal id, 'zoom', or the fallback.
+function tapPick(cx, cy, fallback){
+  const m = svg.getScreenCTM(), c = [];
+  for (const fid in TERMS){ const t = TERMS[fid]; const x = m.a*t.x + m.c*t.y + m.e, y = m.b*t.x + m.d*t.y + m.f, d = Math.hypot(x-cx, y-cy); if (d < tapRadius()) c.push({fid, x, y, d}); }
+  if (!c.length) return fallback || null;
+  c.sort((p,q) => p.d-q.d);
+  if (c.length>1){ const gap = Math.hypot(c[0].x-c[1].x, c[0].y-c[1].y);
+    if (gap < 26 && vb.w > 160 && !(gap >= 16 && c[0].d <= gap/3)){ const p = svgPoint({clientX:cx, clientY:cy}), k = Math.max(150/vb.w, gap/42);
+      tweenVB({x:p.x-(p.x-vb.x)*k, y:p.y-(p.y-vb.y)*k, w:vb.w*k, h:vb.h*k}, 350);
+      toast('Those terminals are close together, so I zoomed in. Tap the one you want.'); return 'zoom'; } }
+  return c[0].fid;
+}
+// Phone: bring one end of a wire up close (at least ~1.1 px per map unit) without centring it exactly.
+function glideTo(fid){
+  const t = TERMS[fid], b = bboxOf([t.comp.id], []), r = svg.getBoundingClientRect();
+  const maxW = Math.max(160, (r.width-MAP_GUTTER)/1.1 - 40), maxH = Math.max(160, r.height/1.1 - 40);
+  let hsh = 0; for (const ch of fid) hsh = (hsh*31 + ch.charCodeAt(0)) % 97; const f = 0.3 + 0.4*hsh/96;
+  const win = (lo, len, max, pos) => len <= max ? [lo, len] : [Math.min(Math.max(pos - max*f, lo), lo+len-max), max];
+  const [x, w] = win(b.x, b.w, maxW, t.x), [y, h] = win(b.y, b.h, maxH, t.y);
+  fitBox({x, y, w, h}, 20, 160);
+}
+function needsGlide(fid){  // is that terminal off-screen, or shown too small to tap?
+  const t = TERMS[fid], m = svg.getScreenCTM(), r = svg.getBoundingClientRect(); const x = m.a*t.x + m.e, y = m.d*t.y + m.f;
+  return m.a < 0.95 || x < r.left+24 || x > r.right-MAP_GUTTER-10 || y < r.top+24 || y > r.bottom-24;
+}
+svg.addEventListener('pointerdown', e => {
+  ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if (ptrs.size===2){  // second finger: start a pinch
+    const [a,b] = [...ptrs.values()]; cancelAnimationFrame(tween); tweenGen++; pan = null;
+    pinch = {d:Math.max(10, Math.hypot(a.x-b.x, a.y-b.y)), vb:{...vb}, p:svgPoint({clientX:(a.x+b.x)/2, clientY:(a.y+b.y)/2})}; return; }
+  if (e.target.closest('.term')||e.target.closest('.wiregrp')) return;
+  pan = {x:e.clientX, y:e.clientY, vb:{...vb}, moved:false}; try { svg.setPointerCapture(e.pointerId); } catch(_){}
+});
 svg.addEventListener('pointermove', e => {
+  if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
+  if (pinch && ptrs.size>=2){
+    const [a,b] = [...ptrs.values()]; const d = Math.max(10, Math.hypot(a.x-b.x, a.y-b.y)), mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+    const r = svg.getBoundingClientRect(); const w = Math.min(Math.max(pinch.vb.w*pinch.d/d, 150), 3000), h = w*pinch.vb.h/pinch.vb.w, k = Math.max(w/r.width, h/r.height);
+    setVB({x:pinch.p.x - w/2 - (mx - r.left - r.width/2)*k, y:pinch.p.y - h/2 - (my - r.top - r.height/2)*k, w, h}); return; }
   if (pan){ const r = svg.getBoundingClientRect(); const s = Math.max(pan.vb.w/r.width, pan.vb.h/r.height); const dx=(e.clientX-pan.x)*s, dy=(e.clientY-pan.y)*s; if (Math.abs(dx)+Math.abs(dy)>3) pan.moved=true; cancelAnimationFrame(tween); tweenGen++; setVB({...pan.vb, x:pan.vb.x-dx, y:pan.vb.y-dy}); }
   if (sel && rubber){ const p = svgPoint(e); rubber.setAttribute('x2', p.x); rubber.setAttribute('y2', p.y); }
 });
-svg.addEventListener('pointerup', e => { if (pan && !pan.moved) onBgClick(); pan = null; });
+function ptrEnd(e){
+  ptrs.delete(e.pointerId);
+  if (pinch){ if (ptrs.size<2){ pinch = null; lastPinchEnd = performance.now(); } pan = null; return; }
+  if (pan && !pan.moved && e.type==='pointerup'){ const f = tapRadius() ? tapPick(e.clientX, e.clientY) : null; if (f==='zoom') {} else if (f) onTermClick(f); else onBgClick(); }
+  pan = null;
+}
+svg.addEventListener('pointerup', ptrEnd); svg.addEventListener('pointercancel', ptrEnd);
 document.getElementById('zin').onclick = () => zoomAt(0.75, vb.x+vb.w/2, vb.y+vb.h/2);
 document.getElementById('zout').onclick = () => zoomAt(1.33, vb.x+vb.w/2, vb.y+vb.h/2);
 document.getElementById('zfit').onclick = fitAll;
@@ -972,7 +1080,8 @@ function connList(fid){
   return '<br><span style="color:#8fa3b8">Connected: ' + ws.map(w => { const o = w.a===fid?w.b:w.a; const t = TERMS[o]; return t.comp.title+' '+t.label; }).join(', ') + '</span>';
 }
 let toastT;
-function toast(html, kind=''){ const t = document.getElementById('toast'); t.innerHTML = html; t.className = 'show '+kind; clearTimeout(toastT); toastT = setTimeout(()=>t.className='', 3800); }
+const tapWords = h => isMobile() ? h.replace(/\bClick/g,'Tap').replace(/\bclick/g,'tap') : h;
+function toast(html, kind=''){ const t = document.getElementById('toast'); t.innerHTML = tapWords(html); t.className = 'show '+kind; clearTimeout(toastT); toastT = setTimeout(()=>t.className='', 3800); }
 function gaugeText(w){ if (w.res) return '10 kΩ resistor'; if (w.g>=8) return '14 AWG'; if (w.g>=4) return '18 AWG'; return 'dupont jumper'; }
 
 /* ---------- interactions ---------- */
@@ -980,6 +1089,7 @@ let rubber = null;
 function clearSel(){ sel = null; if (rubber){ rubber.remove(); rubber = null; } }
 function onBgClick(){ if (sel){ clearSel(); applyHighlights(); renderPanelStatus(); } }
 function onTermClick(fid){
+  if (performance.now() - lastPinchEnd < 350) return;  // a finger lifting after a pinch is not a tap
   hideTip();
   if (mode==='explore'){ highlightNet(fid); return; }
   if (mode!=='learn') return;
@@ -991,6 +1101,7 @@ function onTermClick(fid){
       sel = fid; const t = TERMS[fid];
       rubber = el('line', {x1:t.x, y1:t.y, x2:t.x, y2:t.y, stroke:COL[s.c]==='#1c1c1c'?'#9aa':COL[s.c], 'stroke-width':3, 'stroke-dasharray':'6 5', 'pointer-events':'none'}, gOver);
       toast(`Good: <b>${t.comp.title} · ${t.label}</b>. Now click the other end.`, 'good');
+      if (isMobile()){ const o = fid===s.a ? s.b : s.a; if (needsGlide(o)) glideTo(o); }
     } else wrong(fid, s);
   } else {
     if (fid===sel){ clearSel(); }
@@ -1010,6 +1121,7 @@ function complete(s){
   state.done[s.id] = true; save(); clearSel(); lastNewWire = s.id; hintLevel = 0;
   renderWires(); applyHighlights(); renderPanel();
   toast(`✓ ${s.name}`, 'good');
+  if (isMobile()) focusStep();   // pull back to show the whole wire just connected
 }
 function highlightNet(fid){
   // BFS through wires + internal bus connections
@@ -1063,9 +1175,11 @@ function renderPanel(){
 
 function renderLearn(){
   const s = STEPS[state.i]; const ph = PHASES[s.ph]; const inPh = PH_STEPS[s.ph]; const k = inPh.indexOf(state.i)+1;
-  let h = `<div class="meta">Overall progress · ${progressPct()}%</div><div class="progress"><i style="width:${progressPct()}%"></i></div>${phaseChips()}`;
-  h += `<div class="meta">Phase ${ph.n}: ${ph.name} · step ${k} of ${inPh.length}</div>`;
-  h += `<div class="card"><h2>${s.t==='wire'?'🔌 ':''}${s.t==='wire'?s.name:s.title}</h2>`;
+  let h = `<div class="lhead"><div class="meta">Overall progress · ${progressPct()}%</div><div class="progress"><i style="width:${progressPct()}%"></i></div>${phaseChips()}`;
+  h += `<div class="meta">Phase ${ph.n}: ${ph.name} · step ${k} of ${inPh.length}</div></div>`;
+  h += `<div class="card step"><h2>${s.t==='wire'?'🔌 ':''}${s.t==='wire'?s.name:s.title}</h2>`;
+  if (s.t==='wire'){ const ca = TERMS[s.a].comp, cb = TERMS[s.b].comp;
+    h += `<div class="zoomrow"><span>Zoom to</span><button class="btn small" data-z="${s.a}">${ca.title}</button>${cb!==ca?`<button class="btn small" data-z="${s.b}">${cb.title}</button>`:''}<button class="btn small" data-z="both">Both ends</button></div>`; }
   if (s.t==='wire'){
     h += `<div class="wirechip"><i style="height:${Math.max(3,s.g)}px;background:${COL[s.c]};${s.c==='blk'?'outline:1px solid #8a9aaa':''}"></i>${s.res?'10 kΩ resistor':COLNAME[s.c]+' · '+gaugeText(s)}</div>`;
     h += `<h3>In real life</h3><p>${s.real}</p><h3>Why</h3><p>${s.why}</p>`;
@@ -1075,6 +1189,7 @@ function renderLearn(){
     h += `<div class="status" id="status"></div>`;
   } else if (s.t==='info'){
     h += s.body;
+    if (s.id==='intro' && isMobile()) h += `<div class="box tip"><b>On your phone</b>Pinch to zoom and drag to move the map. Tap on or near a terminal to pick it. <b>Map / Split / Text</b> above resizes this panel, and <b>Zoom to</b> jumps to either end of the wire.</div>`;
   } else if (s.t==='check'){
     h += s.body + s.items.map((it,k)=>`<label class="check"><input type="checkbox" data-ck="${s.id}:${k}" ${state.checks[s.id+':'+k]?'checked':''}><span>${it}</span></label>`).join('');
   } else if (s.t==='quiz'){
@@ -1084,7 +1199,7 @@ function renderLearn(){
   } else if (s.t==='sim'){
     h += s.body + `<div id="simHost"></div>`;
   }
-  h += `</div><div class="navrow">
+  h += `</div><div class="navrow stepnav">
     <button class="btn" id="back" ${state.i===0?'disabled':''}>← Back</button>
     ${s.t==='wire'&&!state.done[s.id]?`<button class="btn" id="hint">Hint</button><button class="btn" id="showme">Show me</button>`:''}
     <span class="spacer" style="flex:1"></span>
@@ -1092,6 +1207,7 @@ function renderLearn(){
     <div class="navrow noprint"><button class="btn small" id="reset">Reset progress</button><span class="meta">Saved in this browser</span></div>`;
   panel.innerHTML = h;
   panel.querySelectorAll('.chip').forEach(c => c.onclick = () => goto(PH_STEPS[+c.dataset.ph][0]));
+  panel.querySelectorAll('[data-z]').forEach(b => b.onclick = () => b.dataset.z==='both' ? focusStep(true) : glideTo(b.dataset.z));
   panel.querySelector('#back').onclick = () => goto(state.i-1);
   panel.querySelector('#next').onclick = () => { if (state.i<STEPS.length-1) goto(state.i+1); else { toast('🏁 Done! Print the pin map and go build it.', 'good'); setMode('pins'); } };
   panel.querySelector('#reset').onclick = () => { if (confirm('Reset all tutorial progress?')){ state.done={}; state.checks={}; state.quiz={}; state.i=0; save(); clearSel(); renderWires(); goto(0); } };
@@ -1102,7 +1218,8 @@ function renderLearn(){
   if (s.t==='sim'){ const host = panel.querySelector('#simHost'); SIMS[s.which](host, () => { state.done[s.id] = true; save(); panel.querySelector('#next').disabled = false; }); if (s.which!=='mirror'){ state.done[s.id]=true; save(); panel.querySelector('#next').disabled=false; } }
   renderPanelStatus();
 }
-function renderPanelStatus(){
+function renderPanelStatus(){ renderPanelStatusInner(); const st = panel.querySelector('#status'); if (st) st.innerHTML = tapWords(st.innerHTML); }
+function renderPanelStatusInner(){
   const st = panel.querySelector('#status'); if (!st) return; const s = STEPS[state.i];
   if (state.done[s.id]){ st.className='status ok'; st.innerHTML = '✓ Connected. On to the next one.'; return; }
   st.className = 'status';
@@ -1594,9 +1711,26 @@ SIMS.steer = function(host){
 /* =====================================================================
    MODES + BOOT
    ===================================================================== */
+/* ---------- phone layout ---------- */
+const MAPLESS = new Set(['sim','pins','review']);   // tabs with nothing to show on the map
+function isMobile(){ return document.body.classList.contains('mobile'); }
+function refocus(){ if (mode==='learn') focusStep(); else if (mode==='stages') focusStage(); else fitAll(); }
+function applyMobile(){
+  const on = state.mobile ?? matchMedia('(max-width: 820px)').matches;   // auto on phones until the button is used
+  const b = document.body; b.classList.toggle('mobile', on); b.dataset.mode = mode;
+  const mapless = MAPLESS.has(mode);
+  b.dataset.sheet = mapless ? 'full' : (['peek','half','full'].includes(state.sheet) ? state.sheet : 'half');
+  if (mapless) b.dataset.mapless = '1'; else delete b.dataset.mapless;
+  b.style.setProperty('--hdr', document.querySelector('header').offsetHeight + 'px');
+  const mb = document.getElementById('mobileBtn'); mb.textContent = on ? 'Desktop' : '📱 Mobile view'; mb.title = on ? 'Switch to desktop layout' : 'Switch to phone layout';
+  document.querySelectorAll('#sheetSeg button').forEach(x => x.classList.toggle('on', x.dataset.sheet===b.dataset.sheet));
+}
+document.getElementById('mobileBtn').onclick = () => { state.mobile = !isMobile(); save(); applyMobile(); refocus(); };
+document.querySelectorAll('#sheetSeg button').forEach(x => x.onclick = () => { state.sheet = x.dataset.sheet; save(); applyMobile(); refocus(); });
+
 function setMode(m){
   if (m!=='stages') stopStagePlay();
-  mode = m; clearSel(); hideTip();
+  mode = m; clearSel(); hideTip(); applyMobile();
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.mode===m));
   renderWires(); renderLegend(); renderPanel(); applyHighlights();
   if (m==='learn') focusStep(); else if (m==='stages') focusStage(); else fitAll();
@@ -1608,7 +1742,7 @@ addEventListener('keydown', e => {
   if (e.key==='ArrowLeft') goto(state.i-1);
   if (e.key==='Escape') onBgClick();
 });
-addEventListener('resize', () => { if (mode==='learn') focusStep(); else if (mode==='stages') focusStage(); else fitAll(); });
+addEventListener('resize', () => { applyMobile(); refocus(); });
 
 applyBoard();
 document.getElementById('boardSel').onchange = e => switchBoard(e.target.value);
