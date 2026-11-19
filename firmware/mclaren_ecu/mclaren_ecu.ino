@@ -31,7 +31,7 @@
 #define GARAGE_MODE 0
 #endif
 
-#define FW_VERSION "stage1a-telemetry " __DATE__ " " __TIME__  // shows on /status, so you can tell which build is running
+#define FW_VERSION "stage1a-tabs " __DATE__ " " __TIME__  // shows on /status, so you can tell which build is running
 
 // ---------------- pins (match the wiring tutorial) ----------------
 // One sketch, two boards: the right map is picked from the board you select in the IDE.
@@ -111,6 +111,14 @@ void logEvent(const char* msg) {
   Ev& e = evs[evHead]; e.ms = millis(); strncpy(e.msg, msg, sizeof e.msg - 1); e.msg[sizeof e.msg - 1] = 0;
   evHead = (evHead + 1) % EV_N; if (evCount < EV_N) evCount++;
   Serial.printf("EVENT %s\n", msg);
+}
+// Extra telemetry: register any value and it shows up in the dashboard's "More sensors" card.
+// Add your own in setup(), e.g. addMetric("Battery", "V", [] { return analogReadMilliVolts(35) * 6.55f / 1000; }, 2);
+struct Metric { const char* name; const char* unit; float (*get)(); int decimals; };
+const int METRIC_MAX = 16;
+Metric metrics[METRIC_MAX]; int metricCount = 0;
+void addMetric(const char* name, const char* unit, float (*get)(), int decimals) {
+  if (metricCount < METRIC_MAX) metrics[metricCount++] = {name, unit, get, decimals};
 }
 uint32_t loopsThisSec = 0, loopHz = 0, maxGapUs = 0, maxGapThisSec = 0, lastSecMs = 0, prevLoopUs = 0;
 const char* resetReasonName() {
@@ -274,7 +282,8 @@ void controlStep(uint32_t now, float dt) {
 // ---------------- phone page ----------------
 const char PAGE[] PROGMEM = R"rawliteral(<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>McLaren F1</title><style>
+<title>McLaren F1</title><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#0e141b"><style>
+.nav{display:flex;align-items:center;gap:10px}.nav h1{flex:1}.tabs{display:flex;background:#151e28;border:1px solid #2a3a4c;border-radius:10px;overflow:hidden}.tabs a,.tabs b{padding:8px 14px;font-size:14px;color:#8fa3b8;text-decoration:none;font-weight:600}.tabs b{background:#ff8000;color:#1b0f00}
 *{box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 body{margin:0;background:#0e141b;color:#e6edf3;font:16px -apple-system,Helvetica,Arial,sans-serif;display:flex;flex-direction:column;height:100vh;padding:12px;gap:10px}
 h1{font-size:18px;margin:0;color:#ff8000}
@@ -288,12 +297,11 @@ button{flex:1;font-size:18px;font-weight:700;padding:16px;border-radius:12px;bor
 #stat{font:14px ui-monospace,Menlo,monospace;color:#8fa3b8}
 input[type=range]{flex:1;accent-color:#ff8000}
 </style></head><body>
-<h1>Luka's McLaren F1</h1>
+<div class="nav"><h1>McLaren F1</h1><span class="tabs"><b>Drive</b><a href="/dash">Telemetry</a></span></div>
 <div id="stat">connecting...</div><div id="sw" style="font:13px ui-monospace,Menlo,monospace;color:#8fa3b8"></div>
 <div id="pad"><div class="lab" style="top:8px">FORWARD</div><div class="mid"></div><div class="lab" style="bottom:8px">REVERSE</div><div id="knob"></div></div>
 <div class="row"><span>Max speed</span><input id="max" type="range" min="10" max="80" value="30"><b id="maxv">30%</b></div>
 <div class="row"><button id="stop">E-STOP</button><button id="reset">Reset</button></div>
-<a href="/dash" style="color:#8fa3b8;font-size:13px;text-align:center">Telemetry dashboard</a>
 <script>
 let t=0, busy=false; const pad=document.getElementById('pad'), knob=document.getElementById('knob'), stat=document.getElementById('stat'), mx=document.getElementById('max');
 function setFromY(y){const r=pad.getBoundingClientRect();let v=(r.top+r.height/2-y)/(r.height/2-45);t=Math.max(-1,Math.min(1,v));knob.style.top=(50-t*(50-45/r.height*100))+'%';}
@@ -317,7 +325,9 @@ const char* tailName() {
   switch (tail) { case TAIL_STOPPED: return "stopped"; case TAIL_SLOWING: return "slowing"; case TAIL_FWD: return "forward"; default: return "reverse"; }
 }
 const char DASH[] PROGMEM = R"dash(<!doctype html><html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>McLaren F1 · live</title><style>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>McLaren F1 · live</title><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#0e141b"><style>
+.nav{display:flex;align-items:center;gap:10px}.nav h1{flex:1}.tabs{display:flex;background:#151e28;border:1px solid #2a3a4c;border-radius:10px;overflow:hidden}.tabs a,.tabs b{padding:8px 14px;font-size:14px;color:#8fa3b8;text-decoration:none;font-weight:600}.tabs b{background:#ff8000;color:#1b0f00}
+#nav{display:none;margin:2px 0 6px}
 :root{--bg:#0e141b;--card:#151e28;--line:#2a3a4c;--txt:#e6edf3;--mut:#8fa3b8;--org:#ff8000}
 *{box-sizing:border-box}body{margin:0 auto;background:var(--bg);color:var(--txt);font:15px -apple-system,Helvetica,Arial,sans-serif;padding:12px;max-width:760px}
 header{display:flex;align-items:center;gap:10px;margin:2px 0 8px}h1{font-size:18px;margin:0;flex:1}h1 small{display:block;font-size:12px;color:var(--mut);font-weight:400;margin-top:2px}
@@ -344,6 +354,7 @@ header{display:flex;align-items:center;gap:10px;margin:2px 0 8px}h1{font-size:18
 button{background:#8e1b1b;color:#fff;border:0;border-radius:10px;padding:12px 18px;font-weight:800;font-size:14px;white-space:nowrap;flex:none}
 @media(max-width:480px){.lamps{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr 1fr}.num{font-size:34px;min-width:100px}}
 </style></head><body>
+<div class="nav" id="nav"><span style="flex:1"></span><span class="tabs"><a href="/">Drive</a><b>Telemetry</b></span></div>
 <header><h1>McLaren F1 · live<small id="sub">connecting…</small></h1><div class="pill" id="pill">…</div></header>
 <div class="card"><h2>Dash controls</h2><div class="lamps">
 <div class="lamp" id="lPow"><i></i><b>POWER</b><em></em></div><div class="lamp" id="lFwd"><i></i><b>FORWARD</b><em>pedal + rocker</em></div>
@@ -358,8 +369,9 @@ button{background:#8e1b1b;color:#fff;border:0;border-radius:10px;padding:12px 18
 <div class="card"><h2>System</h2><div class="grid"><div class="tile"><span>Up for</span><b id="up"></b></div><div class="tile"><span>Last restart</span><b id="rst"></b></div>
 <div class="tile"><span>Free memory</span><b id="heap"></b></div><div class="tile"><span>Control loop</span><b id="hz"></b></div><div class="tile"><span>Worst delay (1 s)</span><b id="gap"></b></div>
 <div class="tile"><span>Address</span><b id="ip"></b></div></div></div>
+<div class="card" id="moreCard" style="display:none"><h2>More sensors</h2><div class="grid" id="more"></div></div>
 <div class="card"><h2>Event log</h2><div class="log" id="log"></div></div>
-<div class="foot"><button id="stop">E-STOP</button><span>View only. Driving works on the car's own Wi-Fi (McLaren-F1).</span></div>
+<div class="foot"><button id="stop">E-STOP</button><span id="footTxt">View only. Driving works on the car's own Wi-Fi (McLaren-F1).</span></div>
 <script>
 const $=id=>document.getElementById(id), P={forward:[24,60,126,255,24,24,24,24],reverse:[24,24,24,24,255,126,60,24],stopped:Array(8).fill(255),off:Array(8).fill(0)};
 for(let k=0;k<64;k++) $('mx').appendChild(document.createElement('i'));
@@ -387,6 +399,10 @@ function render(j){
   set('up',dur(j.up)); set('rst',j.reset,/BROWNOUT|CRASH|WATCHDOG/.test(j.reset)?'bad':'');
   set('heap',Math.round(j.heap/1024)+' KB'); set('hz',j.loopHz+' Hz',j.loopHz<90?'warn':'good'); set('gap',j.gapMs.toFixed(1)+' ms',j.gapMs>50?'warn':'');
   set('ip',j.ip||'car Wi-Fi only');
+  $('nav').style.display=j.carNet?'flex':'none';
+  $('footTxt').textContent=j.carNet?'On the car\'s Wi-Fi: switch to the Drive tab to drive. Leaving the Drive tab stops the car.':'View only. Driving works on the car\'s own Wi-Fi (McLaren-F1).';
+  const M=$('more'); $('moreCard').style.display=(j.extra&&j.extra.length)?'block':'none'; M.innerHTML='';
+  for(const [name,unit,val] of (j.extra||[])){ const t=document.createElement('div'); t.className='tile'; t.innerHTML='<span></span><b></b>'; t.children[0].textContent=name; t.children[1].textContent=(val===null?'—':val)+(unit?' '+unit:''); M.appendChild(t); }
   const L=$('log'); L.innerHTML=''; for(const [ms,msg] of j.ev){ const r=document.createElement('div'); r.innerHTML='<span></span><b></b>';
     r.children[0].textContent=ago(j.up*1000-ms); r.children[1].textContent=msg; if(/E-STOP|lost|BROWNOUT|CRASH/.test(msg)) r.children[1].className='bad'; L.appendChild(r); }
 }
@@ -409,9 +425,16 @@ void sendTelemetry() {
            sourceName(), (int)lroundf(duty * 100), (int)lroundf(target * 100), (int)enabled, tailName(), (int)lroundf(maxDuty * 100), (int)lroundf(HARD_MAX_DUTY * 100));
   j += b;
   long phoneAge = lastCmdMs ? (long)(now - lastCmdMs) : -1;
-  snprintf(b, sizeof b, "\"phoneAgeMs\":%ld,\"apClients\":%d,\"home\":%d,\"rssi\":%d,\"ip\":\"%s\",\"ev\":[",
-           phoneAge, (int)WiFi.softAPgetStationNum(), (int)home, home ? (int)WiFi.RSSI() : 0, home ? WiFi.localIP().toString().c_str() : "");
+  snprintf(b, sizeof b, "\"phoneAgeMs\":%ld,\"apClients\":%d,\"home\":%d,\"rssi\":%d,\"ip\":\"%s\",\"carNet\":%d,\"extra\":[",
+           phoneAge, (int)WiFi.softAPgetStationNum(), (int)home, home ? (int)WiFi.RSSI() : 0, home ? WiFi.localIP().toString().c_str() : "", (int)fromCarWifi());
   j += b;
+  for (int i = 0; i < metricCount; i++) {
+    float v = metrics[i].get();
+    if (isfinite(v)) snprintf(b, sizeof b, "%s[\"%s\",\"%s\",%.*f]", i ? "," : "", metrics[i].name, metrics[i].unit, metrics[i].decimals, v);
+    else snprintf(b, sizeof b, "%s[\"%s\",\"%s\",null]", i ? "," : "", metrics[i].name, metrics[i].unit);
+    j += b;
+  }
+  j += "],\"ev\":[";
   for (int i = 0; i < evCount; i++) {
     const Ev& e = evs[(evHead - 1 - i + EV_N) % EV_N];
     snprintf(b, sizeof b, "%s[%lu,\"%s\"]", i ? "," : "", (unsigned long)e.ms, e.msg);
@@ -514,6 +537,8 @@ void setup() {
   server.on("/status", [] { sendStatus(false, false); });  // read-only, from either network
   server.begin();
   { char b[44]; snprintf(b, sizeof b, "boot: %s", resetReasonName()); logEvent(b); }
+  addMetric("Chip temperature", "°C", [] { return temperatureRead(); }, 0);   // rough: the ESP32's own die sensor
+  addMetric("Phone max speed", "%", [] { return maxDuty * 100; }, 0);
   Serial.printf("McLaren ECU up on %s. Join Wi-Fi \"%s\", open http://192.168.4.1\n", BOARD_NAME, WIFI_AP_NAME);
   lastLoopUs = micros();
 }

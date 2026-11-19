@@ -100,6 +100,22 @@ Safety stays the same: **driving and E-STOP reset only work from the car's own W
 
 USB is only needed for the first flash, or if the car can't reach your home Wi-Fi.
 
+## Telemetry dashboard
+
+The car serves its own dashboard, so it works anywhere, with no internet needed:
+
+- **On the car's Wi-Fi (McLaren-F1), driving or at the park:** the phone page has **Drive | Telemetry** tabs. Telemetry shows every dash control as a lamp, the drive output, links, system health (restart reason, loop rate, memory) and a live event log. **Leaving the Drive tab stops the car**, because the phone stops sending commands. That's the link-loss safety working.
+- **On the home Wi-Fi:** http://mclaren.local opens the dashboard directly, view-only.
+- **Add to Home Screen** (Safari share menu) to get either page as an app-style icon.
+
+**Adding your own sensor** is one line in `setup()`; it appears in the dashboard's "More sensors" card automatically:
+
+```cpp
+addMetric("Battery", "V", [] { return analogReadMilliVolts(35) * 6.55f / 1000; }, 2);   // name, unit, how to read it, decimals
+```
+
+Raw data for scripts: `/telemetry` (JSON).
+
 ## Flash it
 
 One script does both kinds of flashing (it needs `arduino-cli` and the esp32 core, both installed on the Mac mini):
