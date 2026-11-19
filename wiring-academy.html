@@ -19,6 +19,14 @@ header h1 span{color:var(--accent)}
 .tab:hover{color:var(--text)}
 .tab.on{background:var(--panel2);border-color:var(--line);color:var(--text)}
 .repo-link{margin-left:14px;color:var(--muted);white-space:nowrap}
+.setup{margin-left:auto;position:relative}
+.setupPanel{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:60;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;width:330px;box-shadow:0 10px 30px #000a}
+.setup.open .setupPanel{display:block}
+.setupPanel label{display:block;margin:10px 0 0;color:var(--muted);font-size:12.5px}
+.setupPanel select{display:block;width:100%;margin-top:4px;background:#0f1720;color:var(--text);border:1px solid var(--accent);border-radius:8px;padding:8px;font:inherit;font-size:14px}
+#setupBtn{border-color:var(--accent)}
+body.mobile .setupPanel{position:fixed;left:10px;right:10px;top:calc(var(--hdr,60px) + 4px);width:auto}
+body.mobile #setupBtn{min-height:36px}
 .boardsel{margin-left:auto;color:var(--muted);font-size:13px;white-space:nowrap}
 .boardsel.powersel{margin-left:12px}
 .boardsel select{margin-left:6px;background:var(--panel2);color:var(--text);border:1px solid var(--accent);border-radius:8px;padding:5px 8px;font:inherit;font-size:13px}
@@ -205,8 +213,13 @@ body.mobile .term{transform-box:fill-box;transform-origin:center;transform:scale
     <button class="tab" data-mode="pins">Pin map</button>
     <button class="tab" data-mode="review">Plan review</button>
   </div>
-  <label class="boardsel" title="Pick your microcontroller: pin numbers update everywhere">Board <select id="boardSel"><option value="classic" title="Classic ESP32 (WROOM-32 / DOIT)">Classic ESP32</option><option value="s3" title="ESP32-S3 DevKitC-1 (long board)">ESP32-S3</option></select></label>
-  <label class="boardsel powersel" title="How the ESP32 gets its 5V: the wiring updates live">Power <select id="powerSel"><option value="usb" title="Buck USB socket → ESP32 USB port">USB cable</option><option value="leads" title="Buck 5V/GND leads → ESP32 VIN/GND">Wire leads</option></select></label>
+  <div class="setup" id="setup"><button class="btn small" id="setupBtn" title="Your build's configuration">⚙ <span id="setupSum"></span></button>
+    <div class="setupPanel" id="setupPanel">
+      <p class="meta" style="margin:0 0 6px">Pick what matches <b>your</b> build. The map, the steps, the pin map and the stages all redraw to match.</p>
+      <label>Microcontroller<select id="boardSel"><option value="classic">Classic ESP32 (WROOM-32 / DOIT 30-pin)</option><option value="s3">ESP32-S3 DevKitC-1 (long board)</option></select></label>
+      <label>ESP32 power<select id="powerSel"><option value="usb">USB cable from the buck's USB socket</option><option value="leads">Buck 5V/GND wire leads → VIN/GND</option></select></label>
+      <label>Grounds<select id="gndSel"><option value="wago">Wago splice (2× 3-port), board has 2 GND pins</option><option value="direct">Direct to pins (screw breakout / custom PCB)</option></select></label>
+    </div></div>
   <button class="btn small" id="mobileBtn" title="Switch to phone layout">📱 Phone</button>
   <a class="repo-link" href="https://github.com/c9obvi/wiring-academy" title="View on GitHub">GitHub</a>
 </header>
@@ -336,6 +349,10 @@ const COMPS = [
     terms:[T('CLK','r',.12,'CLK','Clock (SPI SCK).'), T('CS','r',.31,'CS','Chip select / LOAD.'),
            T('DIN','r',.5,'DIN','Data in (SPI MOSI).'), T('GND','r',.69,'GND','Ground.'),
            T('VCC','r',.88,'VCC','5V supply. 64 LEDs need more current than the 3V3 pin can give.')]},
+  {id:'wgA', kind:'wago', x:392, y:604, w:66, h:30, title:'WAGO A', sub:'logic GND', ports:'t', bus:true, gnd:true, variant:'wago',
+    terms:[1,2,3].map((n,i)=>T('p'+n,'t',.2+i*.3,String(n),'Logic-ground Wago A, port '+n+'. Dash black and pink in, one lead out to the ESP32 GND pin on the left. Thin jumper wire: strip 22 mm and fold it back to 11 mm.'))},
+  {id:'wgB', kind:'wago', x:736, y:790, w:66, h:30, title:'WAGO B', sub:'logic GND', ports:'t', bus:true, gnd:true, variant:'wago',
+    terms:[1,2,3].map((n,i)=>T('p'+n,'t',.2+i*.3,String(n),'Logic-ground Wago B, port '+n+'. Tail light and driver GND in, one lead out to the ESP32 GND pin on the right.'))},
 ];
 
 const COMP = {}; const TERMS = {};
@@ -493,7 +510,13 @@ wire(4,'l1','esp.3V3b','drv1.VCC','yel',3,'lv','ESP32 3V3 → driver VCC',
  {fix:'The original diagram powered driver VCC from 5V. Use 3.3V instead.'});
 wire(4,'l2','esp.GNDb','drv1.GND','blk',3,'gnd','ESP32 GND → driver GND',
  'Jumper from a GND pin to the driver\'s <b>GND</b> header pin.',
- 'This is the reference for the signal pins. Without it, the driver can\'t read "HIGH" and "LOW" correctly.');
+ 'This is the reference for the signal pins. Without it, the driver can\'t read "HIGH" and "LOW" correctly.', {gnd:'direct'});
+wire(4,'l2w','drv1.GND','wgB.p2','blk',3,'gnd','Driver GND → Wago B',
+ 'Jumper from the driver\'s <b>GND</b> header pin into port 2 of <b>Wago B</b> (a 3-port). Thin jumper wire: strip 22 mm, fold it back to 11 mm, twist, push in, close the lever, tug.',
+ 'Your board has only two GND pins, so grounds share them through two small Wagos. Wago B collects the driver and tail-light grounds.', {gnd:'wago'});
+wire(4,'gB','wgB.p3','esp.GNDb','blk',3,'gnd','Wago B → ESP32 GND (right side)',
+ 'One jumper (female end on the ESP32 side) from Wago B\'s last port to the <b>GND</b> pin next to 3V3: right side, 2nd from the bottom.',
+ 'Everything in Wago B now shares that one GND pin.', {gnd:'wago', tip:'Tug-test every wire in a Wago. Thin jumper wire slips out unless it\'s folded.'});
 wire(4,'l3','drv1.R_EN','drv1.L_EN','grn',3,'sig','Jumper R_EN ↔ L_EN',
  'A short jumper between the two enable pins on the header, so they always move together.',
  'Both half-bridges must be enabled to drive. Tying them lets one GPIO control both.');
@@ -539,7 +562,9 @@ wire(6,'t1','esp.5Vb','max.VCC','org',3,'lv','5V → MAX7219 VCC',
  'From the 5V rail to the matrix <b>VCC</b>.',
  '64 red LEDs at full brightness can pull 300 mA or more, far more than the 3V3 pin should supply. The buck has 3A to spare.');
 wire(6,'t2','esp.GNDb','max.GND','blk',3,'gnd','GND → MAX7219 GND',
- 'Ground to the matrix <b>GND</b>.', 'Common ground again; every module needs it.');
+ 'Ground to the matrix <b>GND</b>.', 'Common ground again; every module needs it.', {gnd:'direct'});
+wire(6,'t2w','max.GND','wgB.p1','blk',3,'gnd','MAX7219 GND → Wago B',
+ 'Jumper from the matrix <b>GND</b> pin into port 1 of <b>Wago B</b>.', 'The tail light shares Wago B\'s ground with the driver.', {gnd:'wago'});
 wire(6,'t3','esp.IO11','max.DIN','cyn',3,'sig','GPIO11 → DIN',
  'GPIO11 to <b>DIN</b>.', 'Data in: the pixel bits shift in here.',
  {tip:'The MAX7219 datasheet asks for 3.5V as a HIGH and the ESP32 gives 3.3V. It usually works. If you see random dots, add a 74AHCT125 level shifter, slow the SPI clock, or shorten the wires.'});
@@ -570,11 +595,20 @@ wire(7,'c4','dash.grn','esp.IO18','grn',3,'sig','Green (remote mode) → GPIO18'
  'Green connects to black when the round dial is on remote. The firmware then ignores the pedal and only your phone drives. All the input pins have internal pull-ups and stay clear of the S3\'s special pins: 0, 3, 45, 46 (boot strapping) and 19/20 (USB).');
 wire(7,'c5','dash.blk','esp.GND','blk',3,'gnd','Black → GND',
  'Splice black to a jumper and plug onto a GND pin.',
- 'Black is the common for orange, blue, yellow and green: each of those switches connects its wire to black. With black on ground, a closed switch pulls its GPIO LOW.');
+ 'Black is the common for orange, blue, yellow and green: each of those switches connects its wire to black. With black on ground, a closed switch pulls its GPIO LOW.', {gnd:'direct'});
 wire(7,'c6','dash.pnk','esp.GNDb','pnk',3,'gnd','Pink/red → GND',
  'Splice pink/red to a jumper and plug onto another GND pin.',
  'The power button connects pink to white. Putting pink on ground means white reads LOW whenever the button is on.',
- {warn:'In the stock car this wire may have carried supply voltage from the old board. Wired to the ESP32 it is only a switch contact. Never plug it back into the stock board while it is also connected to the ESP32.'});
+ {warn:'In the stock car this wire may have carried supply voltage from the old board. Wired to the ESP32 it is only a switch contact. Never plug it back into the stock board while it is also connected to the ESP32.', gnd:'direct'});
+wire(7,'c6w','dash.pnk','wgA.p1','pnk',3,'gnd','Pink/red → Wago A',
+ 'Dash <b>pink/red</b> into port 1 of <b>Wago A</b> (a 3-port). Cut the jumper, keep the end that\'s in the dash plug, strip 22 mm and fold it to 11 mm.',
+ 'The power button connects pink to white, so pink must be on ground.', {gnd:'wago'});
+wire(7,'c5w','dash.blk','wgA.p2','blk',3,'gnd','Black → Wago A',
+ 'Dash <b>black</b> into port 2 of <b>Wago A</b>, same thin-wire trick.',
+ 'Black is the common for orange, blue, yellow and green.', {gnd:'wago'});
+wire(7,'gA','wgA.p3','esp.GND','blk',3,'gnd','Wago A → ESP32 GND (left side)',
+ 'One jumper (female end on the ESP32 side) from Wago A\'s last port to the <b>GND</b> pin next to VIN: left side, 2nd from the bottom.',
+ 'Both dash grounds now share that one pin. Tug-test all three wires.', {gnd:'wago'});
 wire(7,'c7','dash.wht','esp.IO8','wht',3,'sig','White (power button) → GPIO8',
  'Splice white to a jumper and plug onto GPIO8.',
  'Power button off = the firmware disables the car, your phone included, just like stock. When it comes back on, the driver has to let go of the pedal before it drives.',
@@ -629,17 +663,18 @@ S.find(s=>s.id==='meter').usb = {items:['<b>Lift the B+ wire out of the rear dri
   'Nothing plugged into the converter\'s USB socket yet.',
   'Plug in the battery, switch ON. Multimeter on DC volts between the two <b>outer</b> contacts inside the USB socket: <b>4.9–5.2V</b>. (A cheap USB voltage tester works too.)',
   'Switch OFF, unplug the battery, put the B+ wire back.']};
+S.find(s=>s.id==='b5').wago = {warn:'With the Wago ground splice, the left GND pin is taken by Wago A. Put this black lead into Wago A instead (use a 5-port for Wago A), or use a screw-terminal breakout.'};
 S.find(s=>s.id==='t1').usb = {real:'From the ESP32\'s <b>VIN</b> pin (5V on some boards) to the matrix <b>VCC</b>. With USB power, VIN outputs the USB 5V.'};
 const ALL_WIRES = S.filter(s=>s.t==='wire');
 let STEPS = S, WIRES = ALL_WIRES, PH_STEPS = [];
 function rebuildSteps(){   // drop steps that don't apply to the selected power setup, keeping the user's place
-  const keep = st => !st.power || st.power === state.power;
+  const keep = st => (!st.power || st.power === state.power) && (!st.gnd || st.gnd === state.gnd);
   const curId = STEPS[state.i] && STEPS[state.i].id;
   STEPS = S.filter(keep); WIRES = STEPS.filter(st=>st.t==='wire');
   PH_STEPS = PHASES.map(p => STEPS.map((st,i)=>st.ph===p.n?i:-1).filter(i=>i>=0));
   if (curId){
     const cur = S.find(st=>st.id===curId);
-    let target = keep(cur) ? cur : S.find(st=>st.ph===cur.ph && st.power && keep(st));   // a power-specific step swaps to its counterpart
+    let target = keep(cur) ? cur : S.find(st => st.ph===cur.ph && keep(st) && ((cur.power && st.power) || (cur.gnd && st.gnd)));   // a setup-specific step swaps to its counterpart
     if (!target){ let j = S.indexOf(cur); while (j < S.length-1 && !keep(S[j])) j++; target = S[j]; }
     state.i = Math.max(0, STEPS.indexOf(target));
   }
@@ -650,7 +685,7 @@ function rebuildSteps(){   // drop steps that don't apply to the selected power 
    STATE
    ===================================================================== */
 const KEY = 'mclaren-wiring-academy-v1';
-let state = {i:0, done:{}, checks:{}, quiz:{}, real:{}, layers:{hv:true,gnd:true,lv:true,sig:true}, board:'classic', sheet:'half', power:'usb'};
+let state = {i:0, done:{}, checks:{}, quiz:{}, real:{}, layers:{hv:true,gnd:true,lv:true,sig:true}, board:'classic', sheet:'half', power:'usb', gnd:'wago'};
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = {...state, ...s, layers:{...state.layers, ...(s.layers||{})}}; } catch(e){}
 
 /* =====================================================================
@@ -688,8 +723,10 @@ const BOARDS = {
 };
 { const q = new URLSearchParams(location.search); if (BOARDS[q.get('board')]) state.board = q.get('board');
   if (q.has('mobile')) state.mobile = q.get('mobile')!=='0';
-  if (['usb','leads'].includes(q.get('power'))) state.power = q.get('power'); if (q.get('sheet')) state.sheet = q.get('sheet'); }
+  if (['usb','leads'].includes(q.get('power'))) state.power = q.get('power');
+  if (['wago','direct'].includes(q.get('gnd'))) state.gnd = q.get('gnd'); if (q.get('sheet')) state.sheet = q.get('sheet'); }
 if (!BOARDS[state.board]) state.board = 'classic';
+if (!['wago','direct'].includes(state.gnd)) state.gnd = 'wago';
 const BOARD = () => BOARDS[state.board];
 const pinOf = n => (BOARD().map && BOARD().map[n]) || n;
 function bt(s){  // translate S3-written text for the selected board
@@ -702,7 +739,9 @@ const ORIG = new WeakMap();
 function boardify(obj, keys){
   let o = ORIG.get(obj);
   if (!o){ o = {}; for (const k of keys) if (obj[k]!==undefined) o[k] = Array.isArray(obj[k]) ? [...obj[k]] : obj[k]; ORIG.set(obj, o); }
-  const src = (state.power==='usb' && obj.usb) ? {...o, ...obj.usb} : o;   // USB-power wording, where a step has it
+  let src = o;   // per-setup wording, where a step has it
+  if (state.power==='usb' && obj.usb) src = {...src, ...obj.usb};
+  if (state.gnd==='wago' && obj.wago) src = {...src, ...obj.wago};
   for (const k of keys){
     if (src[k]!==undefined) obj[k] = Array.isArray(src[k]) ? src[k].map(bt) : bt(src[k]);
     else if (!(k in o)) delete obj[k];
@@ -717,9 +756,18 @@ function applyBoard(){
   PARTS.esp.name = B.part;
   const sel = document.getElementById('boardSel'); if (sel) sel.value = state.board;
   const ps = document.getElementById('powerSel'); if (ps) ps.value = state.power;
+  const gs = document.getElementById('gndSel'); if (gs) gs.value = state.gnd;
+  setupSummary();
 }
-const hiddenTerms = () => state.power==='usb' ? ['buck.out+','buck.out-'] : ['buck.usb','esp.usb'];
+const hiddenTerms = () => [...(state.power==='usb' ? ['buck.out+','buck.out-'] : ['buck.usb','esp.usb']), ...(state.gnd==='wago' ? [] : ['wgA.p1','wgA.p2','wgA.p3','wgB.p1','wgB.p2','wgB.p3'])];
 function applyPowerVisibility(){ const h = hiddenTerms(); for (const fid in termEls) termEls[fid].style.display = h.includes(fid) ? 'none' : ''; }
+function setupSummary(){ const e = document.getElementById('setupSum'); if (e) e.textContent = `${BOARD().short} · ${state.power==='usb'?'USB power':'lead power'} · ${state.gnd==='wago'?'Wago GND':'direct GND'}`; }
+function switchGnd(g){
+  state.gnd = g; save(); rebuildSteps(); applyBoard();
+  gComps.innerHTML = ''; COMPS.forEach(drawComp); applyPowerVisibility(); clearSel();
+  renderWires(); renderLegend(); renderPanel(); applyHighlights(); refocus();
+  toast(g==='wago' ? 'Grounds: two 3-port <b>Wagos</b> (A and B) collect the grounds, one lead each to the ESP32\'s two GND pins.' : 'Grounds: every ground goes <b>straight to a GND pin</b>, as on a screw-terminal breakout or the custom PCB.', 'good');
+}
 function switchPower(p){
   state.power = p; save(); rebuildSteps(); applyBoard();
   gComps.innerHTML = ''; COMPS.forEach(drawComp); applyPowerVisibility(); clearSel();
@@ -784,6 +832,7 @@ function drawCar(){
 }
 
 function drawComp(c){
+  if (c.variant && c.variant !== state.gnd) return;   // parts that only exist in one setup
   const g = el('g', {class:'comp', 'data-id':c.id}, gComps);
   const {x,y,w,h} = c;
   const body = (fill, stroke, rx=10) => el('rect', {class:'body', x, y, width:w, height:h, rx, fill, stroke, 'stroke-width':2}, g);
@@ -963,6 +1012,10 @@ const VIA = {
   t4:[[675,880],[675,1399]],
   t5:[[660,907],[660,1380]],
   u1:[[404,632],[404,1066],[525,1066]],
+  gA:[[444.8,588],[386,588],[386,744.2]],
+  gB:[[788.8,700],[632,700],[632,744.2]],
+  t2w:[[735,1437],[735,774]],
+  l2w:[[606.6,1076],[755,1076],[755,774]],
 };
 for (const w of ALL_WIRES) if (VIA[w.id]) w.via = VIA[w.id];
 for (const id of ['l1','l2','l4','l6','l7']) ALL_WIRES.find(w=>w.id===id).k = 26;
@@ -1454,13 +1507,13 @@ const GROUPS = {
            what:'Fused 12V into two 5-port Wagos (+12V and ground strips) feeding the driver. Until you add a switch, the battery plug is your off switch.'},
   five:   {name:'5V for the brain', wires:[...rng('b',1,5),'u1'], parts:['buck','esp','fuse2','meter'],
            what:'The buck makes 5V for the ESP32 and tail light: one USB cable to the ESP32 if your converter has a USB socket, or its 5V and GND leads to VIN and GND. Measure it before connecting the ESP32. (Switch with the Power selector at the top.)'},
-  logic:  {name:'ESP32 → rear driver signals', wires:rng('l',1,7), parts:['kit','fem'],
+  logic:  {name:'ESP32 → rear driver signals', wires:[...rng('l',1,7),'l2w','gB'], parts:['kit','fem'],
            what:'3.3V logic power, the enable pin with its 10k pull-down, and the two PWM wires.'},
-  tail:   {name:'Tail light matrix', wires:rng('t',1,5), parts:['max'],
+  tail:   {name:'Tail light matrix', wires:[...rng('t',1,5),'t2w'], parts:['max'],
            what:'5V power plus three data wires to the MAX7219.'},
-  bench:  {name:'Dash plug → ESP32 pins (jumpers in the plug)', wires:rng('c',1,7), parts:['esp','kit'],
+  bench:  {name:'Dash plug → ESP32 pins (jumpers in the plug)', wires:[...rng('c',1,7),'c6w','c5w','gA'], parts:['esp','kit'],
            what:'Push a male jumper into each hole of the dash plug and plug the other ends onto the ESP32 pins. No splicing or heat shrink yet: this is only to prove every control reads right. Power the ESP32 from a USB phone charger.'},
-  cockpit:{name:'Dash plug (pedal & switches)', wires:rng('c',1,7), parts:['kit','wire','shrink'],
+  cockpit:{name:'Dash plug (pedal & switches)', wires:[...rng('c',1,7),'c6w','c5w','gA'], parts:['kit','wire','shrink'],
            what:'Seven wires from the stock dash plug, each spliced to a jumper: orange and blue (pedal + Forward/Reverse), yellow (turtle), green (remote mode), pink and white (power button) and black (ground). No need to open the dash.'},
   steer:  {name:'Steering motor → driver #2', wires:rng('s',1,11), parts:['bts2'],
            what:'Remote steering like the stock remote: push the stick, the wheels turn. Without the sensor it works the way the stock board did (no position feedback), just with soft starts instead of slams.'},
@@ -1470,6 +1523,9 @@ const GROUPS = {
 const STAGES = [
   {id:'0', name:'Stage 0 · bench test', sub:'Dash → ESP32, USB only', groups:['bench'], verdict:'ok', bench:true,
    summary:'<b>No battery, no motors, no driver.</b> Power the ESP32 from a USB phone charger, plug the 7 dash-plug wires onto its pins (a male jumper pushed into each hole of the plug is fine for this), then work every control and check what the car reads. Nothing here can move or short anything.'},
+  {id:'0b', name:'Stage 0b · bench, part 2', sub:'+ tail light, driver signals', groups:['bench','tail','logic'], verdict:'ok', bench:true,
+   summary:'<b>Still no battery and no motors.</b> Add the tail light and the BTS7960\'s small signal pins on top of the dash test, still powered by a USB charger. The driver has no motor power, so nothing can move; this proves the ESP32 talks to both. With the <b>Wago</b> ground setup, Wago A carries the dash grounds and Wago B the tail light and driver grounds.',
+   rows:[['Plug in the USB charger','tail light goes <b>solid red</b>; the dashboard\'s Tail light tile says <b>stopped</b>'],['Dashboard, Drive card','Motor enable <b>OFF</b>, Commanded by <b>idle</b>'],['Every dash control, again','same lamps as Stage 0 (the dash still works with the new ground Wagos)'],['Tug each Wago wire','nothing pulls out']]},
   {id:'1a', name:'Stage 1a · today', sub:'Only parts you own', groups:['motors','power','five','logic','tail','cockpit'], verdict:'ok',
    summary:'<b>You can build this now.</b> The car drives from the pedal and your phone, Fwd/Rev and High/Low work, and the tail light runs. <b>The one gap: no remote steering.</b> The driver steers by hand and the steering motor is just unplugged, so you can stop the car remotely but not steer it. <b>Hybrid option:</b> leave the stock board in for steering only, so the stock remote still steers (see <span class="kbd">firmware/README.md</span>). Your phone\'s E-STOP becomes the parent stop.'},
   {id:'1', name:'Stage 1 · brain swap', sub:'Does everything stock did', groups:['motors','power','five','logic','tail','cockpit','steer'], verdict:'ok',
@@ -1510,11 +1566,11 @@ function focusStage(){
   for (const w of ws) for (const [x,y] of (w.via||[])){ const x1=Math.max(b.x+b.w,x), y1=Math.max(b.y+b.h,y); b.x=Math.min(b.x,x); b.y=Math.min(b.y,y); b.w=x1-b.x; b.h=y1-b.y; }
   fitBox(b, 50, 520);
 }
-function BENCH_CARD(){
-  const rows = [['Power button on','power ON'],['Power button off','power OFF'],['Pedal down, rocker Forward','pedal down FORWARD'],['Pedal down, rocker Reverse','pedal down REVERSE'],
+function BENCH_CARD(st){
+  const rows = (st && st.rows) || [['Power button on','power ON'],['Power button off','power OFF'],['Pedal down, rocker Forward','pedal down FORWARD'],['Pedal down, rocker Reverse','pedal down REVERSE'],
     ['Pedal up','pedal up'],['Turtle','LOW'],['Rabbit','HIGH'],['Dial on remote','parent only'],['Dial on manual','pedal enabled']];
   return `<div class="card"><h3>Check every control</h3><p>On your phone, either join the car's Wi-Fi <b>McLaren-F1</b> and open <b>192.168.4.1</b>, or stay on your home Wi-Fi and open <b>http://mclaren.local</b> (view only). The grey line under the speed shows what the car reads.</p>
-   <table class="pins"><tr><th>Do this</th><th>Readout should say</th></tr>${rows.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td></tr>`).join('')}</table>
+   <table class="pins"><tr><th>Do this</th><th>You should see</th></tr>${rows.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td></tr>`).join('')}</table>
    <p class="meta">Anything backwards is a one-line firmware setting, fixed over Wi-Fi. Anything that never changes is usually a jumper on the wrong pin: check it against the table above.</p></div>`;
 }
 function partBadge(k){ const p = PARTS[k]; if (p.have) return '✅'; return p.arriving ? '🚚' : p.optional ? '➕' : p.maybe ? '❔' : '🛒'; }
@@ -1547,7 +1603,7 @@ function renderStages(){
   }
   h += `<div class="card"><h3>Parts for ${st.name}</h3><table class="pins">${parts.map(k=>{ const p = PARTS[k]; return `<tr><td>${partBadge(k)}</td><td>${p.name}${p.buy?`<br><span class="meta">${p.buy}</span>`:''}</td></tr>`; }).join('')}</table>
    <p class="meta">✅ have · 🚚 arriving · 🛒 need to buy · ❔ check first · ➕ optional</p></div>
-   ${st.bench ? BENCH_CARD() : `<div class="card"><h3>Stock board vs this stage</h3><table class="pins"><tr><th>What the stock board did</th><th>${st.name.split(' · ')[0]}</th></tr>${PARITY.map(r=>`<tr><td>${r[0]}</td><td>${r[col]}</td></tr>`).join('')}</table>
+   ${st.bench ? BENCH_CARD(st) : `<div class="card"><h3>Stock board vs this stage</h3><table class="pins"><tr><th>What the stock board did</th><th>${st.name.split(' · ')[0]}</th></tr>${PARITY.map(r=>`<tr><td>${r[0]}</td><td>${r[col]}</td></tr>`).join('')}</table>
    <p class="meta">❓ The photos of the stock board will tell us whether it also ran sounds, music or lights. Anything it did, we either rewire or consciously drop.</p>`}
    <div class="box tip"><b>Firmware status</b>Stage 1a is <b>flashed and running</b> on your classic ESP32 (<span class="kbd">firmware/mclaren_ecu</span>): pedal, Fwd/Rev, High/Low, Manual/RC, phone control, rear motors and tail light. Updates go over Wi-Fi. Still to add for Stage 1: steering and the Xbox controller.</div></div>`;
   panel.innerHTML = h;
@@ -1837,6 +1893,10 @@ addEventListener('resize', () => { applyMobile(); refocus(); });
 rebuildSteps(); applyBoard();
 document.getElementById('boardSel').onchange = e => switchBoard(e.target.value);
 document.getElementById('powerSel').onchange = e => switchPower(e.target.value);
+document.getElementById('gndSel').onchange = e => switchGnd(e.target.value);
+document.getElementById('setupBtn').onclick = e => { e.stopPropagation(); document.getElementById('setup').classList.toggle('open'); };
+document.getElementById('setupPanel').onclick = e => e.stopPropagation();
+addEventListener('click', () => document.getElementById('setup').classList.remove('open'));
 drawCar(); COMPS.forEach(drawComp); drawTerms(); applyPowerVisibility();
 { const h = location.hash.slice(1).split(':'); // e.g. #explore, #learn:12, #sim:steer
   if (h[0]==='learn' && h[1]) state.i = Math.min(STEPS.length-1, +h[1]||0);
