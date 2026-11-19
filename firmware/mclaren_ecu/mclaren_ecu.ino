@@ -268,8 +268,8 @@ document.getElementById('stop').onclick=()=>fetch('/estop');
 document.getElementById('reset').onclick=()=>fetch('/reset');
 setInterval(async()=>{ if(busy) return; busy=true;
   try{ const r=await fetch(`/c?t=${Math.round(t*100)}&m=${mx.value}`,{cache:'no-store'}); const j=await r.json();
-    stat.textContent = j.busy ? 'another phone is driving' : `speed ${j.d}%  ${j.s}  (${j.src})${j.e?'  E-STOP (press Reset)':''}`;
-    document.getElementById('sw').textContent = `power ${j.pw?'ON':'OFF'} | pedal ${j.p?(j.rev?'down REVERSE':'down FORWARD'):'up'}${j.p&&!j.arm?' (release first)':''} | ${j.hi?'HIGH':'LOW'} | ${j.rc?'parent only':'Luka can drive'}`;
+    stat.textContent = j.busy ? 'another phone is driving' : `${j.ro?'VIEW ONLY on home Wi-Fi (join McLaren-F1 to drive) · ':''}speed ${j.d}%  ${j.s}  (${j.src})${j.e?'  E-STOP (press Reset)':''}`;
+    document.getElementById('sw').textContent = `power ${j.pw?'ON':'OFF'} | pedal ${j.p?(j.rev?'down REVERSE':'down FORWARD'):'up'}${j.p&&!j.arm?' (release first)':''} | ${j.hi?'HIGH':'LOW'} | ${j.rc?'parent only':'pedal enabled'}`;
   }catch(e){ stat.textContent='no link: car is stopping'; }
   busy=false; },100);
 </script></body></html>)rawliteral";
@@ -278,12 +278,12 @@ const char* tailName() {
   switch (tail) { case TAIL_STOPPED: return "stopped"; case TAIL_SLOWING: return "slowing"; case TAIL_FWD: return "forward"; default: return "reverse"; }
 }
 const char* sourceName() { return source == SRC_PHONE ? "phone" : source == SRC_PEDAL ? "pedal" : "idle"; }
-void sendStatus(bool busy) {
+void sendStatus(bool busy, bool viewOnly) {
   char buf[280];
   snprintf(buf, sizeof buf,
-           "{\"d\":%d,\"s\":\"%s\",\"e\":%s,\"busy\":%s,\"src\":\"%s\",\"p\":%d,\"arm\":%d,\"rev\":%d,\"hi\":%d,\"rc\":%d,\"pw\":%d,\"fw\":\"%s\",\"board\":\"%s\"}",
+           "{\"d\":%d,\"s\":\"%s\",\"e\":%s,\"busy\":%s,\"src\":\"%s\",\"p\":%d,\"arm\":%d,\"rev\":%d,\"hi\":%d,\"rc\":%d,\"pw\":%d,\"ro\":%s,\"fw\":\"%s\",\"board\":\"%s\"}",
            (int)lroundf(duty * 100), tailName(), estop ? "true" : "false", busy ? "true" : "false",
-           sourceName(), pedalDown, pedalArmed, reverseSel, highSel, rcOnly, powerOn, FW_VERSION, BOARD_NAME);
+           sourceName(), pedalDown, pedalArmed, reverseSel, highSel, rcOnly, powerOn, viewOnly ? "true" : "false", FW_VERSION, BOARD_NAME);
   server.sendHeader("Cache-Control", "no-store");
   server.send(200, "application/json", buf);
 }
@@ -295,18 +295,18 @@ bool fromCarWifi() {
 #endif
 }
 void handleCmd() {
-  if (!fromCarWifi()) { server.send(403, "application/json", "{\"err\":\"drive only from the car's own Wi-Fi\"}"); return; }
+  if (!fromCarWifi()) { sendStatus(false, true); return; }  // home network: live readout only, commands ignored
   uint32_t now = millis();
   IPAddress ip = server.client().remoteIP();
   bool ownerActive = (now - lastCmdMs) < 3000;
-  if (ownerActive && !(ownerIp == IPAddress()) && !(ip == ownerIp)) { sendStatus(true); return; }
+  if (ownerActive && !(ownerIp == IPAddress()) && !(ip == ownerIp)) { sendStatus(true, false); return; }
   ownerIp = ip;
   float t = constrain(server.arg("t").toInt(), -100, 100) / 100.0f;
   float m = constrain(server.arg("m").toInt(), 10, 100) / 100.0f;
   throttle = t;
   maxDuty = min(m, HARD_MAX_DUTY);
   lastCmdMs = now;
-  sendStatus(false);
+  sendStatus(false, false);
 }
 
 // ---------------- setup / loop ----------------
@@ -359,12 +359,12 @@ void setup() {
 #endif
   server.on("/", [] { server.send_P(200, "text/html", PAGE); });
   server.on("/c", handleCmd);
-  server.on("/estop", [] { estop = true; throttle = 0; pedalArmed = false; sendStatus(false); Serial.println("E-STOP"); });
+  server.on("/estop", [] { estop = true; throttle = 0; pedalArmed = false; sendStatus(false, false); Serial.println("E-STOP"); });
   server.on("/reset", [] {  // only from the car's network: clearing an e-stop needs someone at the car
     if (!fromCarWifi()) { server.send(403, "application/json", "{\"err\":\"reset only from the car's own Wi-Fi\"}"); return; }
-    estop = false; throttle = 0; sendStatus(false); Serial.println("reset");
+    estop = false; throttle = 0; sendStatus(false, false); Serial.println("reset");
   });
-  server.on("/status", [] { sendStatus(false); });  // read-only, from either network
+  server.on("/status", [] { sendStatus(false, false); });  // read-only, from either network
   server.begin();
   Serial.printf("McLaren ECU up on %s. Join Wi-Fi \"%s\", open http://192.168.4.1\n", BOARD_NAME, WIFI_AP_NAME);
   lastLoopUs = micros();
@@ -387,6 +387,6 @@ void loop() {
     Serial.printf("src %-5s throttle %+.2f target %+.2f duty %+.2f EN %d tail %-7s | power %s pedal %s%s %s %s%s\n",
                   sourceName(), throttle, target, duty, enabled, tailName(), powerOn ? "on" : "OFF",
                   pedalDown ? (reverseSel ? "REV" : "FWD") : "up", (pedalDown && !pedalArmed) ? "(release first)" : "",
-                  highSel ? "HIGH" : "LOW", rcOnly ? "parent-only" : "luka-ok", estop ? "  ESTOP" : "");
+                  highSel ? "HIGH" : "LOW", rcOnly ? "parent-only" : "pedal-ok", estop ? "  ESTOP" : "");
   }
 }

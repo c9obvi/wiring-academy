@@ -64,8 +64,10 @@ Heavy wires: 14 AWG (red to +, black to −). Everything else: 18 AWG or jumpers
 | Battery − | Wago 5-port "GND bus" | heavy |
 | GND bus | BTS7960 **B−** | heavy |
 | GND bus | buck black **input** lead | 18 AWG |
-| Buck red **output** (5V) | Wago 3-port → ESP32 **5V** pin and MAX7219 **VCC** | 18 AWG / jumper |
-| Buck black **output** | ESP32 **GND** | jumper |
+| Buck **USB socket** (USB-output converters) | ESP32 **USB port**, with a USB cable | USB cable: powers the ESP32 and shares ground |
+| *or* buck red **output** lead (5V) | ESP32 **5V/VIN** | 18 AWG / jumper |
+| *or* buck black **output** lead | ESP32 **GND** | jumper |
+| ESP32 **VIN** | MAX7219 **VCC** | jumper (VIN outputs 5V when the ESP32 is USB-powered) |
 | ESP32 **3V3** | BTS7960 **VCC** | jumper |
 | ESP32 **GND** | BTS7960 **GND** and MAX7219 **GND** | jumper |
 | ESP32 **GPIO6** | BTS7960 **R_EN** and **L_EN** (tie them together) | jumper |
@@ -116,7 +118,9 @@ Do steps 1–4 with the ESP32 on USB and nothing else connected. The tail light 
 
 ## Test the dashboard (USB only, no battery)
 
-With the ESP32 on USB and the cockpit wired, join the car's Wi-Fi and open the page. The grey line under the speed shows each switch live:
+The wiring page's **Build stages → Stage 0 · bench test** shows exactly this setup and a table of what each control should read.
+
+With the ESP32 on USB and the dash plug wired, join the car's Wi-Fi and open 192.168.4.1. Or stay on your home Wi-Fi and open **http://mclaren.local**: it shows the same readout, **view only** (driving is ignored from the home network). The grey line under the speed shows each switch live:
 
 `power ON | pedal down FORWARD | HIGH | Luka can drive`
 

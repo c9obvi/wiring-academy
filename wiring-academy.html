@@ -11,15 +11,16 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-header{height:54px;display:flex;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid var(--line);background:#101820}
+header{min-height:54px;display:flex;align-items:center;gap:12px;padding:0 14px;border-bottom:1px solid var(--line);background:#101820}
 header h1{font-size:16px;margin:0;white-space:nowrap}
 header h1 span{color:var(--accent)}
-.tabs{display:flex;gap:4px;flex-wrap:wrap}
-.tab{background:transparent;border:1px solid transparent;color:var(--muted);padding:6px 12px;border-radius:8px;cursor:pointer;font:inherit}
+.tabs{display:flex;gap:2px;flex-wrap:wrap}
+.tab{background:transparent;border:1px solid transparent;color:var(--muted);padding:6px 10px;white-space:nowrap;border-radius:8px;cursor:pointer;font:inherit}
 .tab:hover{color:var(--text)}
 .tab.on{background:var(--panel2);border-color:var(--line);color:var(--text)}
 .repo-link{margin-left:14px;color:var(--muted);white-space:nowrap}
 .boardsel{margin-left:auto;color:var(--muted);font-size:13px;white-space:nowrap}
+.boardsel.powersel{margin-left:12px}
 .boardsel select{margin-left:6px;background:var(--panel2);color:var(--text);border:1px solid var(--accent);border-radius:8px;padding:5px 8px;font:inherit;font-size:13px}
 .repo-link:hover{color:var(--text)}
 main{display:flex;height:calc(100% - 54px)}
@@ -140,14 +141,14 @@ ul.tight{margin:4px 0;padding-left:18px}ul.tight li{margin:3px 0}
 /* ---- phone layout: map on top, instructions in a bottom sheet ---- */
 body.mobile{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;font-size:16px;-webkit-text-size-adjust:100%}
 body.mobile header{height:auto;min-height:0;flex:none;flex-wrap:wrap;gap:6px 8px;padding:6px 10px}
-body.mobile header h1{font-size:0}
-body.mobile header h1 span{font-size:15px}
+body.mobile header h1{display:none}
 body.mobile .tabs{order:5;width:100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
 body.mobile .tabs::-webkit-scrollbar,body.mobile .phase-chips::-webkit-scrollbar{display:none}
 body.mobile .tab{white-space:nowrap;flex:none;padding:8px 12px}
 body.mobile .repo-link{display:none}
 body.mobile .boardsel{font-size:0;margin-left:auto}
-body.mobile .boardsel select{font-size:16px;max-width:30vw;margin-left:0;padding:6px}
+body.mobile .boardsel.powersel{margin-left:0}
+body.mobile .boardsel select{font-size:16px;max-width:27vw;margin-left:0;padding:6px}
 body.mobile #mobileBtn{margin-left:0;min-height:36px}
 body.mobile main{flex:1;min-height:0;height:auto;flex-direction:column}
 body.mobile #mapWrap{flex:1;min-height:0;height:auto}
@@ -204,9 +205,10 @@ body.mobile .term{transform-box:fill-box;transform-origin:center;transform:scale
     <button class="tab" data-mode="pins">Pin map</button>
     <button class="tab" data-mode="review">Plan review</button>
   </div>
-  <label class="boardsel" title="Pick your microcontroller: pin numbers update everywhere">Board <select id="boardSel"><option value="classic">Classic ESP32 (WROOM-32 / DOIT)</option><option value="s3">ESP32-S3 DevKitC-1 (long board)</option></select></label>
-  <button class="btn small" id="mobileBtn" title="Switch to phone layout">📱 Mobile view</button>
-  <a class="repo-link" href="https://github.com/c9obvi/wiring-academy">View on GitHub</a>
+  <label class="boardsel" title="Pick your microcontroller: pin numbers update everywhere">Board <select id="boardSel"><option value="classic" title="Classic ESP32 (WROOM-32 / DOIT)">Classic ESP32</option><option value="s3" title="ESP32-S3 DevKitC-1 (long board)">ESP32-S3</option></select></label>
+  <label class="boardsel powersel" title="How the ESP32 gets its 5V: the wiring updates live">Power <select id="powerSel"><option value="usb" title="Buck USB socket → ESP32 USB port">USB cable</option><option value="leads" title="Buck 5V/GND leads → ESP32 VIN/GND">Wire leads</option></select></label>
+  <button class="btn small" id="mobileBtn" title="Switch to phone layout">📱 Phone</button>
+  <a class="repo-link" href="https://github.com/c9obvi/wiring-academy" title="View on GitHub">GitHub</a>
 </header>
 <main>
   <div id="mapWrap">
@@ -235,9 +237,9 @@ body.mobile .term{transform-box:fill-box;transform-origin:center;transform:scale
 const W = 1000, H = 1500;
 const COL = {
   red:'#e53935', blk:'#1c1c1c', org:'#fb8c00', yel:'#fdd835', blu:'#42a5f5', pur:'#ab47bc',
-  grn:'#66bb6a', cyn:'#26c6da', lim:'#c0ca33', wht:'#eceff1', brn:'#a1887f', tea:'#26a69a', pnk:'#f06292'
+  grn:'#66bb6a', gry:'#90a4ae', cyn:'#26c6da', lim:'#c0ca33', wht:'#eceff1', brn:'#a1887f', tea:'#26a69a', pnk:'#f06292'
 };
-const COLNAME = {red:'red', blk:'black', org:'orange', yel:'yellow', blu:'blue', pur:'purple', grn:'green',
+const COLNAME = {gry:'grey', red:'red', blk:'black', org:'orange', yel:'yellow', blu:'blue', pur:'purple', grn:'green',
   cyn:'cyan', lim:'lime', wht:'white', brn:'brown', tea:'teal', pnk:'pink'};
 
 function T(id, side, at, label, desc){ return {id, side, at, label, desc}; }
@@ -271,7 +273,8 @@ const COMPS = [
     terms:[T('in+','b',.25,'IN+','Red INPUT lead. Fused +12V goes here.'),
            T('in-','b',.55,'IN−','Black INPUT lead, to the ground bus.'),
            T('out+','r',.62,'5V','Red OUTPUT lead: regulated 5V. Measure it before connecting the ESP32.'),
-           T('out-','r',.86,'GND','Black OUTPUT lead: ground. Inside this module it is the same as the input ground.')]},
+           T('out-','r',.86,'GND','Black OUTPUT lead: ground. Inside this module it is the same as the input ground.'),
+           T('usb','r',.75,'USB','USB-A socket: 5V out. One USB cable from here to the ESP32 powers it and shares ground with the car.')]},
   {id:'esp', kind:'esp', x:440, y:700, w:170, h:340, title:'ESP32-S3', sub:'DevKitC-1 (the long board)',
     terms:[
       T('5V','l',.05,'5V','5V / VIN input. Powers the board (its own regulator makes 3.3V).'),
@@ -285,6 +288,7 @@ const COMPS = [
       T('IO17','l',.78,'GPIO17','GPIO17: dash YELLOW wire: LOW = turtle (slow).'),
       T('IO18','l',.86,'GPIO18','GPIO18: dash GREEN wire: LOW = remote mode (pedal ignored).'),
       T('IO8','l',.94,'GPIO8','GPIO8: dash WHITE wire: LOW = power button on (pink goes to GND).'),
+      T('usb','b',.5,'USB','USB port: 5V in from the converter\'s USB socket (or any USB charger on the bench). Also ties the ESP32 ground to the car ground.'),
       T('5Vb','r',.05,'5V','Second 5V tap. The board has one 5V pin, so in real life split the buck\'s 5V lead with a 3-port Wago: one branch to the ESP32 5V pin, one to the tail light.'),
       T('GNDb','r',.13,'GND','Ground (same node as every other GND).'),
       T('3V3b','r',.21,'3V3','3.3V (the S3 board has two 3V3 pins). With several 3.3V loads, run 3V3 to a breadboard power rail and tap from there.'),
@@ -463,10 +467,15 @@ wire(3,'b4','buck.out+','esp.5V','org',4,'lv','Buck 5V → ESP32 5V/VIN',
  'Red output lead to the <b>5V</b> pin (some boards print <b>VIN</b>). On a screw-terminal breakout, just clamp it.',
  'The ESP32 runs on 3.3V internally and makes it from this 5V with its own regulator.',
  {warn:'Never put 5V on a 3V3 pin, and never feed 12V to the ESP32 anywhere.',
-  tip:'When flashing over USB, switch the car OFF first. The ground stays connected, which is fine.'});
+  tip:'When flashing over USB, switch the car OFF first. The ground stays connected, which is fine.', power:'leads'});
 wire(3,'b5','buck.out-','esp.GND','blk',4,'gnd','Buck GND → ESP32 GND',
  'Black output lead to a <b>GND</b> pin.',
- 'Now the logic ground and the battery ground are the same <b>common ground</b>. Every signal voltage is measured against it, so it\'s mandatory.');
+ 'Now the logic ground and the battery ground are the same <b>common ground</b>. Every signal voltage is measured against it, so it\'s mandatory.', {power:'leads'});
+wire(3,'u1','buck.usb','esp.usb','gry',6,'lv','USB cable: buck → ESP32',
+ 'Plug a USB cable from the converter\'s <b>USB socket</b> into the ESP32\'s USB port. That one cable powers the ESP32. No VIN or GND wires needed for power.',
+ 'Inside the converter, the input and output grounds are the same wire, so the USB cable also ties the ESP32\'s ground to the battery ground: the <b>common ground</b> every signal needs.',
+ {power:'usb', cable:'USB cable', tip:'One-time check, everything unplugged, meter on continuity: the converter\'s black <b>input</b> wire to the metal shell of its USB socket should beep.',
+  warn:'Only one USB power source at a time. If you plug the ESP32 into a laptop, unplug it from the converter first. (You rarely need to: updates go over Wi-Fi.)'});
 
 /* ---------- Phase 4 ---------- */
 info(4,'p4-intro','Phase 4: the ESP32 talks to the rear driver',
@@ -568,7 +577,7 @@ wire(7,'c6','dash.pnk','esp.GNDb','pnk',3,'gnd','Pink/red → GND',
  {warn:'In the stock car this wire may have carried supply voltage from the old board. Wired to the ESP32 it is only a switch contact. Never plug it back into the stock board while it is also connected to the ESP32.'});
 wire(7,'c7','dash.wht','esp.IO8','wht',3,'sig','White (power button) → GPIO8',
  'Splice white to a jumper and plug onto GPIO8.',
- 'Power button off = the firmware disables the car, your phone included, just like stock. When it comes back on, Luka has to let go of the pedal before it drives.',
+ 'Power button off = the firmware disables the car, your phone included, just like stock. When it comes back on, the driver has to let go of the pedal before it drives.',
  {tip:'Long wires near motors pick up noise. Add a 100 nF capacitor from each input to GND at the ESP32; the firmware also debounces every input (30 ms).'});
 
 /* ---------- Phase 8 ---------- */
@@ -614,15 +623,34 @@ info(9,'done','Everything is wired',
   <li>Firmware failsafes: a Bluetooth disconnect ramps to stop, a watchdog, a parent e-stop that overrides the pedal, and a speed cap.</li>
   <li>Bluetooth gamepad through <b>Bluepad32</b>. The ESP32-S3 only speaks Bluetooth Low Energy, so use an <b>Xbox Wireless controller</b> (Series X|S, or Xbox One with updated firmware) or another BLE pad. PlayStation controllers won't pair with an S3.</li></ul>`, null);
 
-const STEPS = S;
-const WIRES = S.filter(s=>s.t==='wire');
-const PH_STEPS = PHASES.map(p => STEPS.map((s,i)=>s.ph===p.n?i:-1).filter(i=>i>=0));
+// USB-power overrides for steps whose text depends on how the ESP32 gets 5V
+S.find(s=>s.id==='p3-intro').usb = {body:`<p>The buck turns 12V into a steady 5V for the ESP32 and the tail light. Yours has a <b>USB socket</b> on the output, so one USB cable powers the ESP32. Its input still has red/black leads, which join the +12V and GND Wagos.</p>`};
+S.find(s=>s.id==='meter').usb = {items:['<b>Lift the B+ wire out of the rear driver</b> for this test, since its logic isn\'t wired yet and it shouldn\'t be powered.',
+  'Nothing plugged into the converter\'s USB socket yet.',
+  'Plug in the battery, switch ON. Multimeter on DC volts between the two <b>outer</b> contacts inside the USB socket: <b>4.9–5.2V</b>. (A cheap USB voltage tester works too.)',
+  'Switch OFF, unplug the battery, put the B+ wire back.']};
+S.find(s=>s.id==='t1').usb = {real:'From the ESP32\'s <b>VIN</b> pin (5V on some boards) to the matrix <b>VCC</b>. With USB power, VIN outputs the USB 5V.'};
+const ALL_WIRES = S.filter(s=>s.t==='wire');
+let STEPS = S, WIRES = ALL_WIRES, PH_STEPS = [];
+function rebuildSteps(){   // drop steps that don't apply to the selected power setup, keeping the user's place
+  const keep = st => !st.power || st.power === state.power;
+  const curId = STEPS[state.i] && STEPS[state.i].id;
+  STEPS = S.filter(keep); WIRES = STEPS.filter(st=>st.t==='wire');
+  PH_STEPS = PHASES.map(p => STEPS.map((st,i)=>st.ph===p.n?i:-1).filter(i=>i>=0));
+  if (curId){
+    const cur = S.find(st=>st.id===curId);
+    let target = keep(cur) ? cur : S.find(st=>st.ph===cur.ph && st.power && keep(st));   // a power-specific step swaps to its counterpart
+    if (!target){ let j = S.indexOf(cur); while (j < S.length-1 && !keep(S[j])) j++; target = S[j]; }
+    state.i = Math.max(0, STEPS.indexOf(target));
+  }
+  state.i = Math.min(state.i, STEPS.length-1);
+}
 
 /* =====================================================================
    STATE
    ===================================================================== */
 const KEY = 'mclaren-wiring-academy-v1';
-let state = {i:0, done:{}, checks:{}, quiz:{}, real:{}, layers:{hv:true,gnd:true,lv:true,sig:true}, board:'classic', sheet:'half'};
+let state = {i:0, done:{}, checks:{}, quiz:{}, real:{}, layers:{hv:true,gnd:true,lv:true,sig:true}, board:'classic', sheet:'half', power:'usb'};
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = {...state, ...s, layers:{...state.layers, ...(s.layers||{})}}; } catch(e){}
 
 /* =====================================================================
@@ -659,7 +687,8 @@ const BOARDS = {
     note:'Pins are for the ESP32-S3 DevKitC-1 (the long board). Go by the printed labels. Avoid 0, 3, 45, 46 (strapping), 19/20 (USB), 43/44 (serial) and 35–37 (PSRAM).'},
 };
 { const q = new URLSearchParams(location.search); if (BOARDS[q.get('board')]) state.board = q.get('board');
-  if (q.has('mobile')) state.mobile = q.get('mobile')!=='0'; if (q.get('sheet')) state.sheet = q.get('sheet'); }
+  if (q.has('mobile')) state.mobile = q.get('mobile')!=='0';
+  if (['usb','leads'].includes(q.get('power'))) state.power = q.get('power'); if (q.get('sheet')) state.sheet = q.get('sheet'); }
 if (!BOARDS[state.board]) state.board = 'classic';
 const BOARD = () => BOARDS[state.board];
 const pinOf = n => (BOARD().map && BOARD().map[n]) || n;
@@ -673,16 +702,29 @@ const ORIG = new WeakMap();
 function boardify(obj, keys){
   let o = ORIG.get(obj);
   if (!o){ o = {}; for (const k of keys) if (obj[k]!==undefined) o[k] = Array.isArray(obj[k]) ? [...obj[k]] : obj[k]; ORIG.set(obj, o); }
-  for (const k in o) obj[k] = Array.isArray(o[k]) ? o[k].map(bt) : bt(o[k]);
+  const src = (state.power==='usb' && obj.usb) ? {...o, ...obj.usb} : o;   // USB-power wording, where a step has it
+  for (const k of keys){
+    if (src[k]!==undefined) obj[k] = Array.isArray(src[k]) ? src[k].map(bt) : bt(src[k]);
+    else if (!(k in o)) delete obj[k];
+  }
 }
 function applyBoard(){
   const B = BOARD();
-  for (const st of STEPS) boardify(st, ['title','name','real','why','warn','tip','fix','body','items','q','opts','expl']);
+  for (const st of S) boardify(st, ['title','name','real','why','warn','tip','fix','body','items','q','opts','expl']);
   for (const fid in TERMS) if (fid.startsWith('esp.')) boardify(TERMS[fid], ['label','desc']);
   TERMS['esp.5V'].label = TERMS['esp.5Vb'].label = B.fiveV;
   COMP.esp.title = B.short; COMP.esp.sub = B.sub;
   PARTS.esp.name = B.part;
   const sel = document.getElementById('boardSel'); if (sel) sel.value = state.board;
+  const ps = document.getElementById('powerSel'); if (ps) ps.value = state.power;
+}
+const hiddenTerms = () => state.power==='usb' ? ['buck.out+','buck.out-'] : ['buck.usb','esp.usb'];
+function applyPowerVisibility(){ const h = hiddenTerms(); for (const fid in termEls) termEls[fid].style.display = h.includes(fid) ? 'none' : ''; }
+function switchPower(p){
+  state.power = p; save(); rebuildSteps(); applyBoard();
+  gComps.innerHTML = ''; COMPS.forEach(drawComp); applyPowerVisibility(); clearSel();
+  renderWires(); renderLegend(); renderPanel(); applyHighlights(); refocus();
+  toast(p==='usb' ? 'Power: the converter\'s <b>USB socket</b> powers the ESP32 with one USB cable. VIN/GND power wires removed.' : 'Power: the converter\'s <b>5V and GND leads</b> go to the ESP32\'s VIN and GND pins.', 'good');
 }
 function switchBoard(b){
   state.board = b; save(); applyBoard();
@@ -780,6 +822,7 @@ function drawComp(c){
     case 'buck':
       body('#111','#78909c',8);
       title(c.title, y+24, 14); sub(c.sub, y+40);
+      if (state.power==='usb'){ el('rect', {x:x+w-34, y:y+h*.75-9, width:26, height:18, rx:2, fill:'#cfd8dc', stroke:'#455a64'}, g); el('rect', {x:x+w-30, y:y+h*.75-4, width:18, height:4, fill:'#455a64'}, g); }
       break;
     case 'esp': {
       body('#10161c','#607d8b',8);
@@ -830,8 +873,11 @@ function drawComp(c){
   for (const t of c.terms){
     const tt = TERMS[c.id+'.'+t.id];
     if (c.kind==='wago') continue;
+    if (hiddenTerms().includes(c.id+'.'+t.id)) continue;
     const lab = TERMS[c.id+'.'+t.id].label; const fs = 10.5; const fill = '#eceff1';
+    if (c.kind==='buck' && t.id==='usb') continue;   // the socket drawing is the label
     if (c.kind==='esp'){
+      if (t.side==='b') continue;                      // the USB port drawing is the label
       if (t.side==='l') txt(g, tt.x+10, tt.y+4, lab, {'font-size':fs, fill:pinColor(t.id), 'font-family':'ui-monospace,Menlo,monospace'});
       else txt(g, tt.x-10, tt.y+4, lab, {'font-size':fs, fill:pinColor(t.id), 'text-anchor':'end', 'font-family':'ui-monospace,Menlo,monospace'});
       continue;
@@ -916,9 +962,10 @@ const VIA = {
   t3:[[690,853],[690,1418]],
   t4:[[675,880],[675,1399]],
   t5:[[660,907],[660,1380]],
+  u1:[[404,632],[404,1066],[525,1066]],
 };
-for (const w of WIRES) if (VIA[w.id]) w.via = VIA[w.id];
-for (const id of ['l1','l2','l4','l6','l7']) WIRES.find(w=>w.id===id).k = 26;
+for (const w of ALL_WIRES) if (VIA[w.id]) w.via = VIA[w.id];
+for (const id of ['l1','l2','l4','l6','l7']) ALL_WIRES.find(w=>w.id===id).k = 26;
 
 const wireEls = {};
 function drawWire(w, animate, parent = gWires){
@@ -1099,7 +1146,7 @@ function connList(fid){
 let toastT;
 const tapWords = h => isMobile() ? h.replace(/\bClick/g,'Tap').replace(/\bclick/g,'tap') : h;
 function toast(html, kind=''){ const t = document.getElementById('toast'); t.innerHTML = tapWords(html); t.className = 'show '+kind; clearTimeout(toastT); toastT = setTimeout(()=>t.className='', 3800); }
-function gaugeText(w){ if (w.res) return '10 kΩ resistor'; if (w.g>=8) return '14 AWG'; if (w.g>=4) return '18 AWG'; return 'dupont jumper'; }
+function gaugeText(w){ if (w.res) return '10 kΩ resistor'; if (w.cable) return w.cable; if (w.g>=8) return '14 AWG'; if (w.g>=4) return '18 AWG'; return 'dupont jumper'; }
 
 /* ---------- interactions ---------- */
 let rubber = null;
@@ -1405,12 +1452,14 @@ const GROUPS = {
            what:'Both rear motors joined in parallel and landed on the driver\'s M+ / M−.'},
   power:  {name:'Battery → fuse → switch → buses', wires:rng('p',1,6), parts:['fuse','wago','wire','meter'],
            what:'Fused 12V into two 5-port Wagos (+12V and ground strips) feeding the driver. Until you add a switch, the battery plug is your off switch.'},
-  five:   {name:'5V for the brain', wires:rng('b',1,5), parts:['buck','esp','fuse2','meter'],
-           what:'The buck makes 5V for the ESP32 and tail light. Measure it before connecting the ESP32.'},
+  five:   {name:'5V for the brain', wires:[...rng('b',1,5),'u1'], parts:['buck','esp','fuse2','meter'],
+           what:'The buck makes 5V for the ESP32 and tail light: one USB cable to the ESP32 if your converter has a USB socket, or its 5V and GND leads to VIN and GND. Measure it before connecting the ESP32. (Switch with the Power selector at the top.)'},
   logic:  {name:'ESP32 → rear driver signals', wires:rng('l',1,7), parts:['kit','fem'],
            what:'3.3V logic power, the enable pin with its 10k pull-down, and the two PWM wires.'},
   tail:   {name:'Tail light matrix', wires:rng('t',1,5), parts:['max'],
            what:'5V power plus three data wires to the MAX7219.'},
+  bench:  {name:'Dash plug → ESP32 pins (jumpers in the plug)', wires:rng('c',1,7), parts:['esp','kit'],
+           what:'Push a male jumper into each hole of the dash plug and plug the other ends onto the ESP32 pins. No splicing or heat shrink yet: this is only to prove every control reads right. Power the ESP32 from a USB phone charger.'},
   cockpit:{name:'Dash plug (pedal & switches)', wires:rng('c',1,7), parts:['kit','wire','shrink'],
            what:'Seven wires from the stock dash plug, each spliced to a jumper: orange and blue (pedal + Forward/Reverse), yellow (turtle), green (remote mode), pink and white (power button) and black (ground). No need to open the dash.'},
   steer:  {name:'Steering motor → driver #2', wires:rng('s',1,11), parts:['bts2'],
@@ -1419,6 +1468,8 @@ const GROUPS = {
            what:'The pot tells the ESP32 the real wheel angle, so steering becomes a smooth servo with a limp manual mode.'},
 };
 const STAGES = [
+  {id:'0', name:'Stage 0 · bench test', sub:'Dash → ESP32, USB only', groups:['bench'], verdict:'ok', bench:true,
+   summary:'<b>No battery, no motors, no driver.</b> Power the ESP32 from a USB phone charger, plug the 7 dash-plug wires onto its pins (a male jumper pushed into each hole of the plug is fine for this), then work every control and check what the car reads. Nothing here can move or short anything.'},
   {id:'1a', name:'Stage 1a · today', sub:'Only parts you own', groups:['motors','power','five','logic','tail','cockpit'], verdict:'ok',
    summary:'<b>You can build this now.</b> The car drives from the pedal and your phone, Fwd/Rev and High/Low work, and the tail light runs. <b>The one gap: no remote steering.</b> The driver steers by hand and the steering motor is just unplugged, so you can stop the car remotely but not steer it. <b>Hybrid option:</b> leave the stock board in for steering only, so the stock remote still steers (see <span class="kbd">firmware/README.md</span>). Your phone\'s E-STOP becomes the parent stop.'},
   {id:'1', name:'Stage 1 · brain swap', sub:'Does everything stock did', groups:['motors','power','five','logic','tail','cockpit','steer'], verdict:'ok',
@@ -1438,25 +1489,33 @@ const PARITY = [ // [stock feature, stage 1a, stage 1, stage 2]
 const stageSel = {stage:'1a', upto:null, prev:null};
 let stagePlayT = null;
 const curStage = () => STAGES.find(x=>x.id===stageSel.stage);
+const gw = g => GROUPS[g].wires.filter(id => WIRES.some(w=>w.id===id));   // a group's wires for the current power setup
 function stageWireView(id){
   const st = curStage(); const gs = stageSel.upto===null ? st.groups : st.groups.slice(0, stageSel.upto+1);
-  if (!gs.some(g=>GROUPS[g].wires.includes(id))) return null;
+  if (!gs.some(g=>gw(g).includes(id))) return null;
   if (stageSel.upto===null) return 'all';
   const cur = GROUPS[st.groups[stageSel.upto]];
-  return cur.wires.includes(id) ? (stageSel.prev!==stageSel.upto ? 'new' : 'cur') : 'old';
+  return gw(st.groups[stageSel.upto]).includes(id) ? (stageSel.prev!==stageSel.upto ? 'new' : 'cur') : 'old';
 }
 function stageComps(){
   const st = curStage(); const gs = stageSel.upto===null ? st.groups : [st.groups[stageSel.upto]];
   const ids = new Set();
-  for (const g of gs) for (const id of GROUPS[g].wires){ const w = WIRES.find(x=>x.id===id); ids.add(TERMS[w.a].comp.id); ids.add(TERMS[w.b].comp.id); }
+  for (const g of gs) for (const id of gw(g)){ const w = WIRES.find(x=>x.id===id); ids.add(TERMS[w.a].comp.id); ids.add(TERMS[w.b].comp.id); }
   return [...ids];
 }
 function focusStage(){
   if (stageSel.upto===null) return fitAll();
-  const st = curStage(); const ws = GROUPS[st.groups[stageSel.upto]].wires.map(id=>WIRES.find(x=>x.id===id));
+  const st = curStage(); const ws = gw(st.groups[stageSel.upto]).map(id=>WIRES.find(x=>x.id===id));
   const b = bboxOf(stageComps(), ws.flatMap(w=>[w.a,w.b]));
   for (const w of ws) for (const [x,y] of (w.via||[])){ const x1=Math.max(b.x+b.w,x), y1=Math.max(b.y+b.h,y); b.x=Math.min(b.x,x); b.y=Math.min(b.y,y); b.w=x1-b.x; b.h=y1-b.y; }
   fitBox(b, 50, 520);
+}
+function BENCH_CARD(){
+  const rows = [['Power button on','power ON'],['Power button off','power OFF'],['Pedal down, rocker Forward','pedal down FORWARD'],['Pedal down, rocker Reverse','pedal down REVERSE'],
+    ['Pedal up','pedal up'],['Turtle','LOW'],['Rabbit','HIGH'],['Dial on remote','parent only'],['Dial on manual','pedal enabled']];
+  return `<div class="card"><h3>Check every control</h3><p>On your phone, either join the car's Wi-Fi <b>McLaren-F1</b> and open <b>192.168.4.1</b>, or stay on your home Wi-Fi and open <b>http://mclaren.local</b> (view only). The grey line under the speed shows what the car reads.</p>
+   <table class="pins"><tr><th>Do this</th><th>Readout should say</th></tr>${rows.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td></tr>`).join('')}</table>
+   <p class="meta">Anything backwards is a one-line firmware setting, fixed over Wi-Fi. Anything that never changes is usually a jumper on the wrong pin: check it against the table above.</p></div>`;
 }
 function partBadge(k){ const p = PARTS[k]; if (p.have) return '✅'; return p.arriving ? '🚚' : p.optional ? '➕' : p.maybe ? '❔' : '🛒'; }
 function groupNeeds(g, kind){ return GROUPS[g].parts.filter(k=>{ const p = PARTS[k]; if (p.have || p.optional) return false; if (kind==='arriving') return !!p.arriving; if (p.arriving) return false; return kind==='check' ? p.maybe : !p.maybe; }); }
@@ -1472,24 +1531,24 @@ function stageStep(d){
 function renderStages(){
   const st = curStage(); const all = stageSel.upto===null;
   const parts = [...new Set(st.groups.flatMap(g=>GROUPS[g].parts)), 'xbox'];
-  const col = STAGES.indexOf(st)+1;
+  const col = {'1a':1, '1':2, '2':3}[st.id];
   const cur = all ? null : GROUPS[st.groups[stageSel.upto]];
   let h = `<div class="card"><h2>Build stages</h2><p>Pick a stage to see exactly what gets wired in it. Press <b>Play</b> to watch it go in one group at a time, or click a group.</p>
    <div class="stagebtns">${STAGES.map(x=>`<button data-stage="${x.id}" class="${x.id===st.id?'on':''}"><b>${x.name}</b><small>${x.sub}</small></button>`).join('')}</div>
    <div class="box ${st.verdict}">${st.summary}</div>
    <div class="navrow"><button class="btn" id="sgPrev">◀</button><button class="btn primary" id="sgPlay">${stagePlayT?'⏸ Pause':'▶ Play'}</button><button class="btn" id="sgNext">▶</button><button class="btn" id="sgAll" ${all?'disabled':''}>Whole stage</button></div>
    ${st.groups.map((g,i)=>{ const G = GROUPS[g], need = groupNeeds(g), chk = groupNeeds(g,'check'), arr = groupNeeds(g,'arriving'); const cls = all ? '' : i===stageSel.upto ? 'cur' : i>stageSel.upto ? 'future' : '';
-     return `<button class="grow ${cls}" data-g="${i}"><span class="n">${i+1}</span><span class="t">${G.name}<small>${G.wires.length} wires · ${need.length ? '🛒 needs '+need.map(shortName).join(', ') : arr.length ? '🚚 waiting on '+arr.map(shortName).join(', ') : chk.length ? '❔ check first: '+chk.map(shortName).join(', ') : '✅ parts on hand'}</small></span></button>`; }).join('')}
+     return `<button class="grow ${cls}" data-g="${i}"><span class="n">${i+1}</span><span class="t">${G.name}<small>${gw(g).length} wires · ${need.length ? '🛒 needs '+need.map(shortName).join(', ') : arr.length ? '🚚 waiting on '+arr.map(shortName).join(', ') : chk.length ? '❔ check first: '+chk.map(shortName).join(', ') : '✅ parts on hand'}</small></span></button>`; }).join('')}
   </div>`;
   if (cur){
-    h += `<div class="card"><h3>Group ${stageSel.upto+1}: ${cur.name}</h3><p>${cur.what}</p><table class="pins"><tr><th>From</th><th>To</th><th>Wire</th></tr>${cur.wires.map(id=>{ const w = WIRES.find(x=>x.id===id), A=TERMS[w.a], B=TERMS[w.b];
+    h += `<div class="card"><h3>Group ${stageSel.upto+1}: ${cur.name}</h3><p>${cur.what}</p><table class="pins"><tr><th>From</th><th>To</th><th>Wire</th></tr>${gw(st.groups[stageSel.upto]).map(id=>{ const w = WIRES.find(x=>x.id===id), A=TERMS[w.a], B=TERMS[w.b];
       return `<tr><td>${A.comp.title} <b>${A.label}</b></td><td>${B.comp.title} <b>${B.label}</b></td><td><span class="sw" style="background:${COL[w.c]};${w.c==='blk'?'outline:1px solid #8a9aaa':''}"></span> ${w.res?'10k resistor':gaugeText(w)}</td></tr>`; }).join('')}</table>
       <p class="meta">The Tutorial tab walks through each of these wires one at a time.</p></div>`;
   }
   h += `<div class="card"><h3>Parts for ${st.name}</h3><table class="pins">${parts.map(k=>{ const p = PARTS[k]; return `<tr><td>${partBadge(k)}</td><td>${p.name}${p.buy?`<br><span class="meta">${p.buy}</span>`:''}</td></tr>`; }).join('')}</table>
    <p class="meta">✅ have · 🚚 arriving · 🛒 need to buy · ❔ check first · ➕ optional</p></div>
-   <div class="card"><h3>Stock board vs this stage</h3><table class="pins"><tr><th>What the stock board did</th><th>${st.name.split(' · ')[0]}</th></tr>${PARITY.map(r=>`<tr><td>${r[0]}</td><td>${r[col]}</td></tr>`).join('')}</table>
-   <p class="meta">❓ The photos of the stock board will tell us whether it also ran sounds, music or lights. Anything it did, we either rewire or consciously drop.</p>
+   ${st.bench ? BENCH_CARD() : `<div class="card"><h3>Stock board vs this stage</h3><table class="pins"><tr><th>What the stock board did</th><th>${st.name.split(' · ')[0]}</th></tr>${PARITY.map(r=>`<tr><td>${r[0]}</td><td>${r[col]}</td></tr>`).join('')}</table>
+   <p class="meta">❓ The photos of the stock board will tell us whether it also ran sounds, music or lights. Anything it did, we either rewire or consciously drop.</p>`}
    <div class="box tip"><b>Firmware status</b>Stage 1a is <b>flashed and running</b> on your classic ESP32 (<span class="kbd">firmware/mclaren_ecu</span>): pedal, Fwd/Rev, High/Low, Manual/RC, phone control, rear motors and tail light. Updates go over Wi-Fi. Still to add for Stage 1: steering and the Xbox controller.</div></div>`;
   panel.innerHTML = h;
   panel.querySelectorAll('[data-stage]').forEach(b => b.onclick = () => { stopStagePlay(); stageSel.stage = b.dataset.stage; stageSel.upto = null; showStage(); });
@@ -1739,7 +1798,7 @@ function applyMobile(){
   b.dataset.sheet = mapless ? 'full' : (['peek','half','full'].includes(state.sheet) ? state.sheet : 'half');
   if (mapless) b.dataset.mapless = '1'; else delete b.dataset.mapless;
   b.style.setProperty('--hdr', document.querySelector('header').offsetHeight + 'px');
-  const mb = document.getElementById('mobileBtn'); mb.textContent = on ? 'Desktop' : '📱 Mobile view'; mb.title = on ? 'Switch to desktop layout' : 'Switch to phone layout';
+  const mb = document.getElementById('mobileBtn'); mb.textContent = on ? 'Desktop' : '📱 Phone'; mb.title = on ? 'Switch to desktop layout' : 'Switch to phone layout';
   document.querySelectorAll('#sheetSeg button').forEach(x => x.classList.toggle('on', x.dataset.sheet===b.dataset.sheet));
 }
 document.getElementById('mobileBtn').onclick = () => { state.mobile = !isMobile(); save(); applyMobile(); refocus(); };
@@ -1775,9 +1834,10 @@ addEventListener('keydown', e => {
 });
 addEventListener('resize', () => { applyMobile(); refocus(); });
 
-applyBoard();
+rebuildSteps(); applyBoard();
 document.getElementById('boardSel').onchange = e => switchBoard(e.target.value);
-drawCar(); COMPS.forEach(drawComp); drawTerms();
+document.getElementById('powerSel').onchange = e => switchPower(e.target.value);
+drawCar(); COMPS.forEach(drawComp); drawTerms(); applyPowerVisibility();
 { const h = location.hash.slice(1).split(':'); // e.g. #explore, #learn:12, #sim:steer
   if (h[0]==='learn' && h[1]) state.i = Math.min(STEPS.length-1, +h[1]||0);
   if (h[0]==='sim' && h[1]) simTab = h[1];
