@@ -2,7 +2,7 @@
 // Board: ESP32-S3 DevKitC-1 or a classic ESP32 DevKit (pins picked automatically). Arduino-ESP32 core 2.x or 3.x.
 //
 // The ESP32 makes its own Wi-Fi network. Join it from your phone and open http://192.168.4.1.
-// Luka drives with the pedal; the Fwd/Rev and High/Low switches work like stock.
+// Luka drives with the pedal; Fwd/Rev, High/Low, Manual/RC and the power button work like stock.
 // Your phone overrides him: hold the throttle pad to drive, E-STOP to stop everything.
 // By default the pedal only works while your phone page is open (PEDAL_NEEDS_PHONE).
 // Steering stays manual (Luka steers) until the second driver arrives (stage 1).
@@ -30,7 +30,7 @@
 #define GARAGE_MODE 0
 #endif
 
-#define FW_VERSION "stage1a " __DATE__ " " __TIME__  // shows on /status, so you can tell which build is running
+#define FW_VERSION "stage1a-dash " __DATE__ " " __TIME__  // shows on /status, so you can tell which build is running
 
 // ---------------- pins (match the wiring tutorial) ----------------
 // One sketch, two boards: the right map is picked from the board you select in the IDE.
@@ -41,10 +41,11 @@ const int PIN_REAR_EN   = 6;   // R_EN + L_EN, 10k pull-down to GND on the drive
 const int PIN_MAX_DIN   = 11;  // MAX7219 DIN
 const int PIN_MAX_CLK   = 12;  // MAX7219 CLK
 const int PIN_MAX_CS    = 10;  // MAX7219 CS/LOAD
-const int PIN_PEDAL     = 13;  // pedal switch to GND
-const int PIN_FWD_REV   = 14;  // Fwd/Rev switch to GND
-const int PIN_HIGH_LOW  = 17;  // High/Low switch to GND
-const int PIN_MANUAL_RC = 18;  // Manual/RC switch to GND (leave unwired if the car has none)
+const int PIN_GO_FWD    = 13;  // dash ORANGE: closes to GND when pedal down + rocker Forward
+const int PIN_GO_REV    = 14;  // dash BLUE:   closes to GND when pedal down + rocker Reverse
+const int PIN_HIGH_LOW  = 17;  // dash YELLOW: closes to GND in turtle (slow)
+const int PIN_MANUAL_RC = 18;  // dash GREEN:  closes to GND in remote mode
+const int PIN_POWER_BTN = 8;   // dash WHITE (PINK goes to GND): closed = power button on
 #define BOARD_NAME "ESP32-S3"
 #elif defined(CONFIG_IDF_TARGET_ESP32)        // classic ESP32 DevKit (WROOM-32, DOIT V1 and clones)
 const int PIN_REAR_RPWM = 16;  // labeled RX2 on some 30-pin boards
@@ -53,10 +54,11 @@ const int PIN_REAR_EN   = 4;
 const int PIN_MAX_DIN   = 23;
 const int PIN_MAX_CLK   = 18;
 const int PIN_MAX_CS    = 5;
-const int PIN_PEDAL     = 32;
-const int PIN_FWD_REV   = 33;
-const int PIN_HIGH_LOW  = 19;
-const int PIN_MANUAL_RC = 21;
+const int PIN_GO_FWD    = 32;  // dash ORANGE
+const int PIN_GO_REV    = 33;  // dash BLUE
+const int PIN_HIGH_LOW  = 19;  // dash YELLOW
+const int PIN_MANUAL_RC = 21;  // dash GREEN
+const int PIN_POWER_BTN = 22;  // dash WHITE (PINK goes to GND)
 #define BOARD_NAME "classic ESP32"
 #else
 #error "Pin map is for ESP32-S3 or classic ESP32. Pick one of those boards in the IDE."
@@ -75,10 +77,12 @@ const uint32_t PWM_MAX       = (1u << PWM_BITS) - 1;
 
 // cockpit: "closed" = the switch connects the pin to GND. The phone page shows each switch
 // live, so flip these if a switch reads backwards.
+// On the McLaren the pedal and the Fwd/Rev rocker are chained inside the dash: the ESP32 sees one wire
+// for "go forward" (orange) and one for "go backward" (blue). The 7-wire dash plug maps straight onto pins.
 const bool  PEDAL_NEEDS_PHONE   = true;   // pedal works only while your phone page is connected (you're supervising)
-const bool  REVERSE_WHEN_CLOSED = true;   // Fwd/Rev: closed = reverse
-const bool  HIGH_WHEN_CLOSED    = true;   // High/Low: closed = high speed
-const bool  RC_ONLY_WHEN_CLOSED = true;   // Manual/RC: closed = parent only, pedal ignored
+const bool  USE_POWER_BUTTON    = true;   // dash power button off = car disabled (phone included), like stock
+const bool  HIGH_WHEN_CLOSED    = false;  // High/Low: closed = LOW (McLaren: yellow wire closes in turtle mode)
+const bool  RC_ONLY_WHEN_CLOSED = true;   // Manual/RC: closed = parent only, pedal ignored (McLaren: green wire closes in remote mode)
 const float LOW_GEAR_FACTOR     = 0.5f;   // Low = half of the max speed
 const float REVERSE_FACTOR      = 0.6f;   // reverse tops out slower than forward
 
@@ -115,9 +119,9 @@ struct Input {
     if (++count >= 3) { closed = now; count = 0; }
   }
 };
-Input inPedal{PIN_PEDAL}, inFwdRev{PIN_FWD_REV}, inHighLow{PIN_HIGH_LOW}, inMode{PIN_MANUAL_RC};
-bool pedalArmed = false;  // pedal must be seen released once after boot / e-stop before it can drive
-bool reverseSel = false, highSel = false, rcOnly = false;
+Input inGoFwd{PIN_GO_FWD}, inGoRev{PIN_GO_REV}, inHighLow{PIN_HIGH_LOW}, inMode{PIN_MANUAL_RC}, inPower{PIN_POWER_BTN};
+bool pedalArmed = false;  // pedal must be seen released once after boot / e-stop / power-on before it can drive
+bool pedalDown = false, reverseSel = false, highSel = false, rcOnly = false, powerOn = true;
 
 // ---------------- PWM (works on core 2.x and 3.x) ----------------
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
@@ -189,22 +193,26 @@ void updateTail(uint32_t now) {
 
 // ---------------- control loop ----------------
 void controlStep(uint32_t now, float dt) {
-  inPedal.update(); inFwdRev.update(); inHighLow.update(); inMode.update();
-  reverseSel = inFwdRev.closed == REVERSE_WHEN_CLOSED;
+  inGoFwd.update(); inGoRev.update(); inHighLow.update(); inMode.update(); inPower.update();
+  bool fwdReq = inGoFwd.closed && !inGoRev.closed, revReq = inGoRev.closed && !inGoFwd.closed;  // both at once = fault, ignore
+  pedalDown  = fwdReq || revReq;
+  reverseSel = revReq;
   highSel    = inHighLow.closed == HIGH_WHEN_CLOSED;
   rcOnly     = inMode.closed == RC_ONLY_WHEN_CLOSED;
-  if (!inPedal.closed && !estop) pedalArmed = true;
+  powerOn    = !USE_POWER_BUTTON || inPower.closed;
+  if (!powerOn) pedalArmed = false;
+  else if (!inGoFwd.closed && !inGoRev.closed && !estop) pedalArmed = true;
 
   bool linkOk = (now - lastCmdMs) < LINK_TIMEOUT_MS;
   bool phoneActive = linkOk && fabsf(throttle) > 0.02f;
   bool pedalAllowed = pedalArmed && !rcOnly && (!PEDAL_NEEDS_PHONE || linkOk);
   float t = 0;
   source = SRC_NONE;
-  if (estop) {
+  if (estop || !powerOn) {
     t = 0;
   } else if (phoneActive) {                       // parent overrides Luka
     t = throttle * maxDuty; source = SRC_PHONE;
-  } else if (inPedal.closed && pedalAllowed) {
+  } else if (pedalDown && pedalAllowed) {
     t = (reverseSel ? -1.0f : 1.0f) * maxDuty * (highSel ? 1.0f : LOW_GEAR_FACTOR); source = SRC_PEDAL;
   }
   if (t < 0) t *= REVERSE_FACTOR;
@@ -212,15 +220,15 @@ void controlStep(uint32_t now, float dt) {
   if (t != 0 && duty != 0 && ((t > 0) != (duty > 0))) t = 0;
   target = t;
 
-  if (estop) {
-    duty = 0;  // e-stop: outputs off immediately, the car coasts
+  if (estop || !powerOn) {
+    duty = 0;  // e-stop or power button off: outputs off immediately, the car coasts
   } else {
     bool speedingUp = fabsf(target) > fabsf(duty);
     float step = (speedingUp ? ACCEL_PER_S : DECEL_PER_S) * dt;
     float diff = target - duty;
     if (fabsf(diff) <= step) duty = target; else duty += (diff > 0 ? step : -step);
   }
-  enabled = !estop && (duty != 0 || target != 0);
+  enabled = !estop && powerOn && (duty != 0 || target != 0);
   driveOutputs();
   updateTail(now);
 }
@@ -261,7 +269,7 @@ document.getElementById('reset').onclick=()=>fetch('/reset');
 setInterval(async()=>{ if(busy) return; busy=true;
   try{ const r=await fetch(`/c?t=${Math.round(t*100)}&m=${mx.value}`,{cache:'no-store'}); const j=await r.json();
     stat.textContent = j.busy ? 'another phone is driving' : `speed ${j.d}%  ${j.s}  (${j.src})${j.e?'  E-STOP (press Reset)':''}`;
-    document.getElementById('sw').textContent = `pedal ${j.p?'PRESSED':'up'}${j.p&&!j.arm?' (release first)':''} | ${j.rev?'REV':'FWD'} | ${j.hi?'HIGH':'LOW'} | ${j.rc?'parent only':'Luka can drive'}`;
+    document.getElementById('sw').textContent = `power ${j.pw?'ON':'OFF'} | pedal ${j.p?(j.rev?'down REVERSE':'down FORWARD'):'up'}${j.p&&!j.arm?' (release first)':''} | ${j.hi?'HIGH':'LOW'} | ${j.rc?'parent only':'Luka can drive'}`;
   }catch(e){ stat.textContent='no link: car is stopping'; }
   busy=false; },100);
 </script></body></html>)rawliteral";
@@ -273,9 +281,9 @@ const char* sourceName() { return source == SRC_PHONE ? "phone" : source == SRC_
 void sendStatus(bool busy) {
   char buf[280];
   snprintf(buf, sizeof buf,
-           "{\"d\":%d,\"s\":\"%s\",\"e\":%s,\"busy\":%s,\"src\":\"%s\",\"p\":%d,\"arm\":%d,\"rev\":%d,\"hi\":%d,\"rc\":%d,\"fw\":\"%s\",\"board\":\"%s\"}",
+           "{\"d\":%d,\"s\":\"%s\",\"e\":%s,\"busy\":%s,\"src\":\"%s\",\"p\":%d,\"arm\":%d,\"rev\":%d,\"hi\":%d,\"rc\":%d,\"pw\":%d,\"fw\":\"%s\",\"board\":\"%s\"}",
            (int)lroundf(duty * 100), tailName(), estop ? "true" : "false", busy ? "true" : "false",
-           sourceName(), inPedal.closed, pedalArmed, reverseSel, highSel, rcOnly, FW_VERSION, BOARD_NAME);
+           sourceName(), pedalDown, pedalArmed, reverseSel, highSel, rcOnly, powerOn, FW_VERSION, BOARD_NAME);
   server.sendHeader("Cache-Control", "no-store");
   server.send(200, "application/json", buf);
 }
@@ -309,7 +317,7 @@ void setup() {
   pwmSetup(PIN_REAR_LPWM, CH_L);
   maxInit();
   maxShow(PAT_FULL, 15);
-  inPedal.begin(); inFwdRev.begin(); inHighLow.begin(); inMode.begin();
+  inGoFwd.begin(); inGoRev.begin(); inHighLow.begin(); inMode.begin(); inPower.begin();
 
   Serial.begin(115200);
 #if GARAGE_MODE
@@ -376,10 +384,9 @@ void loop() {
   static uint32_t lastLog = 0;
   if (millis() - lastLog > 500) {
     lastLog = millis();
-    Serial.printf("src %-5s throttle %+.2f target %+.2f duty %+.2f EN %d tail %-7s | pedal %d%s %s %s %s%s\n",
-                  sourceName(), throttle, target, duty, enabled, tailName(),
-                  inPedal.closed, (inPedal.closed && !pedalArmed) ? "(release first)" : "",
-                  reverseSel ? "REV" : "FWD", highSel ? "HIGH" : "LOW", rcOnly ? "parent-only" : "luka-ok",
-                  estop ? "  ESTOP" : "");
+    Serial.printf("src %-5s throttle %+.2f target %+.2f duty %+.2f EN %d tail %-7s | power %s pedal %s%s %s %s%s\n",
+                  sourceName(), throttle, target, duty, enabled, tailName(), powerOn ? "on" : "OFF",
+                  pedalDown ? (reverseSel ? "REV" : "FWD") : "up", (pedalDown && !pedalArmed) ? "(release first)" : "",
+                  highSel ? "HIGH" : "LOW", rcOnly ? "parent-only" : "luka-ok", estop ? "  ESTOP" : "");
   }
 }

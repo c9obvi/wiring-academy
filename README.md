@@ -39,11 +39,12 @@ The firmware builds for either board and picks its pins automatically. The wirin
 | Steering R_EN+L_EN | 27 | 16 | 10k pull-down; LOW = limp |
 | Steering pot wiper | 34 | 1 | ADC1, 100 nF to GND |
 | MAX7219 DIN / CLK / CS | 23 / 18 / 5 | 11 / 12 / 10 | hardware SPI pins |
-| Pedal / Fwd-Rev / High-Low / Manual-RC | 32 / 33 / 19 / 21 | 13 / 14 / 17 / 18 | INPUT_PULLUP, switch to GND |
+| Dash orange / blue / yellow / green | 32 / 33 / 19 / 21 | 13 / 14 / 17 / 18 | INPUT_PULLUP, switch to GND |
+| Dash white (power button; pink to GND) | 22 | 8 | INPUT_PULLUP |
 | (later) battery voltage | 35 | 2 | 100k/22k divider, ADC1 |
 
 Classic, avoid: 6–11 (flash) · 0, 2, 12, 15 (strapping) · 1/3 (USB serial) · 34–39 for switches (no pull-ups).
-S3, avoid: 0, 3, 45, 46 (strapping) · 19/20 (USB) · 43/44 (serial) · 35–37 (PSRAM on N8R8/N16R8) · the RGB LED pin (38 or 48). Spares: 8, 9, 21, 39–42, 47.
+S3, avoid: 0, 3, 45, 46 (strapping) · 19/20 (USB) · 43/44 (serial) · 35–37 (PSRAM on N8R8/N16R8) · the RGB LED pin (38 or 48). Spares: 9, 21, 39–42, 47.
 
 Power: battery+ → 20A fuse → switch → +12V bus → (rear B+, steering B+, 2A fuse → buck IN+). Battery− → GND bus → (rear B−, steering B−, buck IN−). Buck 5V → 3-port Wago → ESP32 5V and MAX7219 VCC. ESP32 3V3 → both driver VCC pins and the pot (via a breadboard rail).
 
@@ -56,11 +57,24 @@ Stock board: **JR1630RX-RM2-12V** (12V, max 20A load, 2.4 GHz remote). Everythin
 | Small 2-pin, top socket on the board's right edge | blue + brown | **Steering motor** (remote steering) | Unplugged it: everything still worked except remote steering |
 | Big white 2-pin | red (via the breaker box) + black | Battery feed to the board; becomes the new system's power source | Traced by hand |
 | Big white 2-pin ×2 | orange + white on one motor, red + black on the other | Rear motors | Seen in photos; which is left/right still to label |
-| Small multi-pin, bottom-left of the board | yellow, orange, blue, green, white, red, black… | Dash bundle: pedal, Fwd/Rev, High/Low, power button, dial | Seen; pin-by-pin map still to do |
+| Small 7-pin, bottom-left of the board | pink/red, white, green, black, orange, yellow, blue | **Dash plug** (full map below) | Multimeter, battery unplugged |
 
 Battery: its leads are sealed to the battery, so the battery plug is the only disconnect and the battery half of it is always live. Battery red → small black box (probably a self-resetting breaker; rating not read yet) → splits to the charge port and the board. Leave the box and the charge-port wire alone.
 
-Still unknown: the breaker's rating, the yellow tag text, the multi-pin wire order, what the round dash dial does, and whether the red power button carries main current.
+**Dash plug (mapped with a multimeter, battery unplugged):**
+
+| Wire | Connects to | When | ESP32 pin (classic / S3) |
+|---|---|---|---|
+| black | (common) | — | GND |
+| green | black | round dial on **remote** | 21 / 18 |
+| yellow | black | **turtle** (slow) | 19 / 17 |
+| orange | black | **pedal down + Forward** | 32 / 13 |
+| blue | black | **pedal down + Reverse** | 33 / 14 |
+| pink/red | white | **power button on** | pink → GND, white → 22 / 8 |
+
+The pedal has its own two brown wires that run into the dash and chain through the Fwd/Rev rocker, which is why the pedal never shows up on its own. The red power button is a low-current contact on this plug, not a main power switch.
+
+Still unknown: the breaker box's rating and the yellow tag text.
 
 ## Firmware must-haves
 

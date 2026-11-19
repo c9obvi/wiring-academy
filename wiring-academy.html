@@ -280,10 +280,11 @@ const COMPS = [
       T('IO16','l',.33,'GPIO16','GPIO16: steering driver ENABLE. A pull-down keeps steering limp while booting.'),
       T('IO15','l',.41,'GPIO15','GPIO15: steering LPWM (turn one way).'),
       T('IO7','l',.49,'GPIO7','GPIO7: steering RPWM (turn the other way).'),
-      T('IO13','l',.62,'GPIO13','GPIO13: accelerator pedal input (INPUT_PULLUP; LOW = pressed).'),
-      T('IO14','l',.70,'GPIO14','GPIO14: Forward/Reverse switch input.'),
-      T('IO17','l',.78,'GPIO17','GPIO17: High/Low speed switch input.'),
-      T('IO18','l',.86,'GPIO18','GPIO18: Manual/RC switch input.'),
+      T('IO13','l',.62,'GPIO13','GPIO13: dash ORANGE wire: pedal down + Forward (INPUT_PULLUP; LOW = go forward).'),
+      T('IO14','l',.70,'GPIO14','GPIO14: dash BLUE wire: pedal down + Reverse (LOW = go backward).'),
+      T('IO17','l',.78,'GPIO17','GPIO17: dash YELLOW wire: LOW = turtle (slow).'),
+      T('IO18','l',.86,'GPIO18','GPIO18: dash GREEN wire: LOW = remote mode (pedal ignored).'),
+      T('IO8','l',.94,'GPIO8','GPIO8: dash WHITE wire: LOW = power button on (pink goes to GND).'),
       T('5Vb','r',.05,'5V','Second 5V tap. The board has one 5V pin, so in real life split the buck\'s 5V lead with a 3-port Wago: one branch to the ESP32 5V pin, one to the tail light.'),
       T('GNDb','r',.13,'GND','Ground (same node as every other GND).'),
       T('3V3b','r',.21,'3V3','3.3V (the S3 board has two 3V3 pins). With several 3.3V loads, run 3V3 to a breadboard power rail and tap from there.'),
@@ -305,12 +306,16 @@ const COMPS = [
     terms:[T('1','b',.2,'3V3','Outer leg, to 3.3V. Not 5V: the ESP32 ADC tops out around 3.1V.'),
            T('w','b',.5,'W','Middle leg (wiper). Its voltage is the steering angle; goes to an ADC pin.'),
            T('3','b',.8,'GND','Outer leg, to ground.')]},
-  {id:'ped', kind:'pedal', x:395, y:388, w:100, h:62, title:'Foot pedal', sub:'just a switch',
-    terms:[T('s','b',.3,'SIG','Pedal contact 1, to a GPIO input.'), T('g','b',.72,'GND','Pedal contact 2, to ground.')]},
-  {id:'dash', kind:'dash', x:330, y:490, w:360, h:64, title:'Dash switches', sub:'',
-    terms:[T('fr.s','b',.08,'S','Fwd/Rev switch, signal side.'), T('fr.g','b',.18,'G','Fwd/Rev switch, ground side.'),
-           T('hl.s','b',.43,'S','High/Low switch, signal side.'), T('hl.g','b',.53,'G','High/Low switch, ground side.'),
-           T('mr.s','b',.79,'S','Manual/RC switch, signal side.'), T('mr.g','b',.89,'G','Manual/RC switch, ground side.')]},
+  {id:'ped', kind:'pedal', x:395, y:388, w:100, h:62, title:'Foot pedal', sub:'via the dash',
+    terms:[]},
+  {id:'dash', kind:'dash', x:330, y:490, w:360, h:78, title:'Dash plug', sub:'7 wires',
+    terms:[T('pnk','b',.08,'PNK','Pink/red: one side of the power button. Goes to GND.'),
+           T('wht','b',.22,'WHT','White: other side of the power button. Connects to pink when the button is on.'),
+           T('grn','b',.36,'GRN','Green: connects to black in REMOTE mode (the round dial).'),
+           T('blk','b',.50,'BLK','Black: the common for green, yellow, orange and blue. Goes to GND.'),
+           T('org','b',.64,'ORG','Orange: connects to black when the pedal is down AND the rocker is in Forward.'),
+           T('yel','b',.78,'YEL','Yellow: connects to black in TURTLE (slow) mode.'),
+           T('blu','b',.92,'BLU','Blue: connects to black when the pedal is down AND the rocker is in Reverse.')]},
   {id:'drv1', kind:'driver', x:395, y:1100, w:230, h:120, title:'BTS7960 #1', sub:'rear drive driver',
     terms:[...HDR('t'),
            T('B+','l',.35,'B+','Power input +12V (thick wire from the +12V bus).'), T('B-','l',.72,'B−','Power input ground (thick wire from the GND bus).'),
@@ -537,26 +542,34 @@ sim(6,'sim-drive','Drive + tail light simulator',
  '<p>This is how the firmware should behave once everything is in: soft-start ramps, direction changes only at zero speed, and the tail light state machine. Hold the pedal (or press <span class="kbd">Space</span>), then let go and watch the brake light.</p>','drive',['esp','drv1','max']);
 
 /* ---------- Phase 7 ---------- */
-check(7,'harness','Disconnect the cockpit from 12V first',
- `<p>The stock car runs 12V through the pedal and switches. In the new design they carry only tiny ESP32 signals.</p>`,
- ['The pedal and every dash switch are <b>fully disconnected from the stock 12V harness</b>. 12V on any ESP32 pin destroys it instantly.',
-  'If the Fwd/Rev shifter has <b>thick wires going to the motors</b>, it was switching motor power directly. Those wires are bypassed now; you only reuse the switch as a signal.',
-  'Continuity test on the multimeter: pedal pressed = beep, released = silent. Same for each switch position.'], ['ped','dash']);
-wire(7,'c1','ped.s','esp.IO13','wht',3,'sig','Pedal → GPIO13',
- 'One pedal contact to GPIO13. Run 18 AWG from the cockpit and solder a female jumper end on for the ESP32 side.',
- 'Firmware uses INPUT_PULLUP: the pin floats HIGH through an internal resistor, and pressing the pedal pulls it to ground (LOW). A broken wire reads as "not pressed," so it fails safe.');
-wire(7,'c2','esp.GND','ped.g','blk',3,'gnd','GND → pedal',
- 'The other pedal contact to a GND pin.', 'This ground also starts a daisy chain through the dash switches.');
-wire(7,'c3','dash.fr.s','esp.IO14','pnk',3,'sig','Fwd/Rev → GPIO14',
- 'Fwd/Rev switch signal side to GPIO14.',
- 'All four input pins have internal pull-ups and stay clear of the S3\'s special pins: 0, 3, 45, 46 (boot strapping) and 19/20 (USB).');
-wire(7,'c4','dash.hl.s','esp.IO17','pnk',3,'sig','High/Low → GPIO17', 'High/Low switch signal side to GPIO17.', 'Firmware reads it and caps max duty (for example 50% on Low).');
-wire(7,'c5','dash.mr.s','esp.IO18','pnk',3,'sig','Manual/RC → GPIO18', 'Manual/RC switch signal side to GPIO18.', 'Lets you lock the car into parent-only control if you want.');
-wire(7,'c6','ped.g','dash.fr.g','blk',3,'gnd','Ground daisy chain → Fwd/Rev', 'Short black jumper from the pedal\'s ground contact to the Fwd/Rev switch\'s ground side.',
- 'Daisy-chaining: one ground wire runs to the cockpit and hops switch to switch, instead of four separate wires going back to the ESP32.');
-wire(7,'c7','dash.fr.g','dash.hl.g','blk',3,'gnd','Ground chain → High/Low', 'Jumper from Fwd/Rev ground to High/Low ground.', 'Same ground, next switch.');
-wire(7,'c8','dash.hl.g','dash.mr.g','blk',3,'gnd','Ground chain → Manual/RC', 'Jumper from High/Low ground to Manual/RC ground.', 'Every cockpit switch now pulls its GPIO to ground when closed.',
- {tip:'Long wires near motors pick up noise. Add a 100 nF capacitor from each input to GND at the ESP32, and debounce in firmware (20–50 ms).'});
+check(7,'harness','The dash is one 7-wire plug',
+ `<p>On this car the pedal and every dash switch arrive on <b>one 7-wire plug</b> that used to go into the stock board. The pedal's two brown wires run into the dash and chain through the Fwd/Rev rocker, so you never touch the pedal or open the dash: you splice the 7 plug wires to jumpers.</p>`,
+ ['The 7-wire dash plug is <b>unplugged from the stock board</b>. Its colours: pink/red, white, green, black, orange, yellow, blue.',
+  'The <b>battery is unplugged</b> for all of this. Once the stock board is out, nothing in this plug carries 12V: they are plain switch contacts.',
+  'Multimeter check (continuity): black–orange beeps with the pedal down in Forward; black–blue with the pedal down in Reverse; black–yellow in turtle; black–green in remote; pink–white with the power button on.'], ['ped','dash']);
+wire(7,'c1','dash.org','esp.IO13','org',3,'sig','Orange (pedal + Forward) → GPIO13',
+ 'Splice the orange wire to a female jumper, heat-shrink it, and plug onto GPIO13.',
+ 'Inside the dash the pedal and the Fwd/Rev rocker are chained: orange only connects to black when the pedal is down <b>and</b> the rocker is in Forward. The firmware reads that as "go forward". A broken wire reads as "not pressed", so it fails safe.');
+wire(7,'c2','dash.blu','esp.IO14','blu',3,'sig','Blue (pedal + Reverse) → GPIO14',
+ 'Splice the blue wire to a female jumper and plug onto GPIO14.',
+ 'Blue connects to black when the pedal is down in Reverse. Orange = go forward, blue = go backward; if both ever read on at once, the firmware treats it as a fault and does nothing.');
+wire(7,'c3','dash.yel','esp.IO17','yel',3,'sig','Yellow (turtle) → GPIO17',
+ 'Splice yellow to a jumper and plug onto GPIO17.',
+ 'Yellow connects to black in turtle mode. The firmware then caps speed at half of the max.');
+wire(7,'c4','dash.grn','esp.IO18','grn',3,'sig','Green (remote mode) → GPIO18',
+ 'Splice green to a jumper and plug onto GPIO18.',
+ 'Green connects to black when the round dial is on remote. The firmware then ignores the pedal and only your phone drives. All the input pins have internal pull-ups and stay clear of the S3\'s special pins: 0, 3, 45, 46 (boot strapping) and 19/20 (USB).');
+wire(7,'c5','dash.blk','esp.GND','blk',3,'gnd','Black → GND',
+ 'Splice black to a jumper and plug onto a GND pin.',
+ 'Black is the common for orange, blue, yellow and green: each of those switches connects its wire to black. With black on ground, a closed switch pulls its GPIO LOW.');
+wire(7,'c6','dash.pnk','esp.GNDb','pnk',3,'gnd','Pink/red → GND',
+ 'Splice pink/red to a jumper and plug onto another GND pin.',
+ 'The power button connects pink to white. Putting pink on ground means white reads LOW whenever the button is on.',
+ {warn:'In the stock car this wire may have carried supply voltage from the old board. Wired to the ESP32 it is only a switch contact. Never plug it back into the stock board while it is also connected to the ESP32.'});
+wire(7,'c7','dash.wht','esp.IO8','wht',3,'sig','White (power button) → GPIO8',
+ 'Splice white to a jumper and plug onto GPIO8.',
+ 'Power button off = the firmware disables the car, your phone included, just like stock. When it comes back on, Luka has to let go of the pedal before it drives.',
+ {tip:'Long wires near motors pick up noise. Add a 100 nF capacitor from each input to GND at the ESP32; the firmware also debounces every input (30 ms).'});
 
 /* ---------- Phase 8 ---------- */
 info(8,'p8-intro','Phase 8: steering by wire',
@@ -620,8 +633,8 @@ try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = {...state,
 const BOARDS = {
   classic: {short:'ESP32', sub:'classic DevKit · WROOM-32', can:'ESP32-WROOM-32', usb:[[-14,'USB']], fiveV:'VIN/5V',
     part:'Classic ESP32 DevKit (your CP2102 board)',
-    map:{4:16, 5:17, 6:4, 7:25, 15:26, 16:27, 1:34, 11:23, 12:18, 10:5, 13:32, 14:33, 17:19, 18:21, 2:35},
-    spare:'GPIO13, 14, 22, 2 (14 pulses at boot: not for motors)',
+    map:{4:16, 5:17, 6:4, 7:25, 15:26, 16:27, 1:34, 11:23, 12:18, 10:5, 13:32, 14:33, 17:19, 18:21, 2:35, 8:22},
+    spare:'GPIO13, 14, 2 (14 pulses at boot: not for motors)',
     note:'Pins are for a classic ESP32 DevKit (WROOM-32, DOIT V1 and clones). Go by the printed labels: GPIO16/17 may be printed RX2/TX2, and 5V may be printed VIN. Avoid 6–11 (flash), 0, 2, 12, 15 (strapping) and 1/3 (USB serial).',
     text:[
       [`3.3V (the S3 board has two 3V3 pins). With several 3.3V loads, run 3V3 to a breadboard power rail and tap from there.`,
@@ -632,8 +645,8 @@ const BOARDS = {
       [`Pins to avoid on the S3: <b>0, 3, 45, 46</b> (boot strapping), <b>19/20</b> (USB), <b>43/44</b> (serial), <b>35–37</b> (PSRAM on N8R8/N16R8 boards) and the on-board RGB LED pin (38 or 48).`,
        `Pins to avoid on the classic ESP32: <b>6–11</b> (wired to the flash chip), <b>0, 2, 12, 15</b> (boot strapping), <b>1/3</b> (USB serial), and <b>34–39</b> for switches (input-only, no pull-ups). If the metal can says <b>WROVER</b>, GPIO#16/17 are used by PSRAM: use GPIO#13 and GPIO#22 for the rear PWM instead.`],
       [`GPIO11/12/10 are the S3's default hardware SPI (FSPI) pins`, `GPIO#23/18/5 are the classic ESP32's hardware SPI (VSPI) pins`],
-      [`All four input pins have internal pull-ups and stay clear of the S3's special pins: 0, 3, 45, 46 (boot strapping) and 19/20 (USB).`,
-       `All four input pins have internal pull-ups. GPIO#34–39 can't be used for switches, because they have none.`],
+      [`All the input pins have internal pull-ups and stay clear of the S3's special pins: 0, 3, 45, 46 (boot strapping) and 19/20 (USB).`,
+       `All the input pins have internal pull-ups. GPIO#34–39 can't be used for switches, because they have none.`],
       [`The ESP32-S3 only speaks Bluetooth Low Energy, so use an <b>Xbox Wireless controller</b> (Series X|S, or Xbox One with updated firmware) or another BLE pad. PlayStation controllers won't pair with an S3.`,
        `The classic ESP32 has full Bluetooth, so PS3/PS4/PS5, Xbox, Switch Pro and 8BitDo controllers all pair.`],
       [`<b>Board: the long ESP32-S3 (DevKitC-1 style) runs the car.</b> Pins are remapped for it. The small S3 doesn't have enough free pins for all 14 signals. The S3 only pairs with BLE gamepads: an Xbox Wireless controller works, PlayStation doesn't.`,
@@ -642,7 +655,7 @@ const BOARDS = {
     ]},
   s3: {short:'ESP32-S3', sub:'DevKitC-1 · the long board', can:'ESP32-S3-WROOM-1', usb:[[-38,'COM'],[10,'USB']], fiveV:'5V',
     part:'ESP32-S3 (the long board)', map:null, text:[],
-    spare:'GPIO8, 9, 21, 39–42, 47',
+    spare:'GPIO9, 21, 39–42, 47',
     note:'Pins are for the ESP32-S3 DevKitC-1 (the long board). Go by the printed labels. Avoid 0, 3, 45, 46 (strapping), 19/20 (USB), 43/44 (serial) and 35–37 (PSRAM).'},
 };
 { const q = new URLSearchParams(location.search); if (BOARDS[q.get('board')]) state.board = q.get('board');
@@ -795,13 +808,15 @@ function drawComp(c){
     case 'pedal':
       body('#263238','#90a4ae',10);
       el('rect', {x:x+14, y:y+8, width:w-28, height:12, rx:5, fill:'#546e7a'}, g);
-      title(c.title, y+33, 12.5);
+      title(c.title, y+28, 12.5); sub(c.sub, y+44);
+      el('path', {d:`M${x+w/2},${y+h} L${x+w/2},490`, stroke:'#a1887f', 'stroke-width':3, 'stroke-dasharray':'5 4', fill:'none'}, g);
+      txt(g, x+w/2+8, y+h+26, 'brown wires', {'font-size':10, fill:'#a1887f'});
       break;
     case 'dash': {
       body('#1c252e','#78909c',10);
-      const sws = [['FWD/REV',.13],['HI/LO',.48],['MAN/RC',.84]];
+      const sws = [['FWD/REV',.14],['🐢/🐇',.38],['MAN/RC',.62],['POWER',.86]];
       for (const [n,f] of sws){ const cx = x+w*f; el('rect', {x:cx-16, y:y+10, width:32, height:20, rx:4, fill:'#37474f', stroke:'#b0bec5'}, g); el('rect', {x:cx-3, y:y+12, width:6, height:16, rx:2, fill:'#eceff1'}, g); txt(g, cx, y+44, n, {'font-size':10.5, fill:'#cfd8dc', 'text-anchor':'middle', 'font-weight':700}); }
-      txt(g, x+w+8, y+18, 'Dash', {'font-size':12, 'font-weight':700, fill:'#fff'}); txt(g, x+w+8, y+32, 'switches', {'font-size':12, 'font-weight':700, fill:'#fff'});
+      txt(g, x+w+8, y+18, 'Dash plug', {'font-size':12, 'font-weight':700, fill:'#fff'}); txt(g, x+w+8, y+32, '7 wires', {'font-size':11, fill:'#b0bec5'});
       break; }
     case 'matrix': {
       body('#0d47a1','#64b5f6',6);
@@ -1012,7 +1027,7 @@ function focusStep(overview){
 function svgPoint(e){ const p = svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
 function zoomAt(f, cx, cy){ cancelAnimationFrame(tween); tweenGen++; const w = Math.min(Math.max(vb.w*f, 150), 3000), h = w/(vb.w/vb.h); setVB({x:cx-(cx-vb.x)*(w/vb.w), y:cy-(cy-vb.y)*(h/vb.h), w, h}); }
 svg.addEventListener('wheel', e => { e.preventDefault(); const p = svgPoint(e); zoomAt(Math.exp(e.deltaY*0.0015), p.x, p.y); }, {passive:false});
-let pan = null, pinch = null, lastPinchEnd = 0;
+let pan = null, pinch = null, lastPinchEnd = -Infinity;
 const ptrs = new Map();
 const tapRadius = () => isMobile() ? 30 : 0;   // px: on a phone, a tap picks the nearest terminal within this distance
 // Phone: turn a tap into a terminal. If the two nearest terminals are too close together for a finger
@@ -1330,13 +1345,13 @@ function renderPins(){
   ${[...[['GPIO4','Rear RPWM (forward)','PWM out (LEDC ~20 kHz)'],['GPIO5','Rear LPWM (reverse)','PWM out'],['GPIO6','Rear R_EN+L_EN','Digital out, 10k pull-down'],
      ['GPIO7','Steering RPWM','PWM out'],['GPIO15','Steering LPWM','PWM out'],['GPIO16','Steering R_EN+L_EN','Digital out, 10k pull-down'],['GPIO1','Steering pot wiper','ADC1 in'],
      ['GPIO11','MAX7219 DIN','FSPI MOSI'],['GPIO12','MAX7219 CLK','FSPI SCK'],['GPIO10','MAX7219 CS','FSPI CS'],
-     ['GPIO13','Pedal','INPUT_PULLUP (LOW = pressed)'],['GPIO14','Fwd/Rev','INPUT_PULLUP'],['GPIO17','High/Low','INPUT_PULLUP'],['GPIO18','Manual/RC','INPUT_PULLUP'],
+     ['GPIO13','Dash orange: pedal + Forward','INPUT_PULLUP (LOW = go)'],['GPIO14','Dash blue: pedal + Reverse','INPUT_PULLUP'],['GPIO17','Dash yellow: turtle','INPUT_PULLUP'],['GPIO18','Dash green: remote mode','INPUT_PULLUP'],['GPIO8','Dash white: power button (pink to GND)','INPUT_PULLUP'],
      ['GPIO2','(later) battery voltage, 100k/22k divider','ADC1 in']].map(r=>[bt(r[0]), r[1], bt(r[2])]), [BOARD().spare,'Spare','']].map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td class="meta">${r[2]}</td></tr>`).join('')}
   </table><p class="meta">${BOARD().note}</p></div>
   <div class="card"><h2>Firmware pin map</h2><p class="meta">The firmware already contains both maps and picks this one automatically when built for this board.</p><pre style="white-space:pre-wrap;font-size:12px;background:#0f1720;padding:10px;border-radius:8px;border:1px solid var(--line)">// McLaren ECU pins (${BOARD().short}, ${BOARD().sub})
 ${[['REAR_RPWM',4,''],['REAR_LPWM',5,''],['REAR_EN',6,'HIGH = enabled, 10k pull-down'],['STEER_RPWM',7,''],['STEER_LPWM',15,''],['STEER_EN',16,'LOW = limp (manual steering)'],
-   ['STEER_POT',1,'ADC1'],['MAX_DIN',11,'SPI MOSI'],['MAX_CLK',12,'SPI SCK'],['MAX_CS',10,'SPI CS'],['PEDAL',13,'INPUT_PULLUP, LOW = pressed'],['FWD_REV',14,''],
-   ['HIGH_LOW',17,''],['MANUAL_RC',18,''],['VBAT',2,'later: 100k/22k divider, ADC1']].map(([n,p,c])=>`#define PIN_${n.padEnd(11)}${String(pinOf(p)).padStart(2)}${c?'   // '+c:''}`).join('\n')}</pre></div>`;
+   ['STEER_POT',1,'ADC1'],['MAX_DIN',11,'SPI MOSI'],['MAX_CLK',12,'SPI SCK'],['MAX_CS',10,'SPI CS'],['GO_FWD',13,'dash orange: pedal + Forward'],['GO_REV',14,'dash blue: pedal + Reverse'],
+   ['HIGH_LOW',17,'dash yellow: turtle'],['MANUAL_RC',18,'dash green: remote'],['POWER_BTN',8,'dash white (pink to GND)'],['VBAT',2,'later: 100k/22k divider, ADC1']].map(([n,p,c])=>`#define PIN_${n.padEnd(11)}${String(pinOf(p)).padStart(2)}${c?'   // '+c:''}`).join('\n')}</pre></div>`;
   panel.innerHTML = h;
   panel.querySelectorAll('[data-real]').forEach(c => c.onchange = () => { state.real[c.dataset.real] = c.checked; save(); });
 }
@@ -1396,8 +1411,8 @@ const GROUPS = {
            what:'3.3V logic power, the enable pin with its 10k pull-down, and the two PWM wires.'},
   tail:   {name:'Tail light matrix', wires:rng('t',1,5), parts:['max'],
            what:'5V power plus three data wires to the MAX7219.'},
-  cockpit:{name:'Pedal & dash switches', wires:rng('c',1,8), parts:['kit','wire','shrink'],
-           what:'The stock pedal and switches become plain inputs. This is what keeps the car driving like stock for the driver.'},
+  cockpit:{name:'Dash plug (pedal & switches)', wires:rng('c',1,7), parts:['kit','wire','shrink'],
+           what:'Seven wires from the stock dash plug, each spliced to a jumper: orange and blue (pedal + Forward/Reverse), yellow (turtle), green (remote mode), pink and white (power button) and black (ground). No need to open the dash.'},
   steer:  {name:'Steering motor → driver #2', wires:rng('s',1,11), parts:['bts2'],
            what:'Remote steering like the stock remote: push the stick, the wheels turn. Without the sensor it works the way the stock board did (no position feedback), just with soft starts instead of slams.'},
   pot:    {name:'Steering position sensor', wires:rng('s',12,14), parts:['pot','bracket'],

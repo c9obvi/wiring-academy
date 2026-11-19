@@ -40,7 +40,7 @@ The firmware supports two boards and picks the right pins automatically when you
 | Rear RPWM / LPWM | **16 / 17** (may be printed RX2 / TX2) | 4 / 5 |
 | Rear enable (R_EN + L_EN) | **4** | 6 |
 | Tail light DIN / CLK / CS | **23 / 18 / 5** | 11 / 12 / 10 |
-| Pedal / Fwd-Rev / High-Low / Manual-RC | **32 / 33 / 19 / 21** | 13 / 14 / 17 / 18 |
+| Dash plug: orange / blue / yellow / green / white | **32 / 33 / 19 / 21 / 22** | 13 / 14 / 17 / 18 / 8 |
 | Steering RPWM / LPWM / enable (stage 1) | **25 / 26 / 27** | 7 / 15 / 16 |
 | Steering pot (stage 2) | **34** | 1 |
 | 5V in | **VIN** (or 5V) | 5V |
@@ -75,13 +75,14 @@ Heavy wires: 14 AWG (red to +, black to −). Everything else: 18 AWG or jumpers
 | ESP32 **GPIO11** | MAX7219 **DIN** | jumper |
 | ESP32 **GPIO12** | MAX7219 **CLK** | jumper |
 | ESP32 **GPIO10** | MAX7219 **CS** | jumper |
-| Pedal contact 1 | ESP32 **GPIO13** | 18 AWG from the cockpit, female jumper end |
-| Fwd/Rev switch, one side | ESP32 **GPIO14** | 18 AWG |
-| High/Low switch, one side | ESP32 **GPIO17** | 18 AWG |
-| Manual/RC switch, one side (if the car has one) | ESP32 **GPIO18** | 18 AWG |
-| Other side of the pedal and every switch | ESP32 **GND** (daisy-chain one ground wire) | 18 AWG |
+| Dash plug **orange** (pedal + Forward) | ESP32 **GPIO13** | splice to a female jumper |
+| Dash plug **blue** (pedal + Reverse) | ESP32 **GPIO14** | jumper |
+| Dash plug **yellow** (turtle) | ESP32 **GPIO17** | jumper |
+| Dash plug **green** (remote mode) | ESP32 **GPIO18** | jumper |
+| Dash plug **white** (power button) | ESP32 **GPIO8** | jumper |
+| Dash plug **black** and **pink/red** | ESP32 **GND** (two GND pins) | jumpers |
 
-**Before wiring the cockpit:** cut the pedal and switches completely off the stock 12V harness. 12V on any ESP32 pin kills it. If the Fwd/Rev shifter has thick wires running to the motors, it was switching motor power directly; bypass those and use only the switch itself.
+**The dash on this car is one 7-wire plug** that went into the stock board. The pedal's brown wires run into the dash and chain through the Fwd/Rev rocker, so the ESP32 sees "go forward" (orange) and "go backward" (blue) directly. Unplug the dash plug from the stock board and splice each of its 7 wires to a jumper; you never open the dash. With the stock board out, nothing in that plug carries 12V.
 
 The interactive tutorial (`../wiring-academy.html`) walks through each of these with pictures. In the page's **Build stages** tab, this is **Stage 1a** (press Play to watch it go in).
 
@@ -117,9 +118,11 @@ Do steps 1–4 with the ESP32 on USB and nothing else connected. The tail light 
 
 With the ESP32 on USB and the cockpit wired, join the car's Wi-Fi and open the page. The grey line under the speed shows each switch live:
 
-`pedal PRESSED | FWD | LOW | Luka can drive`
+`power ON | pedal down FORWARD | HIGH | Luka can drive`
 
-Press the pedal and flip each switch, and watch it change. If one reads backwards (for example it says REV when the shifter is in forward), flip its setting at the top of the sketch: `REVERSE_WHEN_CLOSED`, `HIGH_WHEN_CLOSED` or `RC_ONLY_WHEN_CLOSED`. With no motor power connected, it's completely safe.
+Press the pedal in Forward and in Reverse, flip rabbit/turtle, turn the dial and press the power button, and watch it change. The settings already match what the multimeter showed on this car (yellow closes in turtle, green closes in remote). If anything reads backwards, flip `HIGH_WHEN_CLOSED` or `RC_ONLY_WHEN_CLOSED` at the top of the sketch. With no motor power connected, it's completely safe.
+
+**Power button off = car disabled,** phone included, like stock. If you test before wiring the dash plug, the page will say `power OFF`. Set `USE_POWER_BUTTON = false` to test without it.
 
 ## First drive test
 
@@ -136,11 +139,12 @@ Press the pedal and flip each switch, and watch it change. If one reads backward
 ## Safety built into the firmware
 
 - Motors are disabled before anything else runs at boot, and the 10k pull-down holds them off while the board starts.
-- A pedal held down at boot, or after an E-STOP, is ignored until Luka lets go once.
+- A pedal held down at boot, after an E-STOP, or when the power button comes on, is ignored until Luka lets go once.
+- Orange and blue on at the same time (a wiring fault) is ignored.
 - Your phone always beats the pedal. Set `PEDAL_NEEDS_PHONE = false` only when you want it to drive with no phone at all, like stock.
 - Speed is capped at 30% by default. The phone slider goes up to 80%, and `HARD_MAX_DUTY` is the ceiling the phone can't exceed.
 - Soft-start and soft-stop ramps. Forward/reverse changes only happen at zero speed.
 - No command from the phone for 0.5 s → ramp to stop. Letting go of the pad, locking the phone, or leaving the page → stop.
 - Only one phone can drive at a time. E-STOP works from any phone.
 
-Tuning knobs are at the top of the sketch: `DEFAULT_MAX_DUTY`, `ACCEL_PER_S`, `DECEL_PER_S`, `INVERT_DRIVE`, `LOW_GEAR_FACTOR`, `REVERSE_FACTOR`, the switch polarity flags, and the matrix flip flags.
+Tuning knobs are at the top of the sketch: `DEFAULT_MAX_DUTY`, `ACCEL_PER_S`, `DECEL_PER_S`, `INVERT_DRIVE`, `LOW_GEAR_FACTOR`, `REVERSE_FACTOR`, the switch polarity flags, `USE_POWER_BUTTON`, and the matrix flip flags.
