@@ -94,7 +94,7 @@ Firmware updates don't need a laptop at the car. In garage mode the car joins yo
 
 1. Edit `mclaren_ecu/secrets.h` (on this Mac, gitignored). Fill in your home Wi-Fi name and password and uncomment those two lines. `OTA_PASSWORD` is already set. **Wi-Fi names are case-sensitive**, and the classic ESP32 only sees 2.4 GHz networks. If it can't connect, the serial log says which of those it is.
 2. Flash once over USB (below). After that, updates go over Wi-Fi while the car sits in the garage, as long as your home Wi-Fi reaches it.
-3. `http://mclaren.local/status` shows live state (speed, pedal, switches, firmware build, board) from any computer on your home network.
+3. **`http://mclaren.local`** on your home Wi-Fi opens the **telemetry dashboard**: a lamp for each dash control, the drive output, phone and Wi-Fi links, system health (including whether the last restart was a brownout), and a live event log. It's view-only; the only button is E-STOP. On the car's own Wi-Fi the same address is the driving page. Raw data: `/telemetry`.
 
 Safety stays the same: **driving and E-STOP reset only work from the car's own Wi-Fi** (your phone). Home-network devices can read status and press E-STOP, but can't drive. Starting an update forces the motors off first.
 
