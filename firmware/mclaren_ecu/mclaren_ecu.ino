@@ -31,7 +31,7 @@
 #define GARAGE_MODE 0
 #endif
 
-#define FW_VERSION "stage1a-tabs " __DATE__ " " __TIME__  // shows on /status, so you can tell which build is running
+#define FW_VERSION "stage1a-test " __DATE__ " " __TIME__  // shows on /status, so you can tell which build is running
 
 // ---------------- pins (match the wiring tutorial) ----------------
 // One sketch, two boards: the right map is picked from the board you select in the IDE.
@@ -80,7 +80,10 @@ const uint32_t PWM_MAX       = (1u << PWM_BITS) - 1;
 // live, so flip these if a switch reads backwards.
 // On the McLaren the pedal and the Fwd/Rev rocker are chained inside the dash: the ESP32 sees one wire
 // for "go forward" (orange) and one for "go backward" (blue). The 7-wire dash plug maps straight onto pins.
-const bool  PEDAL_NEEDS_PHONE   = true;   // pedal works only while your phone page is connected (you're supervising)
+// TEST MODE (bench testing): the pedal works without a phone, and the home Wi-Fi can drive, reset and run tests.
+// The dashboard shows a banner while it's on. Set false before anyone rides.
+const bool  TEST_MODE           = true;
+const bool  PEDAL_NEEDS_PHONE   = !TEST_MODE;   // normal use: pedal works only while your phone page is connected (you're supervising)
 const bool  USE_POWER_BUTTON    = true;   // dash power button off = car disabled (phone included), like stock
 const bool  HIGH_WHEN_CLOSED    = false;  // High/Low: closed = LOW (McLaren: yellow wire closes in turtle mode)
 const bool  RC_ONLY_WHEN_CLOSED = true;   // Manual/RC: closed = parent only, pedal ignored (McLaren: green wire closes in remote mode)
@@ -88,6 +91,8 @@ const float LOW_GEAR_FACTOR     = 0.5f;   // Low = half of the max speed
 const float REVERSE_FACTOR      = 0.6f;   // reverse tops out slower than forward
 
 // tail light orientation, flip if the arrow points the wrong way once mounted
+const uint8_t TAIL_BRIGHT = 5;   // 0-15. Full (15) on all 64 LEDs pulls ~350 mA, enough to brown out a USB-powered ESP32
+const uint8_t TAIL_DIM    = 2;
 const bool MATRIX_FLIP_ROWS = false;
 const bool MATRIX_FLIP_COLS = false;
 
@@ -134,7 +139,7 @@ const char* resetReasonName() {
   }
 }
 
-enum TailState { TAIL_STOPPED, TAIL_SLOWING, TAIL_FWD, TAIL_REV };
+enum TailState { TAIL_STOPPED, TAIL_SLOWING, TAIL_FWD, TAIL_REV, TAIL_OFF };
 TailState tail = TAIL_STOPPED;
 enum Source { SRC_NONE, SRC_PHONE, SRC_PEDAL };
 Source source = SRC_NONE;
@@ -207,7 +212,8 @@ const uint8_t PAT_OFF[8]  = {0, 0, 0, 0, 0, 0, 0, 0};
 void updateTail(uint32_t now) {
   static int lastKey = -1;
   TailState s;
-  if (fabsf(duty) < 0.01f) s = TAIL_STOPPED;
+  if (!powerOn && fabsf(duty) < 0.01f) s = TAIL_OFF;   // car switched off: light off, like a real car
+  else if (fabsf(duty) < 0.01f) s = TAIL_STOPPED;
   else if (fabsf(target) < fabsf(duty) - 0.02f) s = TAIL_SLOWING;
   else s = duty > 0 ? TAIL_FWD : TAIL_REV;
   tail = s;
@@ -216,10 +222,11 @@ void updateTail(uint32_t now) {
   if (key == lastKey) return;  // only talk to the chip when the picture changes
   lastKey = key;
   switch (s) {
-    case TAIL_STOPPED: maxShow(PAT_FULL, 15); break;
-    case TAIL_SLOWING: maxShow(flickerOn ? PAT_FULL : PAT_OFF, 15); break;
-    case TAIL_FWD:     maxShow(PAT_UP, 3); break;
-    case TAIL_REV:     maxShow(PAT_DOWN, 3); break;
+    case TAIL_STOPPED: maxShow(PAT_FULL, TAIL_BRIGHT); break;
+    case TAIL_SLOWING: maxShow(flickerOn ? PAT_FULL : PAT_OFF, TAIL_BRIGHT); break;
+    case TAIL_FWD:     maxShow(PAT_UP, TAIL_DIM); break;
+    case TAIL_REV:     maxShow(PAT_DOWN, TAIL_DIM); break;
+    case TAIL_OFF:     maxShow(PAT_OFF, 0); break;
   }
 }
 
@@ -322,7 +329,7 @@ setInterval(async()=>{ if(busy) return; busy=true;
 </script></body></html>)rawliteral";
 
 const char* tailName() {
-  switch (tail) { case TAIL_STOPPED: return "stopped"; case TAIL_SLOWING: return "slowing"; case TAIL_FWD: return "forward"; default: return "reverse"; }
+  switch (tail) { case TAIL_STOPPED: return "stopped"; case TAIL_SLOWING: return "slowing"; case TAIL_FWD: return "forward"; case TAIL_OFF: return "off"; default: return "reverse"; }
 }
 const char DASH[] PROGMEM = R"dash(<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>McLaren F1 · live</title><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="theme-color" content="#0e141b"><style>
@@ -354,7 +361,8 @@ header{display:flex;align-items:center;gap:10px;margin:2px 0 8px}h1{font-size:18
 button{background:#8e1b1b;color:#fff;border:0;border-radius:10px;padding:12px 18px;font-weight:800;font-size:14px;white-space:nowrap;flex:none}
 @media(max-width:480px){.lamps{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr 1fr}.num{font-size:34px;min-width:100px}}
 </style></head><body>
-<div class="nav" id="nav"><span style="flex:1"></span><span class="tabs"><a href="/">Drive</a><b>Telemetry</b></span></div>
+<div id="testBanner" style="display:none;background:#b71c1c;color:#fff;font-weight:800;border-radius:10px;padding:8px 12px;margin:4px 0 8px;font-size:13px">TEST MODE: the pedal works without a phone and the home Wi-Fi can drive. Turn it off before anyone rides.</div>
+<div class="nav" id="nav"><span style="flex:1"></span><span class="tabs"><a href="/drive">Drive</a><b>Telemetry</b></span></div>
 <header><h1>McLaren F1 · live<small id="sub">connecting…</small></h1><div class="pill" id="pill">…</div></header>
 <div class="card"><h2>Dash controls</h2><div class="lamps">
 <div class="lamp" id="lPow"><i></i><b>POWER</b><em></em></div><div class="lamp" id="lFwd"><i></i><b>FORWARD</b><em>pedal + rocker</em></div>
@@ -399,8 +407,8 @@ function render(j){
   set('up',dur(j.up)); set('rst',j.reset,/BROWNOUT|CRASH|WATCHDOG/.test(j.reset)?'bad':'');
   set('heap',Math.round(j.heap/1024)+' KB'); set('hz',j.loopHz+' Hz',j.loopHz<90?'warn':'good'); set('gap',j.gapMs.toFixed(1)+' ms',j.gapMs>50?'warn':'');
   set('ip',j.ip||'car Wi-Fi only');
-  $('nav').style.display=j.carNet?'flex':'none';
-  $('footTxt').textContent=j.carNet?'On the car\'s Wi-Fi: switch to the Drive tab to drive. Leaving the Drive tab stops the car.':'View only. Driving works on the car\'s own Wi-Fi (McLaren-F1).';
+  $('nav').style.display=j.canDrive?'flex':'none'; $('testBanner').style.display=j.test?'block':'none';
+  $('footTxt').textContent=j.canDrive?'On the car\'s Wi-Fi: switch to the Drive tab to drive. Leaving the Drive tab stops the car.':'View only. Driving works on the car\'s own Wi-Fi (McLaren-F1).';
   const M=$('more'); $('moreCard').style.display=(j.extra&&j.extra.length)?'block':'none'; M.innerHTML='';
   for(const [name,unit,val] of (j.extra||[])){ const t=document.createElement('div'); t.className='tile'; t.innerHTML='<span></span><b></b>'; t.children[0].textContent=name; t.children[1].textContent=(val===null?'—':val)+(unit?' '+unit:''); M.appendChild(t); }
   const L=$('log'); L.innerHTML=''; for(const [ms,msg] of j.ev){ const r=document.createElement('div'); r.innerHTML='<span></span><b></b>';
@@ -425,8 +433,8 @@ void sendTelemetry() {
            sourceName(), (int)lroundf(duty * 100), (int)lroundf(target * 100), (int)enabled, tailName(), (int)lroundf(maxDuty * 100), (int)lroundf(HARD_MAX_DUTY * 100));
   j += b;
   long phoneAge = lastCmdMs ? (long)(now - lastCmdMs) : -1;
-  snprintf(b, sizeof b, "\"phoneAgeMs\":%ld,\"apClients\":%d,\"home\":%d,\"rssi\":%d,\"ip\":\"%s\",\"carNet\":%d,\"extra\":[",
-           phoneAge, (int)WiFi.softAPgetStationNum(), (int)home, home ? (int)WiFi.RSSI() : 0, home ? WiFi.localIP().toString().c_str() : "", (int)fromCarWifi());
+  snprintf(b, sizeof b, "\"phoneAgeMs\":%ld,\"apClients\":%d,\"home\":%d,\"rssi\":%d,\"ip\":\"%s\",\"carNet\":%d,\"canDrive\":%d,\"test\":%d,\"extra\":[",
+           phoneAge, (int)WiFi.softAPgetStationNum(), (int)home, home ? (int)WiFi.RSSI() : 0, home ? WiFi.localIP().toString().c_str() : "", (int)fromCarWifi(), (int)(fromCarWifi() || TEST_MODE), (int)TEST_MODE);
   j += b;
   for (int i = 0; i < metricCount; i++) {
     float v = metrics[i].get();
@@ -463,7 +471,7 @@ bool fromCarWifi() {
 #endif
 }
 void handleCmd() {
-  if (!fromCarWifi()) { sendStatus(false, true); return; }  // home network: live readout only, commands ignored
+  if (!fromCarWifi() && !TEST_MODE) { sendStatus(false, true); return; }  // home network: live readout only, commands ignored
   uint32_t now = millis();
   IPAddress ip = server.client().remoteIP();
   bool ownerActive = (now - lastCmdMs) < 3000;
@@ -484,7 +492,7 @@ void setup() {
   pwmSetup(PIN_REAR_RPWM, CH_R);
   pwmSetup(PIN_REAR_LPWM, CH_L);
   maxInit();
-  maxShow(PAT_FULL, 15);
+  maxShow(PAT_OFF, 0);   // dark until Wi-Fi is up: the radio's start-up current spike comes first, alone
   inGoFwd.begin(); inGoRev.begin(); inHighLow.begin(); inMode.begin(); inPower.begin();
 
   Serial.begin(115200);
@@ -525,13 +533,14 @@ void setup() {
   WiFi.softAP(WIFI_AP_NAME, WIFI_AP_PASSWORD, 1, 0, 2);
   MDNS.begin("mclaren");
 #endif
-  server.on("/", [] { server.send_P(200, "text/html", fromCarWifi() ? PAGE : DASH); });  // car Wi-Fi: drive page; home Wi-Fi: dashboard
+  server.on("/", [] { server.send_P(200, "text/html", fromCarWifi() ? PAGE : DASH); });  // home Wi-Fi lands on the dashboard; its Drive tab is /drive
+  server.on("/drive", [] { server.send_P(200, "text/html", PAGE); });  // car Wi-Fi: drive page; home Wi-Fi: dashboard
   server.on("/dash", [] { server.send_P(200, "text/html", DASH); });
   server.on("/telemetry", sendTelemetry);
   server.on("/c", handleCmd);
   server.on("/estop", [] { estop = true; throttle = 0; pedalArmed = false; sendStatus(false, false); Serial.println("E-STOP"); });
   server.on("/reset", [] {  // only from the car's network: clearing an e-stop needs someone at the car
-    if (!fromCarWifi()) { server.send(403, "application/json", "{\"err\":\"reset only from the car's own Wi-Fi\"}"); return; }
+    if (!fromCarWifi() && !TEST_MODE) { server.send(403, "application/json", "{\"err\":\"reset only from the car's own Wi-Fi\"}"); return; }
     estop = false; throttle = 0; sendStatus(false, false); Serial.println("reset");
   });
   server.on("/status", [] { sendStatus(false, false); });  // read-only, from either network
@@ -547,6 +556,12 @@ void loop() {
   server.handleClient();
 #if GARAGE_MODE
   ArduinoOTA.handle();
+  { // keep trying the home Wi-Fi in the background, and log every join and drop
+    static uint32_t lastTry = 0; static int was = -1;
+    bool up = WiFi.status() == WL_CONNECTED;
+    if (up != was) { if (was != -1 || up) logEvent(up ? "home Wi-Fi connected" : "home Wi-Fi lost"); was = up; }
+    if (!up && millis() - lastTry > 10000) { lastTry = millis(); WiFi.begin(HOME_WIFI_SSID, HOME_WIFI_PASSWORD); }
+  }
 #endif
   uint32_t nowUs = micros();
   if (prevLoopUs && nowUs - prevLoopUs > maxGapThisSec) maxGapThisSec = nowUs - prevLoopUs;  // worst stall between loop passes
