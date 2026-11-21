@@ -182,15 +182,32 @@ void driveOutputs() {
 }
 
 // ---------------- MAX7219 (bit-banged, no library needed) ----------------
+// Clocked out slowly on purpose (~200 kHz instead of shiftOut's several MHz): on long jumper wires the fast
+// edges ring, and the MAX7219 is a 5 V chip that wants 3.5 V highs from our 3.3 V pins. Slow edges settle first.
+void maxByte(uint8_t v) {
+  for (int i = 7; i >= 0; i--) {
+    digitalWrite(PIN_MAX_DIN, (v >> i) & 1);
+    delayMicroseconds(2);
+    digitalWrite(PIN_MAX_CLK, HIGH);
+    delayMicroseconds(2);
+    digitalWrite(PIN_MAX_CLK, LOW);
+  }
+}
 void maxSend(uint8_t reg, uint8_t val) {
-  digitalWrite(PIN_MAX_CS, LOW);
-  shiftOut(PIN_MAX_DIN, PIN_MAX_CLK, MSBFIRST, reg);
-  shiftOut(PIN_MAX_DIN, PIN_MAX_CLK, MSBFIRST, val);
-  digitalWrite(PIN_MAX_CS, HIGH);
+  digitalWrite(PIN_MAX_CS, LOW); delayMicroseconds(1);
+  maxByte(reg); maxByte(val);
+  delayMicroseconds(1); digitalWrite(PIN_MAX_CS, HIGH); delayMicroseconds(1);
+}
+void maxConfig() {
+  maxSend(0x0F, 0);  // display test off (a garbled write can switch it on: every LED full, stuck)
+  maxSend(0x09, 0);  // no BCD decode, raw pixels
+  maxSend(0x0B, 7);  // scan all 8 rows
+  maxSend(0x0C, 1);  // wake up
 }
 uint8_t reverseBits(uint8_t b) { uint8_t r = 0; for (int i = 0; i < 8; i++) if (b & (1 << i)) r |= 1 << (7 - i); return r; }
 uint8_t shownRows[8], shownLvl = 0;   // what the matrix is showing right now (the dashboard draws it)
 void maxShow(const uint8_t rows[8], uint8_t intensity) {
+  maxConfig();  // every frame re-sends the setup too (~1 ms total), so one bad write can't leave the light stuck
   maxSend(0x0A, intensity & 0x0F);
   for (int i = 0; i < 8; i++) {
     uint8_t v = rows[MATRIX_FLIP_ROWS ? 7 - i : i];
@@ -201,11 +218,8 @@ void maxShow(const uint8_t rows[8], uint8_t intensity) {
 }
 void maxInit() {
   pinMode(PIN_MAX_CS, OUTPUT); digitalWrite(PIN_MAX_CS, HIGH);
-  pinMode(PIN_MAX_DIN, OUTPUT); pinMode(PIN_MAX_CLK, OUTPUT);
-  maxSend(0x0F, 0);  // display test off
-  maxSend(0x09, 0);  // no BCD decode, raw pixels
-  maxSend(0x0B, 7);  // scan all 8 rows
-  maxSend(0x0C, 1);  // wake up
+  pinMode(PIN_MAX_DIN, OUTPUT); pinMode(PIN_MAX_CLK, OUTPUT); digitalWrite(PIN_MAX_CLK, LOW);
+  maxConfig();
 }
 const uint8_t PAT_UP[8]   = {0x18, 0x3C, 0x7E, 0xFF, 0x18, 0x18, 0x18, 0x18};
 const uint8_t PAT_DOWN[8] = {0x18, 0x18, 0x18, 0x18, 0xFF, 0x7E, 0x3C, 0x18};
@@ -220,7 +234,7 @@ DriveLook tailLook = LOOK_ARROW;
 uint8_t tailDriveLvl = TAIL_DIM, tailBrakeLvl = TAIL_BRIGHT, edgeFill = 0;  // edgeFill: inside LEDs lit, 0 / 25 / 50 %
 bool tailFlash = true;
 uint16_t flashMs = 200;  // each blink: this long on, this long off (was 90 ms, too quick to read)
-uint8_t flashN = 3;
+uint8_t flashN = 4;
 const uint8_t TAIL_LAB_MAX = 10;     // brightness ceiling in the lab, so a test can't brown out the board
 char tailPreview = 0;                // 'd' driving, 'r' reverse, 'b' brake, 'g' let go; 0 = real car state
 uint32_t previewStart = 0;
@@ -237,9 +251,9 @@ void drivePattern(uint8_t rows[8]) {
 }
 
 void updateTail(uint32_t now) {
-  static int lastKey = -1;
+  static int lastKey = -1, flashFrames = 0;
   static uint32_t flashStart = 0, lastRefresh = 0;
-  static TailState prev = TAIL_OFF;
+  static bool wasFlashing = false, blinkOn = false;  // a separate flag: "start time 0 = none" tricks broke this before
   TailState s;
   if (!powerOn && fabsf(duty) < 0.01f) s = TAIL_OFF;   // car switched off: light off, like a real car
   else if (fabsf(duty) < 0.01f) s = TAIL_STOPPED;
@@ -253,22 +267,34 @@ void updateTail(uint32_t now) {
   else if (tailPreview == 'g') s = now - previewStart < 1500 ? TAIL_FWD : TAIL_STOPPED;
   // letting go of the gas: blink, then a solid brake light. Keyed on "foot off" (target back to 0), not on
   // "slowing", which can flicker on and off during one release (pedal contact bounce, phone easing off)
-  // and restart the blink each time. One blink per release, and only after at least 0.1 s of driving.
+  // and restart the blink each time. Every release of at least 0.1 s starts a fresh, full blink.
+  // A quick flick during a blink doesn't cut it off; only holding the gas again (0.3 s) does.
   static bool prevGo = false; static uint32_t goSince = 0;
   bool go = tailPreview ? (s == TAIL_FWD || s == TAIL_REV) : fabsf(target) > 0.001f;
   if (go && !prevGo) goSince = now;
-  if (!go && prevGo && tailFlash && !flashStart && now - goSince >= 100) { flashStart = now | 1; logEvent("tail: release blink"); }
-  if (go && flashStart && now - goSince > 150) flashStart = 0;   // really driving again: stop blinking, show the drive look
+  if (!go && prevGo && tailFlash && now - goSince >= 100) { flashStart = now; blinkOn = true; flashFrames = 0; lastKey = -1; }
+  bool cut = go && blinkOn && now - goSince > 300;
+  if (cut) blinkOn = false;   // really driving again: stop blinking, show the drive look
   prevGo = go;
-  prev = s; tail = s;
-  bool flashing = flashStart && now - flashStart < (uint32_t)(2 * flashN - 1) * flashMs;  // ends on a blink, straight into solid
-  if (!flashing) flashStart = 0;
+  tail = s;
+  int frames = 2 * flashN - 1;  // on, off, on ... ends on a blink, straight into solid
+  bool flashing = blinkOn && now - flashStart < (uint32_t)frames * flashMs;
+  if (!flashing) blinkOn = false;
+  if (wasFlashing && !flashing) {  // say how it went, so a missed blink can be told from a wiring glitch
+    char b[44];
+    if (cut) snprintf(b, sizeof b, "tail: blink cut short, driving again");
+    else snprintf(b, sizeof b, "tail: blink done, %d/%d frames", flashFrames, frames);
+    logEvent(b);
+  }
+  wasFlashing = flashing;
   bool flashOn = flashing && ((now - flashStart) / flashMs) % 2 == 0;
-  // re-send the chip's setup every 2 s, so a glitch from a bumped wire heals itself
-  if (now - lastRefresh > 2000 || tailDirty) { lastRefresh = now; maxInit(); lastKey = -1; tailDirty = false; }
+  // re-send the current picture (with the chip's setup) every 150 ms, so a glitch heals before the next blink
+  bool refresh = now - lastRefresh >= 150 || tailDirty;
+  if (tailDirty) { maxInit(); tailDirty = false; }
   int key = flashing ? 100 + flashOn : s;
-  if (key == lastKey) return;  // only talk to the chip when the picture changes
-  lastKey = key;
+  if (key == lastKey && !refresh) return;  // otherwise only talk to the chip when the picture changes
+  if (key != lastKey && flashing) flashFrames++;
+  lastKey = key; lastRefresh = now;
   if (flashing) { maxShow(flashOn ? PAT_FULL : PAT_OFF, tailBrakeLvl); return; }
   uint8_t rows[8];
   switch (s) {
@@ -286,7 +312,7 @@ int tailJson(char* b, size_t n) {
 }
 // /tail?look=arrow|dim|edge&drv=0-10&brk=0-10&fill=0|25|50&flash=0|1&preview=d|r|b|g&reset=1  (cosmetic only, so any network may use it)
 void handleTail() {
-  if (server.hasArg("reset")) { tailLook = LOOK_ARROW; tailDriveLvl = TAIL_DIM; tailBrakeLvl = TAIL_BRIGHT; edgeFill = 0; tailFlash = true; flashMs = 200; flashN = 3; }
+  if (server.hasArg("reset")) { tailLook = LOOK_ARROW; tailDriveLvl = TAIL_DIM; tailBrakeLvl = TAIL_BRIGHT; edgeFill = 0; tailFlash = true; flashMs = 200; flashN = 4; }
   if (server.hasArg("look")) { String l = server.arg("look"); for (int i = 0; i < 3; i++) if (l == LOOK_NAMES[i]) tailLook = (DriveLook)i; }
   if (server.hasArg("drv")) tailDriveLvl = constrain(server.arg("drv").toInt(), 0, TAIL_LAB_MAX);
   if (server.hasArg("brk")) tailBrakeLvl = constrain(server.arg("brk").toInt(), 0, TAIL_LAB_MAX);
