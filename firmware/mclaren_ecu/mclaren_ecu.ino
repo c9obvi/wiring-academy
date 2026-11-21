@@ -31,7 +31,7 @@
 #define GARAGE_MODE 0
 #endif
 
-#define FW_VERSION "stage1a-test " __DATE__ " " __TIME__  // shows on /status, so you can tell which build is running
+#define FW_VERSION "stage1a-taillab " __DATE__ " " __TIME__  // shows on /status, so you can tell which build is running
 
 // ---------------- pins (match the wiring tutorial) ----------------
 // One sketch, two boards: the right map is picked from the board you select in the IDE.
@@ -189,12 +189,15 @@ void maxSend(uint8_t reg, uint8_t val) {
   digitalWrite(PIN_MAX_CS, HIGH);
 }
 uint8_t reverseBits(uint8_t b) { uint8_t r = 0; for (int i = 0; i < 8; i++) if (b & (1 << i)) r |= 1 << (7 - i); return r; }
+uint8_t shownRows[8], shownLvl = 0;   // what the matrix is showing right now (the dashboard draws it)
 void maxShow(const uint8_t rows[8], uint8_t intensity) {
   maxSend(0x0A, intensity & 0x0F);
   for (int i = 0; i < 8; i++) {
     uint8_t v = rows[MATRIX_FLIP_ROWS ? 7 - i : i];
     maxSend(i + 1, MATRIX_FLIP_COLS ? reverseBits(v) : v);
+    shownRows[i] = rows[i];
   }
+  shownLvl = intensity & 0x0F;
 }
 void maxInit() {
   pinMode(PIN_MAX_CS, OUTPUT); digitalWrite(PIN_MAX_CS, HIGH);
@@ -209,25 +212,83 @@ const uint8_t PAT_DOWN[8] = {0x18, 0x18, 0x18, 0x18, 0xFF, 0x7E, 0x3C, 0x18};
 const uint8_t PAT_FULL[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 const uint8_t PAT_OFF[8]  = {0, 0, 0, 0, 0, 0, 0, 0};
 
+// Tail light lab: try different looks from the dashboard (RAM only: a restart goes back to these defaults).
+// The MAX7219 has ONE brightness for all 64 LEDs, so "edge bright, inside dim" is done by lighting fewer inside LEDs.
+enum DriveLook { LOOK_ARROW, LOOK_DIM, LOOK_EDGE };
+const char* LOOK_NAMES[] = {"arrow", "dim", "edge"};
+DriveLook tailLook = LOOK_ARROW;
+uint8_t tailDriveLvl = TAIL_DIM, tailBrakeLvl = TAIL_BRIGHT, edgeFill = 0;  // edgeFill: inside LEDs lit, 0 / 25 / 50 %
+bool tailFlash = true;
+const uint8_t TAIL_LAB_MAX = 10;     // brightness ceiling in the lab, so a test can't brown out the board
+char tailPreview = 0;                // 'd' driving, 'r' reverse, 'b' brake, 'g' let go; 0 = real car state
+uint32_t previewStart = 0;
+bool tailDirty = true;
+void drivePattern(uint8_t rows[8]) {
+  for (int i = 0; i < 8; i++) {
+    if (tailLook == LOOK_ARROW) rows[i] = PAT_UP[i];
+    else if (tailLook == LOOK_DIM) rows[i] = 0xFF;
+    else {
+      uint8_t in = edgeFill == 50 ? (i & 1 ? 0xAA : 0x55) : edgeFill == 25 ? (i % 4 == 1 ? 0x22 : i % 4 == 3 ? 0x88 : 0) : 0;
+      rows[i] = (i == 0 || i == 7) ? 0xFF : (0x81 | (in & 0x7E));
+    }
+  }
+}
+
 void updateTail(uint32_t now) {
   static int lastKey = -1;
+  static uint32_t flashStart = 0, lastRefresh = 0;
+  static TailState prev = TAIL_OFF;
   TailState s;
   if (!powerOn && fabsf(duty) < 0.01f) s = TAIL_OFF;   // car switched off: light off, like a real car
   else if (fabsf(duty) < 0.01f) s = TAIL_STOPPED;
   else if (fabsf(target) < fabsf(duty) - 0.02f) s = TAIL_SLOWING;
   else s = duty > 0 ? TAIL_FWD : TAIL_REV;
-  tail = s;
-  bool flickerOn = (now / 60) % 2;  // ~8 Hz flicker while slowing
-  int key = s * 2 + (s == TAIL_SLOWING ? flickerOn : 0);
+  // a dashboard preview shows a look for a few seconds; real driving always wins
+  if (tailPreview && (fabsf(duty) >= 0.01f || now - previewStart > 4500)) { tailPreview = 0; tailDirty = true; }
+  if (tailPreview == 'd') s = TAIL_FWD;
+  else if (tailPreview == 'r') s = TAIL_REV;
+  else if (tailPreview == 'b') s = TAIL_STOPPED;
+  else if (tailPreview == 'g') s = now - previewStart < 1500 ? TAIL_FWD : TAIL_STOPPED;
+  // letting go of the pedal: three quick flashes, then a solid brake light
+  if (tailFlash && (prev == TAIL_FWD || prev == TAIL_REV) && (s == TAIL_SLOWING || s == TAIL_STOPPED)) flashStart = now | 1;
+  prev = s; tail = s;
+  bool flashing = flashStart && now - flashStart < 540;
+  if (!flashing) flashStart = 0;
+  bool flashOn = flashing && ((now - flashStart) / 90) % 2 == 0;
+  // re-send the chip's setup every 2 s, so a glitch from a bumped wire heals itself
+  if (now - lastRefresh > 2000 || tailDirty) { lastRefresh = now; maxInit(); lastKey = -1; tailDirty = false; }
+  int key = flashing ? 100 + flashOn : s;
   if (key == lastKey) return;  // only talk to the chip when the picture changes
   lastKey = key;
+  if (flashing) { maxShow(flashOn ? PAT_FULL : PAT_OFF, tailBrakeLvl); return; }
+  uint8_t rows[8];
   switch (s) {
-    case TAIL_STOPPED: maxShow(PAT_FULL, TAIL_BRIGHT); break;
-    case TAIL_SLOWING: maxShow(flickerOn ? PAT_FULL : PAT_OFF, TAIL_BRIGHT); break;
-    case TAIL_FWD:     maxShow(PAT_UP, TAIL_DIM); break;
-    case TAIL_REV:     maxShow(PAT_DOWN, TAIL_DIM); break;
+    case TAIL_STOPPED:
+    case TAIL_SLOWING: maxShow(PAT_FULL, tailBrakeLvl); break;   // brake light on
+    case TAIL_FWD:     drivePattern(rows); maxShow(rows, tailDriveLvl); break;
+    case TAIL_REV:     maxShow(PAT_DOWN, tailDriveLvl); break;   // reverse keeps the down arrow in every look, so it's easy to tell apart
     case TAIL_OFF:     maxShow(PAT_OFF, 0); break;
   }
+}
+int tailJson(char* b, size_t n) {
+  return snprintf(b, n, "{\"look\":\"%s\",\"drv\":%d,\"brk\":%d,\"fill\":%d,\"flash\":%d,\"max\":%d,\"pv\":%d,\"lvl\":%d,\"rows\":[%d,%d,%d,%d,%d,%d,%d,%d]}",
+                  LOOK_NAMES[tailLook], tailDriveLvl, tailBrakeLvl, edgeFill, (int)tailFlash, TAIL_LAB_MAX, tailPreview ? 1 : 0, shownLvl,
+                  shownRows[0], shownRows[1], shownRows[2], shownRows[3], shownRows[4], shownRows[5], shownRows[6], shownRows[7]);
+}
+// /tail?look=arrow|dim|edge&drv=0-10&brk=0-10&fill=0|25|50&flash=0|1&preview=d|r|b|g&reset=1  (cosmetic only, so any network may use it)
+void handleTail() {
+  if (server.hasArg("reset")) { tailLook = LOOK_ARROW; tailDriveLvl = TAIL_DIM; tailBrakeLvl = TAIL_BRIGHT; edgeFill = 0; tailFlash = true; }
+  if (server.hasArg("look")) { String l = server.arg("look"); for (int i = 0; i < 3; i++) if (l == LOOK_NAMES[i]) tailLook = (DriveLook)i; }
+  if (server.hasArg("drv")) tailDriveLvl = constrain(server.arg("drv").toInt(), 0, TAIL_LAB_MAX);
+  if (server.hasArg("brk")) tailBrakeLvl = constrain(server.arg("brk").toInt(), 0, TAIL_LAB_MAX);
+  if (server.hasArg("fill")) { int f = server.arg("fill").toInt(); edgeFill = f >= 50 ? 50 : f >= 25 ? 25 : 0; }
+  if (server.hasArg("flash")) tailFlash = server.arg("flash").toInt() != 0;
+  if (server.hasArg("preview")) { char c = server.arg("preview")[0]; if (strchr("drbg", c)) { tailPreview = c; previewStart = millis(); } }
+  tailDirty = true;
+  updateTail(millis());
+  char b[220]; tailJson(b, sizeof b);
+  server.sendHeader("Cache-Control", "no-store");
+  server.send(200, "application/json", b);
 }
 
 // ---------------- control loop ----------------
@@ -360,6 +421,13 @@ header{display:flex;align-items:center;gap:10px;margin:2px 0 8px}h1{font-size:18
 .foot{display:flex;gap:12px;align-items:center;color:var(--mut);font-size:12px;margin:12px 0 20px}
 button{background:#8e1b1b;color:#fff;border:0;border-radius:10px;padding:12px 18px;font-weight:800;font-size:14px;white-space:nowrap;flex:none}
 @media(max-width:480px){.lamps{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr 1fr}.num{font-size:34px;min-width:100px}}
+.lab{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start}
+.big{display:grid;grid-template-columns:repeat(8,16px);gap:4px;padding:10px;background:#0a0f14;border-radius:10px;border:1px solid var(--line)}.big i{width:16px;height:16px;border-radius:50%;background:#2a0808}
+.seg{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}.seg button,.pv button{background:#0f1720;color:var(--txt);border:1px solid var(--line);padding:8px 11px;font-size:13px;font-weight:600;border-radius:9px}
+.seg button.sel{background:var(--org);color:#1b0f00;border-color:var(--org)}.pv{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}.pv button{background:#1c2a38}
+.sl{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mut);margin:0 0 8px}.sl input{flex:1;accent-color:#ff3b30}.sl b{min-width:22px;color:var(--txt);font-family:ui-monospace,Menlo,monospace}
+.lab small{display:block;color:var(--mut);font-size:12px;margin-top:8px;line-height:1.4}
+@media(max-width:480px){.lab{grid-template-columns:1fr}.big{justify-self:center}}
 </style></head><body>
 <div id="testBanner" style="display:none;background:#b71c1c;color:#fff;font-weight:800;border-radius:10px;padding:8px 12px;margin:4px 0 8px;font-size:13px">TEST MODE: the pedal works without a phone and the home Wi-Fi can drive. Turn it off before anyone rides.</div>
 <div class="nav" id="nav"><span style="flex:1"></span><span class="tabs"><a href="/drive">Drive</a><b>Telemetry</b></span></div>
@@ -372,6 +440,17 @@ button{background:#8e1b1b;color:#fff;border:0;border-radius:10px;padding:12px 18
 <div class="grid"><div class="tile"><span>Commanded by</span><b id="src">idle</b></div><div class="tile"><span>Target</span><b id="tgt">0%</b></div>
 <div class="tile"><span>Motor enable</span><b id="en">OFF</b></div><div class="tile"><span>Speed cap</span><b id="max"></b></div>
 <div class="tile"><span>Tail light</span><b id="tail"></b><div class="mx" id="mx"></div></div><div class="tile"><span>Battery</span><b class="warn">not wired yet</b></div></div></div>
+<div class="card"><h2>Tail light lab · try a look</h2><div class="lab"><div><div class="big" id="big"></div><div style="text-align:center;font-size:12px;color:var(--mut);margin-top:6px" id="bigTxt"></div></div><div>
+<div style="font-size:12px;color:var(--mut);margin-bottom:6px">When the pedal is pressed, show:</div>
+<div class="seg" id="look"><button data-v="arrow">▲ Arrow</button><button data-v="dim">Dim red</button><button data-v="edge">Bright edge</button></div>
+<div class="sl" id="fillRow"><span>Inside</span><span class="seg" id="fill" style="margin:0"><button data-v="0">off</button><button data-v="25">¼ lit</button><button data-v="50">½ lit</button></span></div>
+<label class="sl"><span>Driving</span><input type="range" id="drv" min="0" max="10"><b id="drvV"></b></label>
+<label class="sl"><span>Brake</span><input type="range" id="brk" min="0" max="10"><b id="brkV"></b></label>
+<label class="sl"><input type="checkbox" id="flash" style="flex:none;width:18px;height:18px"><span>Flash 3× when he lets go</span></label>
+<div style="font-size:12px;color:var(--mut);margin:6px 0 4px">Preview on the real light (4 s, no motors):</div>
+<div class="pv"><button data-p="d">▶ Driving</button><button data-p="g">▶ Let go</button><button data-p="b">▶ Brake</button><button data-p="r">▶ Reverse</button><button id="tlReset" style="background:#2a3a4c">Back to default</button></div>
+<small>The chip has one brightness for all 64 LEDs, so "Bright edge" dims the inside by lighting fewer of its LEDs. Reverse always shows the down arrow. Brightness stops at 10 to protect the USB supply. These settings reset when the car restarts; tell Claude the one you like to make it the default.</small>
+</div></div></div>
 <div class="card"><h2>Links</h2><div class="grid"><div class="tile"><span>Driving phone</span><b id="phone"></b></div>
 <div class="tile"><span>On car Wi-Fi</span><b id="ap"></b></div><div class="tile"><span>Home Wi-Fi</span><b id="rssi"></b></div></div></div>
 <div class="card"><h2>System</h2><div class="grid"><div class="tile"><span>Up for</span><b id="up"></b></div><div class="tile"><span>Last restart</span><b id="rst"></b></div>
@@ -400,7 +479,7 @@ function render(j){
   b.style.left=(d>=0?50:50+d/2)+'%'; b.style.width=Math.abs(d)/2+'%';
   set('src',j.src,j.src==='idle'?'':'warn'); set('tgt',(j.target>0?'+':'')+j.target+'%'); set('en',j.en?'ON':'OFF',j.en?'good':'');
   set('max',j.max+'% (cap '+j.hardMax+'%)'); set('tail',j.tail);
-  const pat=j.tail==='slowing'?((Date.now()/60|0)%2?P.stopped:P.off):(P[j.tail]||P.off); [...$('mx').children].forEach((c,i)=>c.classList.toggle('on',!!(pat[i>>3]&(128>>(i&7)))));
+  [...$('mx').children].forEach((c,i)=>c.classList.toggle('on',!!(j.tl.rows[i>>3]&(128>>(i&7))))); tl(j.tl);
   set('phone',j.phoneAgeMs<0?'none yet':j.phoneAgeMs<800?'connected':'last '+ago(j.phoneAgeMs),j.phoneAgeMs>=0&&j.phoneAgeMs<800?'good':'');
   set('ap',j.apClients+' device'+(j.apClients===1?'':'s'));
   set('rssi',j.home?j.rssi+' dBm '+(j.rssi>-60?'strong':j.rssi>-70?'good':j.rssi>-80?'weak':'very weak'):'not connected',j.home?(j.rssi>-70?'good':j.rssi>-80?'warn':'bad'):'warn');
@@ -414,6 +493,23 @@ function render(j){
   const L=$('log'); L.innerHTML=''; for(const [ms,msg] of j.ev){ const r=document.createElement('div'); r.innerHTML='<span></span><b></b>';
     r.children[0].textContent=ago(j.up*1000-ms); r.children[1].textContent=msg; if(/E-STOP|lost|BROWNOUT|CRASH/.test(msg)) r.children[1].className='bad'; L.appendChild(r); }
 }
+let tlTouch=0;
+function tl(t){ const op=(0.25+0.75*Math.sqrt((2*t.lvl+1)/31)).toFixed(2);
+  [...$('big').children].forEach((c,i)=>{const on=!!(t.rows[i>>3]&(128>>(i&7))); c.style.background=on?'#ff3b30':''; c.style.opacity=on?op:''; c.style.boxShadow=on?'0 0 '+(2+t.lvl)+'px #ff3b30':'';});
+  $('bigTxt').textContent=(t.pv?'preview · ':'live · ')+(t.rows.some(r=>r)?'level '+t.lvl:'off');
+  for(const b of $('look').children) b.classList.toggle('sel',b.dataset.v===t.look);
+  for(const b of $('fill').children) b.classList.toggle('sel',+b.dataset.v===t.fill);
+  $('fillRow').style.display=t.look==='edge'?'flex':'none';
+  if(Date.now()-tlTouch>1500) for(const k of ['drv','brk']) $(k).value=t[k]; $('drvV').textContent=$('drv').value; $('brkV').textContent=$('brk').value;
+  if(document.activeElement!==$('flash')) $('flash').checked=!!t.flash; }
+async function tlSend(q){ try{ const r=await fetch('/tail?'+q,{cache:'no-store'}); tl(await r.json()); }catch(e){} }
+for(let k=0;k<64;k++) $('big').appendChild(document.createElement('i'));
+$('look').onclick=e=>{ if(e.target.dataset.v) tlSend('look='+e.target.dataset.v+'&preview=d'); };
+$('fill').onclick=e=>{ if(e.target.dataset.v) tlSend('fill='+e.target.dataset.v+'&preview=d'); };
+let tlT=0; for(const k of ['drv','brk']) $(k).oninput=()=>{ tlTouch=Date.now(); $(k+'V').textContent=$(k).value; clearTimeout(tlT); tlT=setTimeout(()=>tlSend(k+'='+$(k).value+'&preview='+(k==='drv'?'d':'b')),120); };
+$('flash').onchange=()=>tlSend('flash='+($('flash').checked?1:0)+($('flash').checked?'&preview=g':''));
+document.querySelector('.pv').onclick=e=>{ if(e.target.dataset.p) tlSend('preview='+e.target.dataset.p); };
+$('tlReset').onclick=()=>tlSend('reset=1&preview=g');
 async function tick(){ try{ const r=await fetch('/telemetry',{cache:'no-store'}); last=await r.json(); fails=0; render(last); }
   catch(e){ if(++fails>2){ $('pill').textContent='OFFLINE'; $('pill').className='pill stop'; $('sub').textContent='car not answering'; } } }
 setInterval(tick,333); tick();
@@ -433,9 +529,10 @@ void sendTelemetry() {
            sourceName(), (int)lroundf(duty * 100), (int)lroundf(target * 100), (int)enabled, tailName(), (int)lroundf(maxDuty * 100), (int)lroundf(HARD_MAX_DUTY * 100));
   j += b;
   long phoneAge = lastCmdMs ? (long)(now - lastCmdMs) : -1;
-  snprintf(b, sizeof b, "\"phoneAgeMs\":%ld,\"apClients\":%d,\"home\":%d,\"rssi\":%d,\"ip\":\"%s\",\"carNet\":%d,\"canDrive\":%d,\"test\":%d,\"extra\":[",
+  snprintf(b, sizeof b, "\"phoneAgeMs\":%ld,\"apClients\":%d,\"home\":%d,\"rssi\":%d,\"ip\":\"%s\",\"carNet\":%d,\"canDrive\":%d,\"test\":%d,\"tl\":",
            phoneAge, (int)WiFi.softAPgetStationNum(), (int)home, home ? (int)WiFi.RSSI() : 0, home ? WiFi.localIP().toString().c_str() : "", (int)fromCarWifi(), (int)(fromCarWifi() || TEST_MODE), (int)TEST_MODE);
   j += b;
+  tailJson(b, sizeof b); j += b; j += ",\"extra\":[";
   for (int i = 0; i < metricCount; i++) {
     float v = metrics[i].get();
     if (isfinite(v)) snprintf(b, sizeof b, "%s[\"%s\",\"%s\",%.*f]", i ? "," : "", metrics[i].name, metrics[i].unit, metrics[i].decimals, v);
@@ -538,6 +635,7 @@ void setup() {
   server.on("/dash", [] { server.send_P(200, "text/html", DASH); });
   server.on("/telemetry", sendTelemetry);
   server.on("/c", handleCmd);
+  server.on("/tail", handleTail);
   server.on("/estop", [] { estop = true; throttle = 0; pedalArmed = false; sendStatus(false, false); Serial.println("E-STOP"); });
   server.on("/reset", [] {  // only from the car's network: clearing an e-stop needs someone at the car
     if (!fromCarWifi() && !TEST_MODE) { server.send(403, "application/json", "{\"err\":\"reset only from the car's own Wi-Fi\"}"); return; }
