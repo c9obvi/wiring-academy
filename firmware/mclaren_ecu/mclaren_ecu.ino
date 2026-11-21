@@ -253,11 +253,11 @@ void updateTail(uint32_t now) {
   else if (tailPreview == 'g') s = now - previewStart < 1500 ? TAIL_FWD : TAIL_STOPPED;
   // letting go of the gas: blink, then a solid brake light. Keyed on "foot off" (target back to 0), not on
   // "slowing", which can flicker on and off during one release (pedal contact bounce, phone easing off)
-  // and restart the blink each time. One blink per release, and only after at least 1/4 s of driving.
+  // and restart the blink each time. One blink per release, and only after at least 0.1 s of driving.
   static bool prevGo = false; static uint32_t goSince = 0;
   bool go = tailPreview ? (s == TAIL_FWD || s == TAIL_REV) : fabsf(target) > 0.001f;
   if (go && !prevGo) goSince = now;
-  if (!go && prevGo && tailFlash && !flashStart && now - goSince >= 250) { flashStart = now | 1; logEvent("tail: release blink"); }
+  if (!go && prevGo && tailFlash && !flashStart && now - goSince >= 100) { flashStart = now | 1; logEvent("tail: release blink"); }
   if (go && flashStart && now - goSince > 150) flashStart = 0;   // really driving again: stop blinking, show the drive look
   prevGo = go;
   prev = s; tail = s;
