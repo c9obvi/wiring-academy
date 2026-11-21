@@ -219,6 +219,8 @@ const char* LOOK_NAMES[] = {"arrow", "dim", "edge"};
 DriveLook tailLook = LOOK_ARROW;
 uint8_t tailDriveLvl = TAIL_DIM, tailBrakeLvl = TAIL_BRIGHT, edgeFill = 0;  // edgeFill: inside LEDs lit, 0 / 25 / 50 %
 bool tailFlash = true;
+uint16_t flashMs = 200;  // each blink: this long on, this long off (was 90 ms, too quick to read)
+uint8_t flashN = 3;
 const uint8_t TAIL_LAB_MAX = 10;     // brightness ceiling in the lab, so a test can't brown out the board
 char tailPreview = 0;                // 'd' driving, 'r' reverse, 'b' brake, 'g' let go; 0 = real car state
 uint32_t previewStart = 0;
@@ -244,7 +246,7 @@ void updateTail(uint32_t now) {
   else if (fabsf(target) < fabsf(duty) - 0.02f) s = TAIL_SLOWING;
   else s = duty > 0 ? TAIL_FWD : TAIL_REV;
   // a dashboard preview shows a look for a few seconds; real driving always wins
-  if (tailPreview && (fabsf(duty) >= 0.01f || now - previewStart > 4500)) { tailPreview = 0; tailDirty = true; }
+  if (tailPreview && (fabsf(duty) >= 0.01f || now - previewStart > 6000)) { tailPreview = 0; tailDirty = true; }
   if (tailPreview == 'd') s = TAIL_FWD;
   else if (tailPreview == 'r') s = TAIL_REV;
   else if (tailPreview == 'b') s = TAIL_STOPPED;
@@ -252,9 +254,9 @@ void updateTail(uint32_t now) {
   // letting go of the pedal: three quick flashes, then a solid brake light
   if (tailFlash && (prev == TAIL_FWD || prev == TAIL_REV) && (s == TAIL_SLOWING || s == TAIL_STOPPED)) flashStart = now | 1;
   prev = s; tail = s;
-  bool flashing = flashStart && now - flashStart < 540;
+  bool flashing = flashStart && now - flashStart < (uint32_t)(2 * flashN - 1) * flashMs;  // ends on a blink, straight into solid
   if (!flashing) flashStart = 0;
-  bool flashOn = flashing && ((now - flashStart) / 90) % 2 == 0;
+  bool flashOn = flashing && ((now - flashStart) / flashMs) % 2 == 0;
   // re-send the chip's setup every 2 s, so a glitch from a bumped wire heals itself
   if (now - lastRefresh > 2000 || tailDirty) { lastRefresh = now; maxInit(); lastKey = -1; tailDirty = false; }
   int key = flashing ? 100 + flashOn : s;
@@ -271,18 +273,20 @@ void updateTail(uint32_t now) {
   }
 }
 int tailJson(char* b, size_t n) {
-  return snprintf(b, n, "{\"look\":\"%s\",\"drv\":%d,\"brk\":%d,\"fill\":%d,\"flash\":%d,\"max\":%d,\"pv\":%d,\"lvl\":%d,\"rows\":[%d,%d,%d,%d,%d,%d,%d,%d]}",
-                  LOOK_NAMES[tailLook], tailDriveLvl, tailBrakeLvl, edgeFill, (int)tailFlash, TAIL_LAB_MAX, tailPreview ? 1 : 0, shownLvl,
+  return snprintf(b, n, "{\"look\":\"%s\",\"drv\":%d,\"brk\":%d,\"fill\":%d,\"flash\":%d,\"fms\":%d,\"fn\":%d,\"max\":%d,\"pv\":%d,\"lvl\":%d,\"rows\":[%d,%d,%d,%d,%d,%d,%d,%d]}",
+                  LOOK_NAMES[tailLook], tailDriveLvl, tailBrakeLvl, edgeFill, (int)tailFlash, flashMs, flashN, TAIL_LAB_MAX, tailPreview ? 1 : 0, shownLvl,
                   shownRows[0], shownRows[1], shownRows[2], shownRows[3], shownRows[4], shownRows[5], shownRows[6], shownRows[7]);
 }
 // /tail?look=arrow|dim|edge&drv=0-10&brk=0-10&fill=0|25|50&flash=0|1&preview=d|r|b|g&reset=1  (cosmetic only, so any network may use it)
 void handleTail() {
-  if (server.hasArg("reset")) { tailLook = LOOK_ARROW; tailDriveLvl = TAIL_DIM; tailBrakeLvl = TAIL_BRIGHT; edgeFill = 0; tailFlash = true; }
+  if (server.hasArg("reset")) { tailLook = LOOK_ARROW; tailDriveLvl = TAIL_DIM; tailBrakeLvl = TAIL_BRIGHT; edgeFill = 0; tailFlash = true; flashMs = 200; flashN = 3; }
   if (server.hasArg("look")) { String l = server.arg("look"); for (int i = 0; i < 3; i++) if (l == LOOK_NAMES[i]) tailLook = (DriveLook)i; }
   if (server.hasArg("drv")) tailDriveLvl = constrain(server.arg("drv").toInt(), 0, TAIL_LAB_MAX);
   if (server.hasArg("brk")) tailBrakeLvl = constrain(server.arg("brk").toInt(), 0, TAIL_LAB_MAX);
   if (server.hasArg("fill")) { int f = server.arg("fill").toInt(); edgeFill = f >= 50 ? 50 : f >= 25 ? 25 : 0; }
   if (server.hasArg("flash")) tailFlash = server.arg("flash").toInt() != 0;
+  if (server.hasArg("fms")) flashMs = constrain(server.arg("fms").toInt(), 60, 500);
+  if (server.hasArg("fn")) flashN = constrain(server.arg("fn").toInt(), 1, 5);
   if (server.hasArg("preview")) { char c = server.arg("preview")[0]; if (strchr("drbg", c)) { tailPreview = c; previewStart = millis(); } }
   tailDirty = true;
   updateTail(millis());
@@ -446,7 +450,9 @@ button{background:#8e1b1b;color:#fff;border:0;border-radius:10px;padding:12px 18
 <div class="sl" id="fillRow"><span>Inside</span><span class="seg" id="fill" style="margin:0"><button data-v="0">off</button><button data-v="25">¼ lit</button><button data-v="50">½ lit</button></span></div>
 <label class="sl"><span>Driving</span><input type="range" id="drv" min="0" max="10"><b id="drvV"></b></label>
 <label class="sl"><span>Brake</span><input type="range" id="brk" min="0" max="10"><b id="brkV"></b></label>
-<label class="sl"><input type="checkbox" id="flash" style="flex:none;width:18px;height:18px"><span>Flash 3× when he lets go</span></label>
+<label class="sl"><input type="checkbox" id="flash" style="flex:none;width:18px;height:18px"><span>Flash when he lets go</span></label>
+<label class="sl"><span>Blinks</span><input type="range" id="fn" min="1" max="5"><b id="fnV"></b></label>
+<label class="sl"><span>Blink speed</span><input type="range" id="fms" min="60" max="500" step="10"><b id="fmsV" style="min-width:58px"></b></label>
 <div style="font-size:12px;color:var(--mut);margin:6px 0 4px">Preview on the real light (4 s, no motors):</div>
 <div class="pv"><button data-p="d">▶ Driving</button><button data-p="g">▶ Let go</button><button data-p="b">▶ Brake</button><button data-p="r">▶ Reverse</button><button id="tlReset" style="background:#2a3a4c">Back to default</button></div>
 <small>The chip has one brightness for all 64 LEDs, so "Bright edge" dims the inside by lighting fewer of its LEDs. Reverse always shows the down arrow. Brightness stops at 10 to protect the USB supply. These settings reset when the car restarts; tell Claude the one you like to make it the default.</small>
@@ -500,13 +506,14 @@ function tl(t){ const op=(0.25+0.75*Math.sqrt((2*t.lvl+1)/31)).toFixed(2);
   for(const b of $('look').children) b.classList.toggle('sel',b.dataset.v===t.look);
   for(const b of $('fill').children) b.classList.toggle('sel',+b.dataset.v===t.fill);
   $('fillRow').style.display=t.look==='edge'?'flex':'none';
-  if(Date.now()-tlTouch>1500) for(const k of ['drv','brk']) $(k).value=t[k]; $('drvV').textContent=$('drv').value; $('brkV').textContent=$('brk').value;
+  if(Date.now()-tlTouch>1500) for(const k of ['drv','brk','fn','fms']) $(k).value=t[k]; tlLabels();
   if(document.activeElement!==$('flash')) $('flash').checked=!!t.flash; }
 async function tlSend(q){ try{ const r=await fetch('/tail?'+q,{cache:'no-store'}); tl(await r.json()); }catch(e){} }
 for(let k=0;k<64;k++) $('big').appendChild(document.createElement('i'));
 $('look').onclick=e=>{ if(e.target.dataset.v) tlSend('look='+e.target.dataset.v+'&preview=d'); };
 $('fill').onclick=e=>{ if(e.target.dataset.v) tlSend('fill='+e.target.dataset.v+'&preview=d'); };
-let tlT=0; for(const k of ['drv','brk']) $(k).oninput=()=>{ tlTouch=Date.now(); $(k+'V').textContent=$(k).value; clearTimeout(tlT); tlT=setTimeout(()=>tlSend(k+'='+$(k).value+'&preview='+(k==='drv'?'d':'b')),120); };
+function tlLabels(){ $('drvV').textContent=$('drv').value; $('brkV').textContent=$('brk').value; $('fnV').textContent=$('fn').value+'×'; $('fmsV').textContent=$('fms').value+' ms'; }
+let tlT=0; for(const k of ['drv','brk','fn','fms']) $(k).oninput=()=>{ tlTouch=Date.now(); tlLabels(); clearTimeout(tlT); tlT=setTimeout(()=>tlSend(k+'='+$(k).value+'&preview='+(k==='drv'?'d':k==='brk'?'b':'g')),k[0]==='f'?400:120); };
 $('flash').onchange=()=>tlSend('flash='+($('flash').checked?1:0)+($('flash').checked?'&preview=g':''));
 document.querySelector('.pv').onclick=e=>{ if(e.target.dataset.p) tlSend('preview='+e.target.dataset.p); };
 $('tlReset').onclick=()=>tlSend('reset=1&preview=g');
