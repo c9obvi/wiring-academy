@@ -155,6 +155,7 @@ Status 2026-11-25: Stage 1a in progress. The dash, tail light and remote control
 3. Main switch when it arrives (power page step 7).
 4. Before anyone rides: set `TEST_MODE = false` and update over Wi-Fi.
 5. Stage 1: steering driver. Stage 2: steering pot and PID. Later: Xbox controller, battery-voltage sensing, the KiCad board.
+6. Dash upgrade (after Stage 1a): a 3-gang flip-cover toggle panel ([Nilight, 12V, 3-pin lit SPST](https://www.amazon.com/dp/B08SCGNRVS)) replaces the forward/reverse rocker (on = reverse), the fast/slow rocker (on = slow) and the remote/manual key (on = remote). Needs the pedal split from the direction rocker onto its own GPIO, plus a small firmware change. First version uses only the two switch tabs (lights off). The LED tab expects 12V and must never reach a GPIO; lighting them later needs a divider per switch (a job for the PCB).
 
 ## Deploy
 
