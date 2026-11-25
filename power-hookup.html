@@ -3,328 +3,399 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Power hookup · McLaren F1</title>
+<title>Power hookup, step by step · McLaren F1</title>
 <style>
 :root{--bg:#0e141b;--card:#151e28;--line:#2a3a4c;--txt:#e6edf3;--mut:#8fa3b8;--org:#ff8000}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
-main{max-width:1180px;margin:0 auto;padding:16px}
-h1{font-size:22px;margin:4px 0 2px}h1 span{color:var(--org)}
-.sub{color:var(--mut);margin:0 0 14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
-.card h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:0 0 10px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:860px){.grid{grid-template-columns:1fr}}
+body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+main{max-width:1240px;margin:0 auto;padding:14px}
+h1{font-size:21px;margin:2px 0}h1 span{color:var(--org)}
+.sub{color:var(--mut);margin:0 0 10px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+.card h3{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:14px 0 6px}
+.card h3:first-child{margin-top:0}
+.layout{display:block}
+.sticky{}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.sticky{position:static}}
 svg{width:100%;height:auto;display:block}
 svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
-.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;color:var(--mut);margin-top:8px}
-.legend i{display:inline-block;width:26px;border-radius:3px;vertical-align:middle;margin-right:6px}
-.warn{background:#33250a;border:1px solid #6b4a0f;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:14px}
-.bad{background:#3a1212;border:1px solid #7a2323;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:14px}
-.tip{background:#10273a;border:1px solid #1e4a6e;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:14px}
-.steps>div{display:flex;gap:10px;align-items:flex-start;padding:10px 8px;border-bottom:1px solid #1d2935;cursor:pointer;border-radius:8px}
-.steps>div:hover{background:#1a2532}.steps>div.cur{background:#2a1c08;outline:1px solid #6b4a0f}
-.steps input{width:20px;height:20px;margin-top:2px;accent-color:var(--org);flex:none}
-.steps b{color:#fff}.steps .n{color:var(--org);font-weight:800;min-width:24px}
-.steps .test{display:inline-block;background:#1b5e20;color:#fff;font-size:11px;font-weight:800;padding:1px 6px;border-radius:5px;margin-right:4px;letter-spacing:.04em}
+.dots{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.dots button{width:34px;height:30px;border-radius:8px;border:1px solid var(--line);background:#0f1720;color:var(--mut);font-weight:700;cursor:pointer}
+.dots button.done{background:#1b3a1f;color:#a5d6a7;border-color:#2e6b34}
+.dots button.cur{background:var(--org);color:#1b0f00;border-color:var(--org)}
+.dots button.test{box-shadow:inset 0 -3px 0 #43a047}
+.nav{display:flex;gap:10px;align-items:center;margin-top:12px}
+.nav button{background:#0f1720;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:11px 18px;font-weight:700;font-size:15px;cursor:pointer}
+.nav .next{background:var(--org);color:#1b0f00;border-color:var(--org);margin-left:auto}
+.nav label{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--mut);cursor:pointer}
+.nav input{width:20px;height:20px;accent-color:#43a047}
+.stitle{font-size:22px;font-weight:800;margin:0 0 4px}.stitle small{display:block;font-size:13px;color:var(--org);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.why{background:#10273a;border:1px solid #1e4a6e;border-radius:10px;padding:10px 12px;font-size:15px}
+.need{display:flex;flex-wrap:wrap;gap:6px}.need span{background:#0f1720;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13.5px}
+ol.do{margin:0;padding-left:22px}ol.do li{margin:6px 0}
+.check{background:#13301a;border:1px solid #2e6b34;border-radius:10px;padding:10px 12px;font-size:15px;margin:8px 0}
+.oops{background:#33250a;border:1px solid #6b4a0f;border-radius:10px;padding:10px 12px;font-size:15px;margin:8px 0}
+.danger{background:#3a1212;border:1px solid #7a2323;border-radius:10px;padding:10px 12px;font-size:15px;margin:8px 0}
+.detail{background:#0f1720;border:1px solid var(--line);border-radius:10px;padding:8px;margin:8px 0}
+.detail .cap{font-size:13px;color:var(--mut);text-align:center;margin-top:2px}
 table{width:100%;border-collapse:collapse;font-size:14px}
 td,th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left;vertical-align:top}
-th{color:var(--mut);font-weight:600}
-.chip{display:inline-block;width:30px;height:16px;border-radius:4px;vertical-align:middle;margin-right:6px;border:1px solid #0006}
-.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
-.bar button{background:#0f1720;color:var(--txt);border:1px solid var(--line);border-radius:9px;padding:7px 12px;font-weight:600;font-size:13px;cursor:pointer}
-.bar button.sel{background:var(--org);color:#1b0f00;border-color:var(--org)}
-#stepNote{font-size:14px;color:#ffd9a8;min-height:22px}
-.dim{opacity:.13;transition:opacity .2s}.hi{opacity:1;transition:opacity .2s}
-.hiw{filter:drop-shadow(0 0 5px #ffb300)}
-@media print{body{background:#fff;color:#000}.card{background:#fff;border-color:#999}}
+.chip{display:inline-block;width:28px;height:15px;border-radius:4px;vertical-align:middle;margin-right:6px;border:1px solid #0006}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--mut);margin-top:6px}
+.legend i{display:inline-block;width:24px;border-radius:3px;vertical-align:middle;margin-right:5px}
+details{margin:10px 0}summary{cursor:pointer;font-weight:700;color:#cfd8e3}
+b.r{color:#ff8a80}b.br{color:#d7b49e}
 </style>
 </head>
 <body>
 <main>
-<h1>Power hookup · <span>battery → fuse → switch → buses</span></h1>
-<p class="sub">The 12V side: the heavy wires. Work with the <b>battery unplugged</b> and <b>no fuses in the holders</b> until a step says otherwise. Click a step below, and the diagram lights up only the wires for that step.</p>
+<h1>Power hookup · <span>one step at a time</span></h1>
+<p class="sub">Go in order. Each step's picture shows the wiring <b>after</b> that step, with the new part glowing orange. Tick "done" before you move on. The ← → arrow keys also work.</p>
+<div class="dots" id="dots"></div>
 
-<div class="bad"><b>Two facts that change everything:</b> (1) the red <b>power button on the dash is only a signal</b>. It tells the ESP32 "car on" and carries no real current, so it can't switch power. (2) The <b>BTS7960 has no reverse-polarity protection</b>: battery + on its B− for even a second destroys it. That's why the buses get tested with a meter <b>before</b> any driver is connected.</div>
-
-<div class="card">
-  <h2>1 · The whole power picture</h2>
-  <div class="bar"><button id="showAll" class="sel">Show everything</button><span id="stepNote"></span></div>
-  <svg id="map" viewBox="0 150 1200 590"></svg>
-  <div class="legend">
-    <span><i style="background:#e53935;height:8px"></i>+12V, 14 AWG (heavy)</span>
-    <span><i style="background:#222;height:8px;outline:1px solid #8a9aaa"></i>Ground, 14 AWG</span>
-    <span><i style="background:#e53935;height:4px"></i>+12V, 18 AWG</span>
-    <span><i style="background:#222;height:4px;outline:1px solid #8a9aaa"></i>Ground, 18 AWG</span>
-    <span><i style="background:#8d6e63;height:8px"></i>Brown: the car's stock ground</span>
+<div class="layout">
+  <div class="sticky">
+    <div class="card" style="padding:10px">
+      <svg id="map" viewBox="0 120 1200 645" style="max-height:62vh"></svg>
+      <div class="legend">
+        <span><i style="background:#e53935;height:7px"></i>+ (positive)</span>
+        <span><i style="background:#8d6e63;height:7px"></i>brown: the car's ground (−)</span>
+        <span><i style="background:#222;height:7px;outline:1px solid #8a9aaa"></i>your new black ground (−)</span>
+        <span><i style="background:#ff8000;height:7px"></i>new in this step</span>
+      </div>
+    </div>
   </div>
+  <div class="card" id="step"></div>
 </div>
 
-<div class="card">
-  <h2>2 · Build order (click a step to see it on the diagram)</h2>
-  <div class="steps" id="steps"></div>
-</div>
+<details class="card"><summary>Words you'll see, in plain English</summary>
+<table>
+<tr><td><b>+ / −</b></td><td>Positive and negative (ground). Current flows out of +, through whatever it powers, and back to −. If + touches − directly, that's a <b>short</b>: huge current, heat, sparks. The fuse exists for that moment.</td></tr>
+<tr><td><b>Fuse</b></td><td>A deliberately weak link. Too much current melts its little metal strip and the circuit stops, before a wire gets hot. A 20A fuse lets up to 20 amps through. A blown fuse is a 30-cent part; replace it with the same number.</td></tr>
+<tr><td><b>Bus</b></td><td>One place where many wires share the same thing. Your "+ bus" is a 5-port Wago: everything plugged into it is connected to + together.</td></tr>
+<tr><td><b>Wago</b></td><td>The orange-lever connectors. Lever up, push the wire in all the way, lever down. Every port in one Wago is connected to every other port in it.</td></tr>
+<tr><td><b>Ferrule</b></td><td>The little metal tube you crimp on the end of a stripped wire, so the strands can't fray and every strand gets clamped. Blue = 14 AWG, red = 18 AWG, white = thin wire.</td></tr>
+<tr><td><b>AWG</b></td><td>Wire thickness. <b>Smaller number = thicker wire.</b> 14 AWG is your thick red/black, 18 AWG the thinner one.</td></tr>
+<tr><td><b>B+ / B− / M+ / M−</b></td><td>The big screw terminals on the BTS7960 motor driver. <b>B</b> = battery in, <b>M</b> = motor out.</td></tr>
+<tr><td><b>Buck</b></td><td>Your 12V → 5V converter. It feeds the ESP32 through a USB cable, like a car phone charger.</td></tr>
+</table></details>
 
-<div class="grid">
-  <div class="card">
-    <h2>3 · Your inline fuse holders: how to use one</h2>
-    <svg id="holder" viewBox="0 0 520 330"></svg>
-    <p style="margin:6px 0 0;font-size:14px">Each holder comes as <b>one loop of red wire</b> with the fuse socket in the middle. <b>Cut the loop</b> at the far end and you get two leads: one goes toward the battery, the other toward what it protects. Direction doesn't matter to a fuse. Strip about 10 mm and crimp a <b>blue ferrule</b> (14 AWG) on each end before it goes into a Wago or a screw terminal.</p>
-    <div class="tip">You'll use <b>2 holders</b>: one for the 20A main fuse and one for the steering driver's 10A fuse. The buck has its own fuse slot, so it doesn't need one.</div>
-  </div>
-  <div class="card">
-    <h2>4 · Which fuse goes where</h2>
-    <table>
-      <tr><th>Where</th><th>Fuse</th><th>Why</th></tr>
-      <tr><td><b>Main</b>, right after the big white plug</td><td><span class="chip" style="background:#fdd835"></span><b>20A</b></td><td>Protects every new wire. Two rear motors pulling hard stay under it.</td></tr>
-      <tr><td><b>Steering</b> driver B+</td><td><span class="chip" style="background:#e53935"></span><b>10A</b></td><td>Its feed is thinner 18 AWG wire, which the 20A fuse doesn't protect on its own. Not optional.</td></tr>
-      <tr><td><b>Buck</b>'s built-in slot</td><td><span class="chip" style="background:#9e9e9e"></span><b>2A</b></td><td>The buck pulls about 0.2A, and 1.5A even flat out. 3A is the most you should use.</td></tr>
-    </table>
-    <h2 style="margin-top:14px">Standard blade fuse colours</h2>
-    <table id="colors"></table>
-    <div class="warn"><b>Go by the number stamped on top, not the colour.</b> Some kits dye them differently (yours has orange ones, which are usually 5A).</div>
-  </div>
-</div>
-
-<div class="grid">
-  <div class="card">
-    <h2>5 · The main switch</h2>
-    <svg id="sw" viewBox="0 0 520 260"></svg>
-    <p style="margin:6px 0 0;font-size:14px">It goes <b>after</b> the 20A fuse, so the fuse also protects the switch's wires. Plain 2-wire toggle: one lead from the fuse, the other to the +12V Wago. Toggle with a <b>light</b> (3 wires): the third, usually black, goes to a spare port on the <b>GND Wago</b>. Send me a photo and I'll confirm which wire is which.</p>
-    <div class="warn"><b>Why you need it:</b> the ESP32 never sleeps (Wi-Fi), so the system draws about 0.1A all the time. That runs a 12V ride-on battery flat in a few days, and a fully flattened lead-acid battery gets damaged. <b>No switch yet?</b> Leave it out, wire the 20A fuse straight to Wago+ port 1, and <b>unplug the big white plug after every ride</b>.</div>
-  </div>
-  <div class="card">
-    <h2>6 · The big white plug</h2>
-    <svg id="plug" viewBox="0 0 520 260"></svg>
-    <p style="margin:6px 0 0;font-size:14px">Keep the plug: it's your battery disconnect. On this car its <b>pink/red</b> wire is <b>+</b> (after the stock breaker) and its <b>brown</b> wire is <b>−</b>: ground runs from battery − through the charge port first, which cuts it while charging. When the old board comes out, cut its wires <b>at the board end</b>, so the car-side half of the plug keeps long red and black leads. Those leads become your new power input. The battery half and the charge port stay stock.</p>
-    <div class="tip">Plug it in, then put the meter on the car-side leads: <b>red probe on the pink/red pin, black probe on the brown pin: +12.x V</b>. A minus sign means it's the other way round. Stop and tell me. Bonus check: push the charger's plug into the charge port (charger not in the wall). If the reading drops to 0 V, that's the charging safety switch, and it's working.</div>
-  </div>
-</div>
-
-<div class="card">
-  <h2>7 · Meter checks</h2>
-  <table>
-    <tr><th>When</th><th>Meter setting</th><th>Probes</th><th>Good</th><th>Stop if</th></tr>
-    <tr><td>Step 5, battery <b>unplugged</b>, 20A fuse <b>out</b></td><td>Ω / beep</td><td>Wago+ any port ↔ Wago− any port</td><td>No beep, open (OL)</td><td>Beeps or ~0 Ω: a short. Find it before going on.</td></tr>
-    <tr><td>Step 5, plugged in, fuse in, switch <b>OFF</b></td><td>DC V (20V range)</td><td>red on Wago+, black on Wago−</td><td>0 V</td><td>12 V: the switch is wired around, not through.</td></tr>
-    <tr><td>Step 5, switch <b>ON</b></td><td>DC V</td><td>red on Wago+, black on Wago−</td><td><b>+12.x V</b> (12.6+ is a full battery)</td><td>Negative: polarity is swapped. Unplug and fix it before connecting anything.</td></tr>
-    <tr><td>Step 8, buck connected</td><td>USB meter</td><td>in the buck's USB-A port</td><td>5.0–5.2 V</td><td>Nothing: check the 2A fuse and the buck's IN+/IN− orientation.</td></tr>
-  </table>
-</div>
-
-<div class="card">
-  <h2>8 · Send me photos of</h2>
-  <table>
-    <tr><td>The <b>switch</b> (how many wires, colours, any markings)</td><td>The <b>buck's input leads</b> and its fuse slot (and the fuse in it, if any)</td></tr>
-    <tr><td>The <b>big white plug</b>, both halves</td><td>Close-ups of the <b>breaker box</b> at the top and the <b>pink-wire cluster</b> on the right (any printing)</td></tr>
-    <tr><td>The <b>rear driver's big screw terminals</b> (B+ B− M+ M− labels)</td><td>Your layout under the seat before you power up</td></tr>
-  </table>
-</div>
+<details class="card"><summary>Fuse colours (always go by the number printed on top)</summary><table id="colors"></table></details>
 </main>
 
 <script>
 const NS='http://www.w3.org/2000/svg';
-function el(svg,tag,attrs,text){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!==undefined)e.textContent=text;svg.appendChild(e);return e;}
-function g(svg,step){return el(svg,'g',step?{'data-step':step}:{});}
-const RED='#e53935', BLK='#1e1e1e', STOCK='#546e7a';
-function wire(p,pts,color,w,label){
+const RED='#e53935', BLK='#1e1e1e', BRN='#8d6e63', ORG='#ff8000';
+function el(p,tag,a,t){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(t!==undefined)e.textContent=t;p.appendChild(e);return e;}
+function txt(p,x,y,t,o={}){return el(p,'text',{x,y,fill:o.c||'#cfd8e3','font-size':o.s||13,'font-weight':o.w||400,'text-anchor':o.a||'middle'},t);}
+function wire(p,pts,color,w,isNew){
   const d='M'+pts.map(q=>q.join(',')).join(' L');
-  el(p,'path',{d,fill:'none',stroke:'#0e141b',"stroke-width":w+6,"stroke-linejoin":"round","stroke-linecap":"round"});
-  if(color===BLK) el(p,'path',{d,fill:'none',stroke:'#8a9aaa',"stroke-width":w+2,"stroke-linejoin":"round","stroke-linecap":"round"});
-  el(p,'path',{d,fill:'none',stroke:color,"stroke-width":w,"stroke-linejoin":"round","stroke-linecap":"round"});
-  if(label){const [x,y,t]=label; el(p,'text',{x,y,fill:'#cfd8e3','font-size':13,'text-anchor':'middle'},t);}
+  if(isNew) el(p,'path',{d,fill:'none',stroke:ORG,'stroke-width':w+10,'stroke-opacity':.45,'stroke-linejoin':'round','stroke-linecap':'round'});
+  el(p,'path',{d,fill:'none',stroke:'#0e141b','stroke-width':w+5,'stroke-linejoin':'round','stroke-linecap':'round'});
+  if(color===BLK) el(p,'path',{d,fill:'none',stroke:'#8a9aaa','stroke-width':w+2,'stroke-linejoin':'round','stroke-linecap':'round'});
+  el(p,'path',{d,fill:'none',stroke:color,'stroke-width':w,'stroke-linejoin':'round','stroke-linecap':'round'});
 }
-function box(p,x,y,w,h,fill,stroke,title,sub){
+function glow(p,x,y,w,h){el(p,'rect',{x:x-6,y:y-6,width:w+12,height:h+12,rx:12,fill:'none',stroke:ORG,'stroke-width':4,'stroke-dasharray':'8 5'});}
+function rbox(p,x,y,w,h,fill,stroke,title,sub){
   el(p,'rect',{x,y,width:w,height:h,rx:10,fill,stroke,'stroke-width':2});
-  if(title) el(p,'text',{x:x+w/2,y:y+22,fill:'#fff','font-size':15,'font-weight':700,'text-anchor':'middle'},title);
-  if(sub) sub.split('|').forEach((s,i)=>el(p,'text',{x:x+w/2,y:y+40+i*16,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},s));
+  if(title) txt(p,x+w/2,y+22,title,{c:'#fff',s:15,w:700});
+  (sub||'').split('|').filter(Boolean).forEach((s,i)=>txt(p,x+w/2,y+40+i*16,s,{c:'#9fb3c8',s:12}));
 }
-function term(p,x,y,label,side,color){
-  el(p,'circle',{cx:x,cy:y,r:7,fill:'#c0c8d0',stroke:color||'#333','stroke-width':3});
-  el(p,'text',{x:x+(side==='l'?14:-14),y:y+5,fill:'#fff','font-size':14,'font-weight':700,'text-anchor':side==='l'?'start':'end'},label);
-}
-function fuse(p,x,y,color,amps,vertical){
+function term(p,x,y,label){el(p,'circle',{cx:x,cy:y,r:7,fill:'#c0c8d0',stroke:'#333','stroke-width':3});txt(p,x+14,y+5,label,{c:'#fff',s:14,w:700,a:'start'});}
+function fuse(p,x,y,color,amps,empty){
   el(p,'rect',{x:x-26,y:y-17,width:52,height:34,rx:8,fill:'#111',stroke:'#555','stroke-width':2});
-  el(p,'rect',{x:x-14,y:y-11,width:28,height:22,rx:3,fill:color,stroke:'#0008'});
-  el(p,'text',{x,y:y+5,fill:'#111','font-size':12,'font-weight':800,'text-anchor':'middle'},amps);
+  if(empty){el(p,'rect',{x:x-14,y:y-11,width:28,height:22,rx:3,fill:'none',stroke:'#666','stroke-dasharray':'3 3'});txt(p,x,y+4,'empty',{c:'#888',s:10});}
+  else{el(p,'rect',{x:x-14,y:y-11,width:28,height:22,rx:3,fill:color});txt(p,x,y+5,amps,{c:'#111',s:12,w:800});}
 }
-function wago(p,x,y,n,title,color){
+function wago(p,x,y,n,title,tcol){
   el(p,'rect',{x,y,width:64,height:40*n+20,rx:8,fill:'#d7dde2',stroke:'#9aa6b0','stroke-width':2});
-  for(let i=0;i<n;i++){ const cy=y+30+i*40;
+  for(let i=0;i<n;i++){const cy=y+30+i*40;
     el(p,'rect',{x:x+6,y:cy-13,width:22,height:26,rx:3,fill:'#f39c12',stroke:'#a35f00'});
-    el(p,'circle',{cx:x+46,cy,r:8,fill:'#444'});
-    el(p,'text',{x:x+46,y:cy+4,fill:'#fff','font-size':11,'font-weight':700,'text-anchor':'middle'},i+1);
+    el(p,'circle',{cx:x+46,cy,r:8,fill:'#444'}); txt(p,x+46,cy+4,i+1,{c:'#fff',s:11,w:700});}
+  if(title) txt(p,x+32,y-10,title,{c:tcol,s:14,w:800});
+}
+function wago2(p,x,y){
+  el(p,'rect',{x:x-20,y:y-16,width:40,height:32,rx:6,fill:'#d7dde2',stroke:'#9aa6b0','stroke-width':2});
+  el(p,'rect',{x:x-15,y:y-11,width:12,height:22,rx:2,fill:'#f39c12'});el(p,'rect',{x:x+3,y:y-11,width:12,height:22,rx:2,fill:'#f39c12'});
+}
+function ferr(p,x,y){el(p,'rect',{x:x-7,y:y-5,width:14,height:10,rx:2,fill:'#1e88e5'});}
+
+// ---------- the big picture, drawn from the state after each step ----------
+const WP=230, WN=530, P=i=>WP+30+(i-1)*40, N=i=>WN+30+(i-1)*40, X0=780, XR=844, DX=995;
+function drawMap(st){
+  const M=document.getElementById('map'); M.innerHTML='';
+  M.setAttribute('viewBox',(st.rear||st.buck||st.steer)?'0 120 1200 645':'0 120 910 645');  // zoom in until the drivers join
+  const n=k=>st.glow.includes(k);
+  rbox(M,20,P(1)-60,120,N(1)-P(1)+120,'#1b2631','#455a64','BATTERY','12V');
+  txt(M,124,P(1)+7,'+',{c:'#ff8a80',s:24,w:800}); txt(M,124,N(1)+8,'−',{c:'#cfd8e3',s:26,w:800});
+  if(st.batt){ el(M,'rect',{x:140,y:P(1)-9,width:26,height:18,rx:3,fill:'#222',stroke:'#777'});
+    if(n('batt')){ glow(M,136,P(1)-13,34,26); txt(M,80,P(1)-72,'+ connector ON: LIVE',{c:ORG,s:13,w:800}); } }
+  else { el(M,'rect',{x:160,y:P(1)-9,width:26,height:18,rx:3,fill:'#222',stroke:n('batt')?ORG:'#777','stroke-width':n('batt')?3:1});
+    txt(M,90,P(1)-86,'+ connector pulled off:',{c:n('batt')?ORG:'#9fb3c8',s:12,w:700}); txt(M,90,P(1)-72,'everything is dead',{c:n('batt')?ORG:'#9fb3c8',s:12,w:700}); }
+  wire(M,[[st.batt?166:186,P(1)],[200,P(1)]],RED,7);
+  el(M,'rect',{x:200,y:P(1)-15,width:44,height:30,rx:5,fill:'#111',stroke:'#666'});
+  txt(M,222,P(1)-24,'breaker',{c:'#9fb3c8',s:12}); txt(M,222,P(1)+32,'(stock)',{c:'#9fb3c8',s:11});
+  wire(M,[[262,P(1)],[262,N(1)-56]],RED,4);
+  wire(M,[[244,P(1)],[300,P(1)]],RED,7);
+  wire(M,[[140,N(1)],[196,N(1)]],BLK,6);
+  rbox(M,182,N(1)-56,100,96,'#1b2631','#455a64','Charge','port (stock)');
+  txt(M,232,N(1)+20,'leave alone',{c:'#9fb3c8',s:11});
+  wire(M,[[282,N(1)],[300,N(1)]],BRN,7);
+  if(st.plug==='on'){
+    el(M,'rect',{x:300,y:P(1)-40,width:56,height:N(1)-P(1)+80,rx:8,fill:'#eceff1',stroke:n('plug')?ORG:'#90a4ae','stroke-width':n('plug')?4:2});
+    txt(M,328,P(1)-50,'big white plug',{c:'#fff',s:14,w:700});
+    el(M,'circle',{cx:328,cy:P(1),r:9,fill:'#b71c1c'}); el(M,'circle',{cx:328,cy:N(1),r:9,fill:'#5d4037'});
+    txt(M,328,P(1)+30,'pink/red',{c:'#b71c1c',s:11,w:700}); txt(M,328,N(1)-18,'brown',{c:'#5d4037',s:11,w:700});
+    if(n('plug')){ el(M,'circle',{cx:328,cy:P(1),r:16,fill:'none',stroke:'#ffeb3b','stroke-width':3}); el(M,'circle',{cx:328,cy:N(1),r:16,fill:'none',stroke:'#ffeb3b','stroke-width':3});
+      txt(M,430,P(1)+5,'← red probe',{c:'#ffeb3b',s:14,w:700}); txt(M,436,N(1)+5,'← black probe',{c:'#ffeb3b',s:14,w:700}); }
+  } else if(st.plug==='cut'){
+    el(M,'rect',{x:400,y:P(1)-40,width:56,height:N(1)-P(1)+80,rx:8,fill:'none',stroke:'#555','stroke-width':2,'stroke-dasharray':'6 5'});
+    txt(M,428,P(1)-50,'plug: GONE',{c:'#888',s:14,w:700}); txt(M,428,(P(1)+N(1))/2,'✂',{c:ORG,s:40}); txt(M,428,(P(1)+N(1))/2+30,'in the bin',{c:'#888',s:12});
   }
-  el(p,'text',{x:x+32,y:y-10,fill:color,'font-size':14,'font-weight':800,'text-anchor':'middle'},title);
+  if(st.plug!=='on'){
+    const endX=360;
+    wire(M,[[300,P(1)],[endX,P(1)]],RED,6,n('ends')||n('cut')); wire(M,[[300,N(1)],[endX,N(1)]],BRN,6,n('ends')||n('cut'));
+    if(st.ends){ferr(M,endX,P(1)); ferr(M,endX,N(1));}
+    else { el(M,'rect',{x:endX-4,y:P(1)-8,width:16,height:16,rx:2,fill:'#333',stroke:'#ffb74d'}); el(M,'rect',{x:endX-4,y:N(1)-8,width:16,height:16,rx:2,fill:'#333',stroke:'#ffb74d'});
+      txt(M,330,P(1)+30,'taped end',{c:'#ffb74d',s:11}); txt(M,330,N(1)-18,'taped end',{c:'#ffb74d',s:11}); }
+    if(st.ends&&!st.gnd){ txt(M,330,P(1)+30,'pink/red = +',{c:'#ff8a80',s:12,w:700}); txt(M,330,N(1)-18,'brown = −',{c:'#d7b49e',s:12,w:700}); }
+  }
+  if(st.gnd){ wire(M,[[367,N(1)],[X0,N(1)]],BRN,6,n('gnd')); wago(M,X0,WN,5,'− BUS (ground)','#b0bec5'); if(n('gnd')) glow(M,X0,WN,64,220);
+    txt(M,570,N(1)-12,'brown → port 1',{c:'#d7b49e',s:13,w:700}); }
+  if(st.fuse){
+    wire(M,[[367,P(1)],[430,P(1)]],RED,6,n('fuse')); wago2(M,450,P(1));
+    wire(M,[[470,P(1)],[500,P(1)]],RED,6,n('fuse')); fuse(M,526,P(1),'#fdd835','20A',!st.fuseIn);
+    if(n('fuse')||n('fuseIn')) glow(M,496,P(1)-20,60,40);
+    txt(M,526,P(1)-28,'20A fuse holder',{c:'#fdd835',s:12,w:700});
+    txt(M,450,P(1)+34,'small Wago',{c:'#9fb3c8',s:11});
+    wire(M,[[552,P(1)],[st.sw?590:X0,P(1)]],RED,6,n('fuse')||n('sw'));
+    wago(M,X0,WP,5,'+ BUS (12V)',RED); if(n('sw')||n('fuse')) glow(M,X0,WP,64,220);
+  }
+  if(st.sw){
+    wago2(M,610,P(1)); txt(M,610,P(1)+34,'small Wago',{c:'#9fb3c8',s:11});
+    wire(M,[[630,P(1)],[650,P(1)]],RED,6,n('sw'));
+    el(M,'rect',{x:650,y:P(1)-24,width:76,height:48,rx:8,fill:'#263238',stroke:n('sw')?ORG:'#90a4ae','stroke-width':n('sw')?4:2});
+    el(M,'rect',{x:683,y:P(1)-42,width:11,height:26,rx:4,fill:'#b0bec5',transform:`rotate(${st.swOn?20:-20} 688 ${P(1)-16})`});
+    txt(M,688,P(1)+6,'SWITCH',{c:'#fff',s:12,w:800}); txt(M,688,P(1)+42,st.swOn?'ON':'OFF',{c:st.swOn?'#a5d6a7':'#ff8a80',s:13,w:800});
+    wire(M,[[726,P(1)],[X0,P(1)]],RED,6,n('sw'));
+  }
+  if(st.v12){ txt(M,600,(P(1)+N(1))/2+10,'meter across the buses: '+st.v12,{c:'#a5d6a7',s:16,w:800}); }
+  if(st.rear){
+    rbox(M,DX,180,190,140,'#1d2b1d',n('rear')?ORG:'#43a047','BTS7960 #1','rear drive');
+    term(M,DX,225,'B+'); term(M,DX,285,'B−'); txt(M,DX+148,250,'M+ M−',{c:'#9fb3c8',s:12}); txt(M,DX+148,266,'empty for now',{c:'#9fb3c8',s:11});
+    wire(M,[[XR,N(2)],[945,N(2)],[945,285],[DX,285]],BLK,7,n('rear'));
+    wire(M,[[XR,P(2)],[870,P(2)],[870,225],[DX,225]],RED,7,n('rear'));
+  }
+  if(st.buck){
+    rbox(M,DX,560,190,150,'#2a2516',n('buck')?ORG:'#f9a825','BUCK 12V→5V','');
+    term(M,DX,600,'IN+'); term(M,DX,660,'IN−'); fuse(M,DX+135,600,'#9e9e9e','2A',!st.buckFuse);
+    el(M,'rect',{x:DX+112,y:650,width:46,height:22,rx:3,fill:'#90a4ae'}); txt(M,DX+135,666,'USB-A',{c:'#111',s:11,w:800});
+    txt(M,DX+135,694,st.usb?'→ ESP32 ✓':'→ ESP32 later',{c:st.usb?'#a5d6a7':'#9fb3c8',s:12,w:st.usb?700:400});
+    wire(M,[[XR,N(4)],[915,N(4)],[915,660],[DX,660]],BLK,4,n('buck'));
+    wire(M,[[XR,P(4)],[858,P(4)],[858,600],[DX,600]],RED,4,n('buck'));
+  }
+  if(st.steer){
+    rbox(M,DX,370,190,140,'#1d2b1d',n('steer')?ORG:'#43a047','BTS7960 #2','steering');
+    term(M,DX,410,'B+'); term(M,DX,470,'B−');
+    wire(M,[[XR,N(3)],[960,N(3)],[960,470],[DX,470]],BLK,4,n('steer'));
+    wire(M,[[XR,P(3)],[884,P(3)],[884,410],[900,410]],RED,4,n('steer')); fuse(M,925,410,'#e53935','10A',true); wire(M,[[951,410],[DX,410]],RED,4,n('steer'));
+  }
 }
-const port=(y0,i)=>y0+30+(i-1)*40;
 
-// ---------- main map ----------
-const M=document.getElementById('map');
-const WP=200, WN=500;                 // Wago+ and Wago- tops
-const P=i=>port(WP,i), N=i=>port(WN,i);
-const X0=760, XR=824;                 // wago left / right edges
-// stock part
-let s=g(M,'stock');
-box(s,20,180,140,360,'#1b2631','#455a64','BATTERY','12V|sealed leads');
-term(s,160,P(1),'','r',RED); term(s,160,N(1),'','r','#000');
-el(s,'text',{x:140,y:P(1)+6,fill:'#ff8a80','font-size':22,'font-weight':800,'text-anchor':'middle'},'+'); el(s,'text',{x:140,y:N(1)+7,fill:'#cfd8e3','font-size':24,'font-weight':800,'text-anchor':'middle'},'−');
-wire(s,[[160,P(1)],[195,P(1)]],RED,8);
-el(s,'rect',{x:195,y:P(1)-16,width:46,height:32,rx:5,fill:'#111',stroke:'#666'});
-el(s,'text',{x:218,y:P(1)-24,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'breaker box');
-el(s,'text',{x:218,y:P(1)+34,fill:'#9fb3c8','font-size':11,'text-anchor':'middle'},'(stock)');
-wire(s,[[241,P(1)],[300,P(1)]],RED,8);
-wire(s,[[262,P(1)],[262,N(1)-58]],RED,5);
-wire(s,[[160,N(1)],[196,N(1)]],BLK,8);
-box(s,180,N(1)-58,104,100,'#1b2631','#455a64','Charge','port (stock)');
-el(s,'text',{x:232,y:N(1)+20,fill:'#9fb3c8','font-size':11,'text-anchor':'middle'},'cuts ground');
-el(s,'text',{x:232,y:N(1)+34,fill:'#9fb3c8','font-size':11,'text-anchor':'middle'},'while charging');
-wire(s,[[284,N(1)],[300,N(1)]],'#8d6e63',8);
-el(s,'text',{x:292,y:N(1)+62,fill:'#bcaaa4','font-size':12,'font-weight':700,'text-anchor':'middle'},'brown = −');
-el(s,'text',{x:292,y:P(1)-52,fill:'#ff8a80','font-size':12,'font-weight':700,'text-anchor':'middle'},'');
-// the plug
-s=g(M,'plug');
-el(s,'rect',{x:300,y:P(1)-40,width:46,height:N(1)-P(1)+80,rx:8,fill:'#eceff1',stroke:'#90a4ae','stroke-width':2});
-el(s,'rect',{x:352,y:P(1)-40,width:46,height:N(1)-P(1)+80,rx:8,fill:'#eceff1',stroke:'#ff8000','stroke-width':3});
-el(s,'text',{x:349,y:P(1)-52,fill:'#fff','font-size':14,'font-weight':700,'text-anchor':'middle'},'big white plug');
-el(s,'text',{x:323,y:(P(1)+N(1))/2,fill:'#37474f','font-size':12,'font-weight':700,'text-anchor':'middle',transform:`rotate(-90 323 ${(P(1)+N(1))/2})`},'battery half');
-el(s,'text',{x:375,y:(P(1)+N(1))/2,fill:'#b35a00','font-size':12,'font-weight':700,'text-anchor':'middle',transform:`rotate(-90 375 ${(P(1)+N(1))/2})`},'car half (old board pigtail)');
-// step 3: ground in
-s=g(M,'3'); wire(s,[[398,N(1)],[X0,N(1)]],BLK,8,[560,N(1)-12,'from the brown pin → GND Wago port 1']);
-// step 4: red chain
-s=g(M,'4');
-wire(s,[[398,P(1)],[470,P(1)]],RED,8); fuse(s,496,P(1),'#fdd835','20A');
-el(s,'text',{x:496,y:P(1)-26,fill:'#fdd835','font-size':13,'font-weight':700,'text-anchor':'middle'},'main fuse');
-wire(s,[[522,P(1)],[590,P(1)]],RED,8);
-el(s,'rect',{x:590,y:P(1)-24,width:80,height:48,rx:8,fill:'#263238',stroke:'#ff8000','stroke-width':2});
-el(s,'rect',{x:624,y:P(1)-40,width:12,height:26,rx:4,fill:'#b0bec5',transform:`rotate(20 630 ${P(1)-14})`});
-el(s,'text',{x:630,y:P(1)+6,fill:'#fff','font-size':13,'font-weight':800,'text-anchor':'middle'},'SWITCH');
-el(s,'text',{x:630,y:P(1)+42,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'30A toggle');
-wire(s,[[670,P(1)],[X0,P(1)]],RED,8);
-// wagos
-s=g(M,'bus'); wago(s,X0,WP,5,'+12V BUS',RED); wago(s,X0,WN,5,'GND BUS','#b0bec5');
-el(s,'text',{x:X0+32,y:P(5)+44,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'port 5: spare');
-el(s,'text',{x:X0+32,y:N(5)+44,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'port 5: spare / switch light');
-// devices
-const DX=990;
-s=g(M,'dev');
-box(s,DX,150,190,150,'#1d2b1d','#43a047','BTS7960 #1','rear drive');
-term(s,DX,190,'B+','l',RED); term(s,DX,260,'B−','l','#000');
-el(s,'text',{x:DX+150,y:205,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'M+ M−');
-el(s,'text',{x:DX+150,y:221,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'→ motors');
-box(s,DX,350,190,150,'#1d2b1d','#43a047','BTS7960 #2','steering');
-term(s,DX,390,'B+','l',RED); term(s,DX,460,'B−','l','#000');
-el(s,'text',{x:DX+150,y:405,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'M+ brown');
-el(s,'text',{x:DX+150,y:421,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'M− blue');
-box(s,DX,560,190,160,'#2a2516','#f9a825','BUCK 12V→5V','');
-term(s,DX,600,'IN+','l',RED); term(s,DX,670,'IN−','l','#000');
-fuse(s,DX+130,600,'#9e9e9e','2A');
-el(s,'text',{x:DX+130,y:632,fill:'#9fb3c8','font-size':11,'text-anchor':'middle'},'its own slot');
-el(s,'rect',{x:DX+110,y:660,width:46,height:22,rx:3,fill:'#90a4ae'});
-el(s,'text',{x:DX+133,y:676,fill:'#111','font-size':11,'font-weight':800,'text-anchor':'middle'},'USB-A');
-el(s,'text',{x:DX+133,y:705,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'→ cable → ESP32');
-// step 6: rear driver
-s=g(M,'6');
-wire(s,[[XR,N(2)],[930,N(2)],[930,260],[DX,260]],BLK,8);
-wire(s,[[XR,P(2)],[850,P(2)],[850,190],[DX,190]],RED,8,[905,182,'14 AWG']);
-// step 7: buck
-s=g(M,'7');
-wire(s,[[XR,N(4)],[900,N(4)],[900,670],[DX,670]],BLK,4);
-wire(s,[[XR,P(4)],[840,P(4)],[840,600],[DX,600]],RED,4,[915,592,'18 AWG']);
-// step 9: steering
-s=g(M,'9');
-wire(s,[[XR,N(3)],[945,N(3)],[945,460],[DX,460]],BLK,4);
-wire(s,[[XR,P(3)],[862,P(3)],[862,390],[876,390]],RED,4);
-fuse(s,902,390,'#e53935','10A');
-wire(s,[[928,390],[DX,390]],RED,4);
-el(s,'text',{x:902,y:422,fill:'#ff8a80','font-size':12,'font-weight':700,'text-anchor':'middle'},'steering fuse');
+// ---------- small "how to" drawings ----------
+const D={
+meter(p){ el(p,'rect',{x:150,y:10,width:120,height:180,rx:14,fill:'#f9a825',stroke:'#7a5a00','stroke-width':2});
+  el(p,'rect',{x:165,y:22,width:90,height:36,rx:4,fill:'#c5d6b8'}); txt(p,210,47,'12.6',{c:'#1b2b12',s:22,w:800});
+  el(p,'circle',{cx:210,cy:105,r:30,fill:'#333'}); el(p,'line',{x1:210,y1:105,x2:236,y2:88,stroke:'#fff','stroke-width':4});
+  txt(p,252,82,'V⎓',{c:'#111',s:14,w:800,a:'start'}); txt(p,210,152,'COM    V',{c:'#111',s:12,w:700});
+  el(p,'circle',{cx:188,cy:168,r:7,fill:'#111'}); el(p,'circle',{cx:232,cy:168,r:7,fill:'#c62828'});
+  wire(p,[[188,175],[150,200],[60,200]],BLK,4); wire(p,[[232,175],[280,200],[370,200]],RED,4);
+  txt(p,40,197,'black',{c:'#cfd8e3',s:12}); txt(p,395,197,'red',{c:'#ff8a80',s:12});
+  txt(p,300,40,'dial to V⎓',{c:'#ffeb3b',s:13,w:700,a:'start'}); txt(p,300,58,'(DC volts; pick',{c:'#ffeb3b',s:12,a:'start'}); txt(p,300,74,'"20" if it has',{c:'#ffeb3b',s:12,a:'start'}); txt(p,300,90,'ranges)',{c:'#ffeb3b',s:12,a:'start'});},
+cut(p){ wire(p,[[20,60],[400,60]],RED,7); wire(p,[[20,150],[400,150]],BRN,7);
+  el(p,'rect',{x:330,y:40,width:70,height:130,rx:6,fill:'#eceff1'}); txt(p,365,110,'plug',{c:'#333',s:13,w:700});
+  el(p,'line',{x1:315,y1:42,x2:315,y2:78,stroke:'#fff','stroke-width':3}); txt(p,315,32,'✂ 1',{c:ORG,s:15,w:800});
+  el(p,'line',{x1:315,y1:132,x2:315,y2:168,stroke:'#fff','stroke-width':3}); txt(p,290,128,'✂ 2',{c:ORG,s:15,w:800});
+  txt(p,150,105,'one wire at a time, right next to the plug',{c:'#cfd8e3',s:13});
+  txt(p,210,198,'never both in one snip: the blade would join + and −',{c:'#ff8a80',s:13,w:700});},
+strip(p){ el(p,'rect',{x:30,y:80,width:250,height:30,rx:8,fill:'#d84315'}); el(p,'rect',{x:280,y:86,width:80,height:18,rx:3,fill:'#c98b4a'});
+  for(let i=0;i<6;i++) el(p,'line',{x1:282,y1:89+i*2.6,x2:358,y2:89+i*2.6,stroke:'#e0a96d','stroke-width':1});
+  el(p,'line',{x1:280,y1:130,x2:360,y2:130,stroke:'#ffeb3b','stroke-width':2}); txt(p,320,150,'about 11 mm bare',{c:'#ffeb3b',s:13,w:700});
+  txt(p,155,70,'insulation',{c:'#cfd8e3',s:12}); txt(p,320,70,'copper',{c:'#e0a96d',s:12});
+  txt(p,210,190,'twist the strands so none stick out',{c:'#cfd8e3',s:13});},
+ferrule(p){ el(p,'rect',{x:30,y:80,width:180,height:30,rx:8,fill:'#d84315'}); el(p,'rect',{x:210,y:75,width:40,height:40,rx:6,fill:'#1e88e5'});
+  el(p,'rect',{x:250,y:86,width:80,height:18,rx:2,fill:'#cfd8dc'}); txt(p,290,70,'metal tube',{c:'#cfd8e3',s:12}); txt(p,230,140,'plastic collar',{c:'#64b5f6',s:12});
+  txt(p,210,172,'push the wire in until the insulation meets the collar,',{c:'#cfd8e3',s:13}); txt(p,210,192,'then squeeze the metal part in the crimper. Tug: it must not move.',{c:'#cfd8e3',s:13});},
+wago(p){ const one=(x,up,label)=>{ el(p,'rect',{x,y:70,width:90,height:70,rx:8,fill:'#d7dde2',stroke:'#9aa6b0','stroke-width':2});
+    el(p,'rect',{x:x+10,y:up?30:62,width:30,height:up?44:14,rx:4,fill:'#f39c12',stroke:'#a35f00',transform:up?`rotate(-25 ${x+25} 74)`:''});
+    txt(p,x+45,170,label,{c:'#cfd8e3',s:12});};
+  one(15,true,'1. lever UP'); one(165,true,'2. wire in, all the way'); wire(p,[[120,115],[175,115]],RED,6); ferr(p,172,115); one(315,false,'3. lever DOWN, tug');
+  txt(p,210,200,'you can see the metal through the clear side',{c:'#9fb3c8',s:12});},
+screw(p){ el(p,'rect',{x:110,y:40,width:200,height:110,rx:6,fill:'#2e7d32',stroke:'#1b5e20','stroke-width':2});
+  [150,270].forEach(x=>{ el(p,'circle',{cx:x,cy:70,r:16,fill:'#bdbdbd'}); el(p,'line',{x1:x-10,y1:70,x2:x+10,y2:70,stroke:'#555','stroke-width':3}); el(p,'rect',{x:x-14,y:104,width:28,height:30,rx:3,fill:'#111'});});
+  txt(p,150,30,'B+',{c:'#fff',s:14,w:800}); txt(p,270,30,'B−',{c:'#fff',s:14,w:800});
+  wire(p,[[150,200],[150,138]],RED,6); wire(p,[[270,200],[270,138]],BLK,6);
+  txt(p,320,170,'loosen · ferrule in · tighten · tug',{c:'#cfd8e3',s:12,a:'start'});},
+holder(p){ el(p,'path',{d:'M110,50 C 20,50 20,170 110,170 C 200,170 200,50 110,50',fill:'none',stroke:RED,'stroke-width':6}); fuse(p,110,50,'#fdd835','20A',true);
+  txt(p,110,200,'as it comes: one loop',{c:'#9fb3c8',s:12}); el(p,'line',{x1:95,y1:158,x2:125,y2:182,stroke:'#fff','stroke-width':3}); el(p,'line',{x1:125,y1:158,x2:95,y2:182,stroke:'#fff','stroke-width':3});
+  txt(p,145,186,'✂ cut here',{c:ORG,s:14,w:700,a:'start'});
+  wire(p,[[250,110],[310,110]],RED,6); fuse(p,336,110,'#fdd835','20A',true); wire(p,[[362,110],[415,110]],RED,6); ferr(p,250,110); ferr(p,415,110);
+  txt(p,336,150,'after: two ends,',{c:'#9fb3c8',s:12}); txt(p,336,166,'strip + ferrule both',{c:'#9fb3c8',s:12});},
+fuseIn(p){ el(p,'rect',{x:140,y:100,width:140,height:60,rx:10,fill:'#111',stroke:'#555','stroke-width':2}); el(p,'rect',{x:180,y:20,width:60,height:46,rx:5,fill:'#fdd835'});
+  txt(p,210,50,'20',{c:'#111',s:20,w:800}); el(p,'rect',{x:190,y:66,width:10,height:30,fill:'#bbb'}); el(p,'rect',{x:220,y:66,width:10,height:30,fill:'#bbb'});
+  txt(p,210,190,'push straight down into the holder, then snap the cap shut',{c:'#cfd8e3',s:13}); txt(p,300,45,'read the number',{c:'#ffeb3b',s:12,a:'start'}); txt(p,300,61,'on top: 20',{c:'#ffeb3b',s:12,a:'start'});},
+toggle(p){ el(p,'rect',{x:150,y:70,width:120,height:70,rx:10,fill:'#263238',stroke:'#90a4ae','stroke-width':2});
+  el(p,'rect',{x:203,y:22,width:14,height:56,rx:5,fill:'#b0bec5',transform:'rotate(20 210 76)'}); txt(p,210,115,'ON / OFF',{c:'#fff',s:13,w:800});
+  wire(p,[[150,105],[60,105]],RED,5); wire(p,[[270,105],[360,105]],RED,5); txt(p,60,90,'lead 1',{c:'#cfd8e3',s:12}); txt(p,360,90,'lead 2',{c:'#cfd8e3',s:12});
+  txt(p,210,180,'a plain mechanical switch. No relay, no electronics.',{c:'#cfd8e3',s:13});},
+};
+const detail=(name,cap)=>`<div class="detail"><svg viewBox="0 0 420 210" data-d="${name}"></svg><div class="cap">${cap}</div></div>`;
 
-// ---------- steps ----------
+// ---------- the steps ----------
+const BASE={batt:true,plug:'on',ends:false,gnd:false,fuse:false,fuseIn:false,sw:false,swOn:false,rear:false,buck:false,buckFuse:false,usb:false,steer:false,glow:[]};
+const AFTER_SW={batt:false,plug:'gone',ends:true,gnd:true,fuse:true,sw:true};
 const STEPS=[
- ['1','stock',"<b>Unplug the battery.</b> Take every fuse out of every holder, the buck's slot included. Cut both inline fuse holder loops (see section 3)."],
- ['2','plug',"<b>Car half of the big white plug:</b> cut the old board's wires at the board end so you keep long leads on the plug. On this car the plug's <b>pink/red pin is +</b> and its <b>brown pin is − (ground)</b>. Go by which pin they mate with, not by the old board's wire colours. Strip them and crimp blue ferrules on."],
- ['3','3',"<b>Ground first:</b> the lead that mates with the <b>brown</b> pin → <b>GND Wago, port 1</b>."],
- ['4','4',"<b>The red chain:</b> the lead that mates with the <b>pink/red</b> pin → one lead of the <b>20A fuse holder</b> (empty) → its other lead → <b>switch</b> → switch's other lead → <b>+12V Wago, port 1</b>. Join the leads with 2-port Wagos or the switch's own terminals. Switch <b>OFF</b>."],
- ['5','bus',"<span class='test'>TEST</span><b>Buses only, nothing else connected.</b> Beep check between the two Wagos with the battery unplugged (must NOT beep). Then: fuse in (<b>20A</b>), plug in the battery, switch OFF = 0 V, switch ON = <b>+12.x V</b>, red probe on Wago+. Switch OFF and <b>unplug the battery</b> again."],
- ['6','6',"<b>Rear driver:</b> 14 AWG red from <b>+12V Wago port 2 → B+</b>, 14 AWG black from <b>GND Wago port 2 → B−</b>. Read the labels on the driver twice; B+ and B− reversed kills it."],
- ['7','7',"<b>Buck:</b> its red input lead → <b>+12V Wago port 4</b>, its black → <b>GND Wago port 4</b>. Put a <b>2A</b> fuse in its slot."],
- ['8','7',"<span class='test'>TEST</span>Plug in the battery, switch ON, USB meter in the buck's USB port: <b>5.0–5.2 V</b>. Then move the ESP32's USB cable from the power bank to the buck. Watch the dashboard: it should come back on its own."],
- ['9','9',"<b>Steering (when you get to it):</b> the second fuse holder (<b>10A</b>) from <b>+12V Wago port 3 → driver #2 B+</b>, black from <b>GND Wago port 3 → B−</b>. Both 18 AWG. Leave the 10A fuse out until we test steering."],
- ['10','9',"<b>Before any drive test, wheels off the ground.</b> After riding: switch OFF. No switch yet? Unplug the big white plug."],
+{t:'Read this first',st:{},body:`
+<div class="why"><b>Can the ESP32 handle all this? Yes, because it never touches the motor power.</b> The ESP32 only sends tiny 3.3V "go" signals, a few thousandths of an amp. The <b>BTS7960 drivers</b> do the heavy lifting: they're rated for 43 amps and switch the battery's power into the motors. The <b>buck</b> turns 12V into 5V for the ESP32, like a phone charger. You don't need a custom board or extra capacitors: the driver and buck boards already have their own. The custom PCB later is just a tidier version of the same thing.</div>
+<h3>Is 12V dangerous?</h3>
+<p>It can't shock you; you can touch both battery terminals with dry hands and feel nothing. The real danger is a <b>short circuit</b>: + touching − through a bare wire or a metal tool. A battery can push a huge current through that, enough to melt wire and burn fingers. Everything on this page exists to stop that: the battery stays disconnected while you work, and the <b>fuse</b> blows if anything ever shorts.</p>
+<div class="danger"><b>Rules for the whole job:</b> take off rings and metal watch bands. Work with the battery disconnected (step 2 shows how). Never let a bare + wire touch metal or a − wire. Tape any bare end you're not using right now.</div>
+<h3>Did I ruin anything by cutting?</h3>
+<p>No. Any cut wire can be joined back with a Wago in ten seconds. Nothing on this car is irreplaceable, and even the stock board could be wired back the same way.</p>
+<h3>What you're building</h3>
+<p>The battery's two wires go to two "buses" (5-port Wagos): one for <b class="r">+</b>, one for <b class="br">−</b>. On the + side there's a <b>fuse</b> (safety) and a <b>switch</b> (on/off). Then each thing that needs power, the two drivers and the buck, gets one wire from each bus. The picture on the left builds up as you go.</p>`},
+{t:'Check the plug with your meter',test:true,st:{glow:['plug']},need:['multimeter'],body:`
+<div class="why">Before cutting anything, prove which plug wire is + and which is −, and that the battery is charged. One minute, and it makes sure the rest of this page is right for your car.</div>
+${detail('meter','Black lead in COM, red lead in V. Dial to V with the straight line (⎓) = DC volts.')}
+<ol class="do"><li>Set the meter as shown above.</li>
+<li>Find the white plug that used to go into the old board. Its two wires are <b class="r">pink/red</b> and <b class="br">brown</b>.</li>
+<li>Touch the <b>red probe</b> to the metal inside the pink/red side and the <b>black probe</b> to the metal inside the brown side. If you can't reach inside, slide the probe tip in from the back, alongside the wire, until it touches the metal clip.</li>
+<li>Read the number.</li>
+<li><i>Bonus:</i> keep the probes there and push the charger's plug into the car's charge port (charger <b>not</b> plugged into the wall). Watch the number.</li></ol>
+<div class="check"><b>Good:</b> <b>12.0 to 13.0</b> with no minus sign (12.6+ means a full battery). If the bonus test drops it to <b>0</b>, that's the charging safety switch, and it's working. Tell me both numbers.</div>
+<div class="oops"><b>Minus sign</b> (like −12.4)? The colours are the other way round on your car. Stop and tell me. <b>Below 11.5</b>? Charge the battery first. <b>0 or blank</b>? A probe isn't touching metal; try again.</div>`},
+{t:'Disconnect the battery',st:{batt:false,glow:['batt']},need:['your hands'],body:`
+<div class="why">With the battery disconnected, nothing can spark or short while you cut and wire. You'll reconnect it only at the test steps.</div>
+<ol class="do"><li>Look at the battery's <b>+</b> corner (under the red cover). A wire with a black rubber boot is pushed onto a flat metal tab.</li>
+<li>Grip the <b>boot/connector</b>, not the wire, and pull it straight off the tab. Wiggle gently if it's tight.</li>
+<li>Tuck it aside so its metal can't touch anything.</li></ol>
+<div class="check"><b>Check:</b> put the meter on the white plug again, as in step 1. It should now read <b>0</b>.</div>
+<div class="oops"><b>Won't come off, or it isn't a push-on connector?</b> Don't force it. Send me a photo first.</div>`},
+{t:'Snip the white plug off',st:{batt:false,plug:'cut',glow:['cut']},need:['wire cutters','electrical tape'],body:`
+<div class="why">The white plug only made sense for the old board. Once it's cut off, the car gives you two loose wires: <b class="r">pink/red = +</b> and <b class="br">brown = −</b>. Those two wires are the whole power input to your new system. The plug goes in the parts box; you're done with it.</div>
+${detail('cut','Right next to the plug, so the wires stay long.')}
+<ol class="do"><li>Cut the <b class="r">pink/red</b> wire right where it enters the plug.</li>
+<li>Then cut the <b class="br">brown</b> wire the same way.</li>
+<li>Wrap a piece of tape over each cut end for now.</li></ol>
+<div class="check"><b>Check:</b> the plug is in your hand with nothing attached, and the car has two taped wire ends, pink/red and brown.</div>
+<div class="oops"><b>Cut too short?</b> Not a problem: lengthen it with a piece of your 14 AWG wire and a small Wago.</div>`},
+{t:'Strip and ferrule the two car wires',st:{batt:false,plug:'gone',ends:true,glow:['ends']},need:['wire stripper','ferrules (try blue first)','crimper'],body:`
+<div class="why">Wagos and screw terminals grip best on a ferrule. That's what fixed your loose tail-light grounds, too.</div>
+${detail('strip','Use the stripper hole that cuts the plastic but not the copper.')}
+${detail('ferrule','Pick the ferrule that the bare copper fills snugly.')}
+<ol class="do"><li>Remove the tape from the pink/red end. Strip about 11 mm.</li>
+<li>Twist the strands, push on a ferrule, crimp it, tug it.</li>
+<li>Do the same on the brown end.</li></ol>
+<div class="check"><b>Check:</b> no copper strands sticking out, and a firm tug doesn't pull the ferrule off.</div>
+<div class="oops"><b>Strands broke while stripping?</b> Cut the end off and strip again; you have plenty of length. <b>Ferrule loose on the wire?</b> Use the next smaller size.</div>`},
+{t:'− bus: brown into a 5-port Wago',st:{batt:false,plug:'gone',ends:true,gnd:true,glow:['gnd']},need:['one 5-port Wago (221-415)','tape + marker'],body:`
+<div class="why">This 5-port Wago becomes your <b>− bus</b> (ground): every black wire in the system plugs into it. The car's brown wire feeds it.</div>
+${detail('wago','Every port inside one Wago is connected together.')}
+<ol class="do"><li>Take a 5-port Wago. Lift the lever of <b>port 1</b>.</li>
+<li>Push the brown wire's ferrule in all the way.</li>
+<li>Close the lever. Tug.</li>
+<li>Put tape on it and write <b>"−"</b>, so you never mix up the two buses.</li></ol>
+<div class="check"><b>Check:</b> brown is held firmly in port 1; ports 2–5 are empty.</div>`},
+{t:'The 20A fuse holder and the + bus',st:{batt:false,plug:'gone',ends:true,gnd:true,fuse:true,glow:['fuse']},need:['1 inline fuse holder (the red loops)','1 small Wago','one 5-port Wago','blue ferrules'],body:`
+<div class="why"><b>Yes, it's one of your red loop holders.</b> The fuse goes in the <b>+</b> wire, as close to the battery as possible, so it protects every wire after it. Leave the fuse itself <b>out</b> until the test step.</div>
+${detail('holder','Cut the loop on the side opposite the fuse socket.')}
+<ol class="do"><li>Take one fuse holder. Open its cap and make sure it's <b>empty</b>.</li>
+<li>Cut the loop where shown. You now have two red ends. Strip and ferrule both.</li>
+<li>Join the car's <b class="r">pink/red</b> wire and <b>one end</b> of the holder in a <b>small Wago</b>.</li>
+<li>Take a second 5-port Wago and write <b>"+"</b> on it. This is the <b>+ bus</b>.</li>
+<li><b>No switch yet?</b> Put the holder's other end straight into <b>+ bus port 1</b>, and skip the next step. <b>Have the switch?</b> Leave that end free for the next step.</li></ol>
+<div class="check"><b>Check:</b> car pink/red → small Wago → fuse holder (empty, cap closed) → its other end.</div>`},
+{t:'The main switch',st:{...AFTER_SW,glow:['sw']},need:['30A on/off toggle switch, pre-wired','1 small Wago'],body:`
+<div class="why"><b>It's a plain physical flip switch</b>, like a light switch but for 12V. Not a relay and not anything electronic. It turns the whole system on and off. It's needed because the ESP32 never sleeps (Wi-Fi), so without it the parked car slowly drains the battery. The dash power button can't do this job: it's only a signal wire.</div>
+${detail('toggle','Pre-wired switches have two leads. It doesn\'t matter which goes where.')}
+<ol class="do"><li><b>Check your Amazon orders</b> for "30A toggle switch"; it was on the basket list. If you don't have one, the README links the one I picked (12V, 30A, pre-wired, rubber boot). Anything rated <b>12V DC, 20A or more</b> works.</li>
+<li>Flip it to <b>OFF</b>.</li>
+<li>Fuse holder's free end + switch <b>lead 1</b> → a <b>small Wago</b>.</li>
+<li>Switch <b>lead 2</b> → <b>+ bus port 1</b>.</li>
+<li>If the switch has a <b>third wire</b> (switches with a light do), send me a photo before connecting it.</li>
+<li>Mount it later somewhere a grown-up can reach but Luka can't, like under the seat.</li></ol>
+<div class="check"><b>Check:</b> pink/red → Wago → fuse holder → Wago → switch → + bus port 1.</div>
+<div class="oops"><b>Switch not here yet?</b> Skip this step. The fuse doubles as the off switch: <b>fuse out = everything off.</b> Pull it after every ride until the switch arrives.</div>`},
+{t:'TEST: power the buses (nothing else connected)',test:true,st:{...AFTER_SW,batt:true,fuseIn:true,swOn:true,glow:['batt','fuseIn'],v12:'12.x V ✓'},need:['multimeter','a 20A fuse (yellow, "20" on top)'],body:`
+<div class="why">The buses get tested on their own, so if anything is wrong, nothing expensive is connected yet. This is the most important check on the page.</div>
+<ol class="do"><li><b>Short check, battery still disconnected:</b> dial to the beep (or Ω) setting. Touch one probe to the metal of any + bus port and the other to any − bus port. <b>It must NOT beep.</b></li>
+<li>Push the <b>20A</b> fuse into the holder and close the cap.</li>
+<li>Switch <b>OFF</b>. Push the battery + connector back onto its tab.</li>
+<li>Dial to <b>V⎓</b>. Red probe on the + bus, black probe on the − bus. It should read <b>0</b> (switch is off).</li>
+<li>Flip the switch <b>ON</b>. It should read <b>12.x</b>.</li>
+<li>Switch <b>OFF</b>, pull the fuse out, pull the battery + connector off again.</li></ol>
+${detail('fuseIn','Fuses only go in at test steps.')}
+<div class="check"><b>Good:</b> no beep in part 1, 0 with the switch off, <b>+12.x</b> with it on.</div>
+<div class="oops"><b>It beeped:</b> + and − are touching somewhere: a stray copper strand, or a wire in the wrong Wago. Don't connect the battery until it's silent. <b>12 with the switch OFF:</b> the switch is bypassed. <b>Minus sign:</b> the buses are swapped. <b>Fuse blew:</b> there's a short. In every case, stop and send me a photo.</div>`},
+{t:'Rear driver: B+ and B−',st:{...AFTER_SW,rear:true,glow:['rear']},need:['14 AWG red + black wire','blue ferrules','small screwdriver'],body:`
+<div class="why">The rear driver takes power from both buses and will later pass it to the motors. <b>This driver dies instantly if B+ and B− are swapped</b>, so read the labels printed on the board twice.</div>
+${detail('screw','B+ and B− are big screw terminals. Go by the printed labels.')}
+<ol class="do"><li>Battery disconnected, fuse out (from the last step).</li>
+<li>Cut a piece of <b>red</b> 14 AWG long enough to reach from the + bus to the driver without pulling tight. Strip and ferrule both ends.</li>
+<li>Red: <b>+ bus port 2</b> → driver <b>B+</b>.</li>
+<li>Same with a <b>black</b> piece: <b>− bus port 2</b> → driver <b>B−</b>.</li>
+<li>Leave <b>M+</b> and <b>M−</b> empty. The motors come on another day.</li></ol>
+<div class="check"><b>Check:</b> trace the red wire with your finger from the + bus to B+, and the black from the − bus to B−. Both screws tight, both tug-proof.</div>`},
+{t:'Buck converter input',st:{...AFTER_SW,rear:true,buck:true,buckFuse:true,glow:['buck']},need:['the buck','a 2A fuse (grey, "2" on top)','ferrules'],body:`
+<div class="why">The buck is the ESP32's new power supply, replacing the power bank. Its own fuse slot gets a <b>2A</b> fuse: it never needs more than about 1.5A.</div>
+<ol class="do"><li>Find the buck's <b>input</b> leads, usually red and black, marked IN or 12V. The USB-A port is the output.</li>
+<li>Put a <b>2A</b> fuse in its slot. If one came installed, read its number: 2 or 3 is fine.</li>
+<li>Ferrule its leads. Red → <b>+ bus port 4</b>. Black → <b>− bus port 4</b>.</li></ol>
+<div class="check"><b>Check:</b> the buck's red is in the + bus and its black in the − bus.</div>
+<div class="oops"><b>Leads not red/black, or more than two?</b> Send me a photo of the label first.</div>`},
+{t:'TEST: buck on, ESP32 onto car power',test:true,st:{...AFTER_SW,batt:true,fuseIn:true,swOn:true,rear:true,buck:true,buckFuse:true,usb:true,glow:['batt','fuseIn','buck']},need:['USB power meter','the ESP32\'s USB cable'],body:`
+<div class="why">The moment of truth: the car's battery now powers the ESP32.</div>
+<ol class="do"><li>Short check again, battery disconnected: + bus to − bus must not beep.</li>
+<li>20A fuse in, switch OFF, battery + connector on.</li>
+<li>Switch <b>ON</b>. Plug the USB meter into the buck's USB port: <b>5.0–5.2 V</b>.</li>
+<li>Move the ESP32's USB cable from the power bank to the buck (through the USB meter if you like).</li>
+<li>Open the dashboard (mclaren.local). It should come back on its own within about 15 seconds.</li></ol>
+<div class="check"><b>Good:</b> 5V on the meter and the dashboard is back. Tell me and I'll check it from here.</div>
+<div class="oops"><b>No 5V:</b> check the buck's 2A fuse and its input leads. <b>The dashboard keeps dropping or restarting:</b> tell me, and we'll look at the cable and the grounds together.</div>`},
+{t:'Later: steering driver',st:{...AFTER_SW,rear:true,buck:true,buckFuse:true,usb:true,steer:true,glow:['steer']},need:['the second fuse holder','a 10A fuse (red, "10" on top)','18 AWG wire'],body:`
+<div class="why">Do this when we start Stage 1 steering. Its feed is thinner 18 AWG wire, so it gets its own <b>10A</b> fuse; the 20A main fuse wouldn't protect wire that thin.</div>
+<ol class="do"><li>Battery disconnected.</li>
+<li>Second fuse holder (empty): cut, strip and ferrule both ends. One end → <b>+ bus port 3</b>, the other → driver #2 <b>B+</b> (18 AWG if you need to extend it).</li>
+<li>18 AWG black: <b>− bus port 3</b> → driver #2 <b>B−</b>.</li>
+<li>The 10A fuse stays out until we test steering together.</li></ol>`},
+{t:'Every ride, from now on',st:{...AFTER_SW,batt:true,fuseIn:true,swOn:false,rear:true,buck:true,buckFuse:true,usb:true,steer:true,glow:['sw']},body:`
+<div class="why"><b>Before riding:</b> switch ON. <b>After:</b> switch OFF. That's it. (No switch yet: pull the 20A fuse after riding.)</div>
+<ul><li><b>Charging:</b> works exactly as before, through the stock charge port. Everything new is off while the charger is in.</li>
+<li><b>Before any drive test, wheels off the ground.</b></li>
+<li><b>A fuse blew?</b> Something drew too much current. Never swap in a bigger one; tell me first.</li>
+<li><b>Working on wires again?</b> Switch off and pull the battery + connector. Every time.</li></ul>`},
 ];
-const S=document.getElementById('steps'), saved=JSON.parse(localStorage.getItem('powerSteps')||'{}');
-STEPS.forEach(([n,show,html],i)=>{
-  const d=document.createElement('div'); d.innerHTML=`<input type="checkbox"><span class="n">${n}</span><span>${html}</span>`;
-  const cb=d.querySelector('input'); cb.checked=!!saved[n];
-  cb.onclick=e=>{e.stopPropagation(); saved[n]=cb.checked; localStorage.setItem('powerSteps',JSON.stringify(saved));};
-  d.onclick=()=>focusStep(i); S.appendChild(d);
-});
-// each step: [what's visible (earlier work stays as context), what glows]
-const VIEW={stock:[['stock'],['stock']], plug:[['stock','plug'],['plug']], '3':[['stock','plug','bus','3'],['3']],
-  '4':[['stock','plug','bus','3','4'],['4']], bus:[['stock','plug','bus','3','4'],['bus']],
-  '6':[['stock','plug','bus','3','4','dev','6'],['6']], '7':[['stock','plug','bus','3','4','dev','6','7'],['7']],
-  '9':[['stock','plug','bus','3','4','dev','6','7','9'],['9']]};
-function focusStep(i){
-  [...S.children].forEach((c,k)=>c.classList.toggle('cur',k===i));
-  document.getElementById('showAll').classList.toggle('sel',i<0);
-  const v=i<0?null:VIEW[STEPS[i][1]];
-  M.querySelectorAll('g[data-step]').forEach(gr=>{
-    const st=gr.dataset.step, on=!v||v[0].includes(st);
-    gr.classList.toggle('dim',!on); gr.classList.toggle('hiw',!!v&&v[1].includes(st));
-  });
-  document.getElementById('stepNote').textContent=i<0?'':'Step '+STEPS[i][0]+' glows; earlier steps stay visible';
+let cur=Math.min(+(localStorage.getItem('pwStep')||0),STEPS.length-1); const done=JSON.parse(localStorage.getItem('pwDone')||'{}');
+function show(i){
+  cur=Math.max(0,Math.min(STEPS.length-1,i)); localStorage.setItem('pwStep',cur);
+  const s=STEPS[cur];
+  drawMap({...BASE,...(s.st||{})});
+  const need=s.need?`<h3>You need</h3><div class="need">${s.need.map(x=>`<span>${x}</span>`).join('')}</div>`:'';
+  document.getElementById('step').innerHTML=`<div class="stitle"><small>Step ${cur} of ${STEPS.length-1}${s.test?' · test':''}</small>${s.t}</div>${need}<h3>${cur?'Do this':'Before you start'}</h3>${s.body}
+   <div class="nav"><button id="back">◀ Back</button>${cur?`<label><input type="checkbox" id="dn" ${done[cur]?'checked':''}> done</label>`:''}<button class="next" id="next">${cur===STEPS.length-1?'Finish':'Next ▶'}</button></div>`;
+  document.querySelectorAll('#step svg[data-d]').forEach(sv=>D[sv.dataset.d](sv));
+  document.getElementById('back').onclick=()=>show(cur-1);
+  document.getElementById('next').onclick=()=>{ if(cur&&!done[cur]){done[cur]=true;localStorage.setItem('pwDone',JSON.stringify(done));} show(cur+1); window.scrollTo({top:0,behavior:'smooth'}); };
+  const dn=document.getElementById('dn'); if(dn) dn.onchange=()=>{done[cur]=dn.checked;localStorage.setItem('pwDone',JSON.stringify(done));dots();};
+  dots();
 }
-document.getElementById('showAll').onclick=()=>focusStep(-1);
-
-// ---------- fuse holder ----------
-const H=document.getElementById('holder');
-el(H,'text',{x:130,y:24,fill:'#9fb3c8','font-size':13,'text-anchor':'middle','font-weight':700},'as it comes');
-el(H,'path',{d:'M130,60 C 30,60 30,200 130,200 C 230,200 230,60 130,60',fill:'none',stroke:RED,'stroke-width':7});
-fuse(H,130,60,'#fdd835','20A');
-el(H,'line',{x1:112,y1:188,x2:148,y2:212,stroke:'#fff','stroke-width':3});el(H,'line',{x1:148,y1:188,x2:112,y2:212,stroke:'#fff','stroke-width':3});
-el(H,'text',{x:130,y:236,fill:'#fff','font-size':13,'text-anchor':'middle','font-weight':700},'✂ cut here');
-el(H,'text',{x:385,y:24,fill:'#9fb3c8','font-size':13,'text-anchor':'middle','font-weight':700},'after cutting');
-el(H,'path',{d:'M290,150 L360,150',stroke:RED,'stroke-width':7});fuse(H,386,150,'#fdd835','20A');el(H,'path',{d:'M412,150 L482,150',stroke:RED,'stroke-width':7});
-el(H,'rect',{x:278,y:143,width:16,height:14,rx:2,fill:'#1e88e5'});el(H,'rect',{x:478,y:143,width:16,height:14,rx:2,fill:'#1e88e5'});
-el(H,'text',{x:300,y:182,fill:'#cfd8e3','font-size':12,'text-anchor':'middle'},'from battery');
-el(H,'text',{x:470,y:182,fill:'#cfd8e3','font-size':12,'text-anchor':'middle'},'to switch');
-el(H,'text',{x:386,y:212,fill:'#64b5f6','font-size':12,'text-anchor':'middle'},'blue ferrule on each end');
-el(H,'text',{x:260,y:290,fill:'#ffd54f','font-size':13,'text-anchor':'middle'},'Fuse stays OUT while you wire. It goes in at the test step.');
-el(H,'text',{x:260,y:312,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'Snap the waterproof cap closed over it once it\'s in.');
-
-// ---------- colour chart ----------
-const C=[['2A','#9e9e9e','grey'],['3A','#8e24aa','violet'],['5A','#c8a165','tan (often orange)'],['7.5A','#795548','brown'],['10A','#e53935','red'],['15A','#1e88e5','blue'],['20A','#fdd835','yellow'],['25A','#eceff1','clear / white'],['30A','#43a047','green'],['35A','#26a69a','blue-green']];
-const T=document.getElementById('colors'); const use={'2A':'buck','10A':'steering','20A':'main'};
-C.forEach(([a,c,n])=>{const r=document.createElement('tr'); r.innerHTML=`<td><span class="chip" style="background:${c}"></span>${n}</td><td><b>${a}</b></td><td style="color:#ffb74d">${use[a]?'← '+use[a]:''}</td>`; T.appendChild(r);});
-
-// ---------- switch ----------
-const W=document.getElementById('sw');
-wire(W,[[20,90],[110,90]],RED,7); fuse(W,136,90,'#fdd835','20A'); wire(W,[[162,90],[230,90]],RED,7);
-el(W,'rect',{x:230,y:60,width:90,height:60,rx:8,fill:'#263238',stroke:'#ff8000','stroke-width':2});
-el(W,'text',{x:275,y:96,fill:'#fff','font-size':14,'font-weight':800,'text-anchor':'middle'},'SWITCH');
-wire(W,[[320,90],[420,90]],RED,7); el(W,'text',{x:470,y:95,fill:RED,'font-size':14,'font-weight':800,'text-anchor':'middle'},'+12V bus');
-el(W,'text',{x:45,y:75,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'from plug');
-wire(W,[[275,120],[275,190],[420,190]],BLK,4); el(W,'text',{x:470,y:195,fill:'#b0bec5','font-size':14,'font-weight':800,'text-anchor':'middle'},'GND bus');
-el(W,'text',{x:200,y:170,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'3rd wire, lit switch only');
-el(W,'text',{x:260,y:240,fill:'#ffd54f','font-size':13,'text-anchor':'middle'},'Order matters: fuse first, then the switch.');
-
-// ---------- plug ----------
-const Q=document.getElementById('plug');
-el(Q,'rect',{x:150,y:40,width:60,height:170,rx:8,fill:'#eceff1',stroke:'#90a4ae','stroke-width':2});
-el(Q,'rect',{x:216,y:40,width:60,height:170,rx:8,fill:'#eceff1',stroke:'#ff8000','stroke-width':3});
-wire(Q,[[20,80],[150,80]],RED,7); wire(Q,[[20,170],[150,170]],'#8d6e63',7);
-el(Q,'text',{x:70,y:66,fill:'#ff8a80','font-size':12,'text-anchor':'middle'},'pink/red = +');
-el(Q,'text',{x:70,y:196,fill:'#bcaaa4','font-size':12,'text-anchor':'middle'},'brown = − (ground)');
-wire(Q,[[276,80],[400,80]],RED,7); wire(Q,[[276,170],[400,170]],BLK,7);
-el(Q,'rect',{x:396,y:73,width:16,height:14,rx:2,fill:'#1e88e5'});el(Q,'rect',{x:396,y:163,width:16,height:14,rx:2,fill:'#1e88e5'});
-el(Q,'text',{x:460,y:85,fill:'#cfd8e3','font-size':12,'text-anchor':'middle'},'→ 20A fuse');
-el(Q,'text',{x:460,y:175,fill:'#cfd8e3','font-size':12,'text-anchor':'middle'},'→ GND bus');
-el(Q,'text',{x:180,y:232,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'stock');
-el(Q,'text',{x:246,y:232,fill:'#ffb74d','font-size':12,'text-anchor':'middle'},'yours');
-el(Q,'line',{x1:440,y1:30,x2:440,y2:50,stroke:'#fff','stroke-width':2});
-el(Q,'text',{x:340,y:30,fill:'#cfd8e3','font-size':12,'text-anchor':'middle'},'cut here, at the old board ✂');
-el(Q,'text',{x:340,y:130,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'keep these long');
-focusStep(-1);
+function dots(){ const d=document.getElementById('dots'); d.innerHTML='';
+  STEPS.forEach((s,i)=>{const b=document.createElement('button'); b.textContent=i===0?'i':i; b.title=s.t;
+    b.className=(i===cur?'cur ':'')+(done[i]?'done ':'')+(s.test?'test':''); b.onclick=()=>show(i); d.appendChild(b);}); }
+document.addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT')return; if(e.key==='ArrowRight') show(cur+1); if(e.key==='ArrowLeft') show(cur-1); });
+const C=[['2A','#9e9e9e','grey','buck'],['3A','#8e24aa','violet',''],['5A','#c8a165','tan (often orange)',''],['7.5A','#795548','brown',''],['10A','#e53935','red','steering'],['15A','#1e88e5','blue',''],['20A','#fdd835','yellow','main'],['25A','#eceff1','clear / white',''],['30A','#43a047','green',''],['35A','#26a69a','blue-green','']];
+document.getElementById('colors').innerHTML=C.map(([a,c,n,u])=>`<tr><td><span class="chip" style="background:${c}"></span>${n}</td><td><b>${a}</b></td><td style="color:#ffb74d">${u?'← '+u:''}</td></tr>`).join('');
+const q=new URLSearchParams(location.search).get('step'); show(q!==null?+q:cur);
 </script>
 </body>
 </html>
