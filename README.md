@@ -110,7 +110,9 @@ Keep the car's wire runs; don't pull new ones through the car.
 5. **Signal wires (pedal, switches):** solder each one to half of a female dupont jumper, heat-shrink it, then plug onto the ESP32 pin. Don't Wago dupont wire: it's thinner than the Wago 221's 24 AWG minimum and won't clamp reliably.
 6. **Strain relief:** zip-tie the harness near the board, so a yank pulls on the tie, not the joint.
 
-Fuse map: **20A** on battery + (main) · **2A** on the buck feed · **10A** on the steering driver's B+ (optional).
+Fuse map: **20A** on battery + (main, right after the big white plug) · **2A** in the buck's own slot · **10A** on the steering driver's B+ (needed: its feed is 18 AWG). Step-by-step with diagrams: [power-hookup.html](power-hookup.html).
+
+The dash power button is only a signal to the ESP32; the car has no switch that carries main current. The main switch (after the 20A fuse) is needed because the ESP32 and buck draw about 0.1A all the time, which flattens the battery in a few days. Without it, unplug the big white plug after riding.
 
 Stage 2, later: a shafted 10k pot for the steering column (the kit pot is fine for bench testing) and a 3D-printed PETG bracket. Optional anytime: an Xbox Wireless controller (the S3 only pairs with BLE pads).
 
