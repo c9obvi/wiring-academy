@@ -41,6 +41,7 @@ ol.do{margin:0;padding-left:22px}ol.do li{margin:6px 0}
 table{width:100%;border-collapse:collapse;font-size:14px}
 td,th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left;vertical-align:top}
 .chip{display:inline-block;width:28px;height:15px;border-radius:4px;vertical-align:middle;margin-right:6px;border:1px solid #0006}
+.bmode{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--mut);margin:0 0 6px}.bmode button{background:#0f1720;color:var(--txt);border:1px solid var(--line);border-radius:9px;padding:6px 11px;font-weight:600;font-size:13px;cursor:pointer}.bmode button.sel{background:var(--org);color:#1b0f00;border-color:var(--org)}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--mut);margin-top:6px}
 .legend i{display:inline-block;width:24px;border-radius:3px;vertical-align:middle;margin-right:5px}
 details{margin:10px 0}summary{cursor:pointer;font-weight:700;color:#cfd8e3}
@@ -56,6 +57,7 @@ b.r{color:#ff8a80}b.br{color:#d7b49e}
 <div class="layout">
   <div class="sticky">
     <div class="card" style="padding:10px">
+      <div class="bmode"><span>My battery +:</span><button data-m="wago">Wago disconnect (sealed lead, cut)</button><button data-m="tab">push-on connector</button></div>
       <svg id="map" viewBox="0 120 1200 645" style="max-height:62vh"></svg>
       <div class="legend">
         <span><i style="background:#e53935;height:7px"></i>+ (positive)</span>
@@ -128,11 +130,22 @@ function drawMap(st){
   const n=k=>st.glow.includes(k);
   rbox(M,20,P(1)-60,120,N(1)-P(1)+120,'#1b2631','#455a64','BATTERY','12V');
   txt(M,124,P(1)+7,'+',{c:'#ff8a80',s:24,w:800}); txt(M,124,N(1)+8,'−',{c:'#cfd8e3',s:26,w:800});
+  if(BMODE==='wago'){
+    // the sealed battery lead, cut, with a 2-port Wago as the disconnect
+    wire(M,[[140,P(1)],[152,P(1)]],RED,7); wago2(M,168,P(1));
+    if(st.batt){ wire(M,[[188,P(1)],[200,P(1)]],RED,7); if(n('batt')){ glow(M,144,P(1)-20,48,40); } }
+    else { wire(M,[[196,P(1)],[200,P(1)]],RED,7); el(M,'rect',{x:193,y:P(1)-5,width:12,height:10,rx:2,fill:'#1e88e5',stroke:n('batt')?ORG:'none','stroke-width':2}); }
+    txt(M,168,P(1)+52,'battery Wago',{c:'#9fb3c8',s:11});
+    const hot=n('batt');
+    if(st.batt) { if(hot) txt(M,120,P(1)-70,'car wire IN, lever down: LIVE',{c:ORG,s:13,w:800}); }
+    else { txt(M,120,P(1)-86,'lever up, car wire OUT:',{c:hot?ORG:'#9fb3c8',s:12,w:700}); txt(M,120,P(1)-71,'everything is dead',{c:hot?ORG:'#9fb3c8',s:12,w:700}); }
+  } else {
   if(st.batt){ el(M,'rect',{x:140,y:P(1)-9,width:26,height:18,rx:3,fill:'#222',stroke:'#777'});
     if(n('batt')){ glow(M,136,P(1)-13,34,26); txt(M,80,P(1)-72,'+ connector ON: LIVE',{c:ORG,s:13,w:800}); } }
   else { el(M,'rect',{x:160,y:P(1)-9,width:26,height:18,rx:3,fill:'#222',stroke:n('batt')?ORG:'#777','stroke-width':n('batt')?3:1});
     txt(M,90,P(1)-86,'+ connector pulled off:',{c:n('batt')?ORG:'#9fb3c8',s:12,w:700}); txt(M,90,P(1)-72,'everything is dead',{c:n('batt')?ORG:'#9fb3c8',s:12,w:700}); }
   wire(M,[[st.batt?166:186,P(1)],[200,P(1)]],RED,7);
+  }
   el(M,'rect',{x:200,y:P(1)-15,width:44,height:30,rx:5,fill:'#111',stroke:'#666'});
   txt(M,222,P(1)-24,'breaker',{c:'#9fb3c8',s:12}); txt(M,222,P(1)+32,'(stock)',{c:'#9fb3c8',s:11});
   wire(M,[[262,P(1)],[262,N(1)-56]],RED,4);
@@ -327,7 +340,8 @@ ${detail('wago','Every port inside one Wago is connected together.')}
 <li>Put tape on it and write <b>"−"</b>, so you never mix up the two buses.</li></ol>
 <div class="check"><b>Check:</b> brown is held firmly in port 1; ports 2–5 are empty.</div>`},
 {t:'The 20A fuse holder and the + bus',st:{batt:false,plug:'gone',ends:true,gnd:true,fuse:true,glow:['fuse']},need:['1 inline fuse holder (the red loops)','1 small Wago','one 5-port Wago','blue ferrules'],body:`
-<div class="why"><b>Yes, it's one of your red loop holders.</b> The fuse goes in the <b>+</b> wire, as close to the battery as possible, so it protects every wire after it. Leave the fuse itself <b>out</b> until the test step.</div>
+<div class="why"><b>Your battery Wago doesn't change this step.</b> It sits right at the battery, before the breaker. The fuse goes on the car's <b class="r">pink/red</b> wire, the one you cut off the white plug in step 3, which comes <i>after</i> the breaker. In the picture, your battery Wago is at the far left and this step's new parts glow orange in the middle.</div>
+<div class="why" style="margin-top:8px"><b>Yes, it's one of your red loop holders.</b> The fuse goes in the <b>+</b> wire, as close to the battery as possible, so it protects every wire after it. Leave the fuse itself <b>out</b> until the test step.</div>
 ${detail('holder','Cut the loop on the side opposite the fuse socket.')}
 <ol class="do"><li>Take one fuse holder. Open its cap and make sure it's <b>empty</b>.</li>
 <li>Cut the loop where shown. You now have two red ends. Strip and ferrule both.</li>
@@ -416,13 +430,25 @@ ${detail('cut','Same as before: battery off, one wire at a time, right next to e
 <li><b>A fuse blew?</b> Something drew too much current. Never swap in a bigger one; tell me first.</li>
 <li><b>Working on wires again?</b> Switch off and pull the battery + connector. Every time.</li></ul>`},
 ];
+let BMODE=localStorage.getItem('pwBatt')||'wago';
+const WAGO_TXT=[
+ ['Push the battery + connector back onto its tab','Put the car-side red wire back into the <b>battery Wago</b>, lever down'],
+ ['pull the battery + connector off again','lever up and pull the car-side red wire out of the <b>battery Wago</b> again'],
+ ['battery + connector on','car-side red wire back in the <b>battery Wago</b>, lever down'],
+ ['Battery + connector off','Battery Wago open (car-side red wire out)'],
+ ['pull the battery + connector','open the <b>battery Wago</b> (car-side red wire out)'],
+];
+function swapText(h){ if(BMODE!=='wago') return h; for(const [a,b] of WAGO_TXT) h=h.split(a).join(b); return h; }
+function setMode(m){ BMODE=m; localStorage.setItem('pwBatt',m); document.querySelectorAll('.bmode button').forEach(b=>b.classList.toggle('sel',b.dataset.m===m)); show(cur); }
+document.querySelectorAll('.bmode button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+document.querySelectorAll('.bmode button').forEach(b=>b.classList.toggle('sel',b.dataset.m===BMODE));
 let cur=Math.min(+(localStorage.getItem('pwStep')||0),STEPS.length-1); const done=JSON.parse(localStorage.getItem('pwDone')||'{}');
 function show(i){
   cur=Math.max(0,Math.min(STEPS.length-1,i)); localStorage.setItem('pwStep',cur);
   const s=STEPS[cur];
   drawMap({...BASE,...(s.st||{})});
   const need=s.need?`<h3>You need</h3><div class="need">${s.need.map(x=>`<span>${x}</span>`).join('')}</div>`:'';
-  document.getElementById('step').innerHTML=`<div class="stitle"><small>Step ${cur} of ${STEPS.length-1}${s.test?' · test':''}</small>${s.t}</div>${need}<h3>${cur?'Do this':'Before you start'}</h3>${s.body}
+  document.getElementById('step').innerHTML=`<div class="stitle"><small>Step ${cur} of ${STEPS.length-1}${s.test?' · test':''}</small>${s.t}</div>${need}<h3>${cur?'Do this':'Before you start'}</h3>${swapText(s.body)}
    <div class="nav"><button id="back">◀ Back</button>${cur?`<label><input type="checkbox" id="dn" ${done[cur]?'checked':''}> done</label>`:''}<button class="next" id="next">${cur===STEPS.length-1?'Finish':'Next ▶'}</button></div>`;
   document.querySelectorAll('#step svg[data-d]').forEach(sv=>D[sv.dataset.d](sv));
   document.getElementById('back').onclick=()=>show(cur-1);
