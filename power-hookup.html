@@ -296,7 +296,11 @@ ${detail('meter','Black lead in COM, red lead in V. Dial to V with the straight 
 <li>Grip the <b>boot/connector</b>, not the wire, and pull it straight off the tab. Wiggle gently if it's tight.</li>
 <li>Tuck it aside so its metal can't touch anything.</li></ol>
 <div class="check"><b>Check:</b> put the meter on the white plug again, as in step 1. It should now read <b>0</b>.</div>
-<div class="oops"><b>Won't come off, or it isn't a push-on connector?</b> Don't force it. Send me a photo first.</div>`},
+<div class="oops"><b>Sealed on, no connector? (That's how it is on this car.)</b> Make your own disconnect with a <b>2-port Wago</b>:
+<ol class="do"><li>Cut the battery's red wire about 5 cm from the battery. <b>The battery-side stub is now LIVE</b>: keep it away from the − terminal, the metal hold-down bar and any metal.</li>
+<li>Strip about 11 mm of the stub, ferrule it, and put it straight into one port of a 2-port Wago. Inside the Wago it's covered and safe. <b>It stays in there for good.</b></li>
+<li>Strip and ferrule the other end (toward the car). That one is dead now.</li></ol>
+From here on, "pull the + connector off" means <b>lever up, pull the car-side wire out</b>, and "push it back on" means <b>wire in, lever down</b>.</div>`},
 {t:'Snip the white plug off',st:{batt:false,plug:'cut',glow:['cut']},need:['wire cutters','electrical tape'],body:`
 <div class="why">The white plug only made sense for the old board. Once it's cut off, the car gives you two loose wires: <b class="r">pink/red = +</b> and <b class="br">brown = −</b>. Those two wires are the whole power input to your new system. The plug goes in the parts box; you're done with it.</div>
 ${detail('cut','Right next to the plug, so the wires stay long.')}
