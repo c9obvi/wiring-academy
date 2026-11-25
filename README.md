@@ -2,9 +2,39 @@
 
 Huffy 12V McLaren F1 ride-on (model 17154). The stock control board comes out, and an ESP32 becomes the controller. Two BTS7960 drivers handle the motors, and a pot on the steering column gives closed-loop steering that can also go limp for manual driving.
 
-- **[wiring-academy.html](wiring-academy.html)**: interactive top-down wiring tutorial. Open it in Chrome or Safari. It has 51 wires in build order, quizzes, safety checklists, simulators (motor direction, drive + tail light, steering PID), a printable pin map, and the plan review.
-- **[Live Wiring Academy](https://wiring-academy.tech619.com/)**
-- **[firmware/](firmware/README.md)**: milestone 1 sketch (rear drive + tail light from a phone over the ESP32's own Wi-Fi), with the minimal wiring list, flashing steps and first-drive test.
+## Contents
+
+1. [Build guides (open these)](#build-guides-open-these)
+2. [Repository layout](#repository-layout)
+3. [Review of the original plan](#review-of-the-original-plan-2026-11-16)
+4. [Pin map](#pin-map)
+5. [Stock harness map](#stock-harness-map-from-the-car)
+6. [Firmware must-haves](#firmware-must-haves)
+7. [Parts status and shopping basket](#parts-status-2026-11-17)
+8. [Connecting the car's existing harness](#connecting-the-cars-existing-harness)
+9. [Next](#next)
+10. [Deploy](#deploy)
+
+## Build guides (open these)
+
+Each guide is a single HTML file with no dependencies: double-click it locally, or use the **Open online** link (served from this repo, so it works from any device).
+
+| Guide | What it's for | Open |
+|---|---|---|
+| **Power hookup, step by step** · [`power-hookup.html`](power-hookup.html) | The 12V side for a first-timer: meter check, disconnecting the battery, snipping the old plug, 20A fuse, main switch, + and − Wago buses, rear driver, buck, rear motors, and the first spin. Each step redraws the wiring diagram. | [Open online](https://raw.githack.com/c9obvi/wiring-academy/main/power-hookup.html) |
+| **Driver ↔ ESP32 signal wires** · [`driver-hookup.html`](driver-hookup.html) | The BTS7960's 8-pin logic header: which ESP32 pin goes where (USB up), the enable Y-splice with its 10k pull-down, and the logic-ground Wago. | [Open online](https://raw.githack.com/c9obvi/wiring-academy/main/driver-hookup.html) |
+| **Wiring Academy** · [`wiring-academy.html`](wiring-academy.html) | The whole project as an interactive top-down tutorial: 51 wires in build order, stages 0–2, quizzes, simulators (motor direction, tail light, steering PID), a printable pin map, and a Setup menu (board, power, grounds). | [Live site](https://wiring-academy.tech619.com/) |
+
+On the car's own dashboard (`http://mclaren.local` on home Wi-Fi) there's also a live telemetry page with a **Tail light lab** for trying tail-light looks.
+
+## Repository layout
+
+| Path | Contents |
+|---|---|
+| [`firmware/`](firmware/README.md) | The ESP32 sketch (`mclaren_ecu/`), `flash.sh` (USB or Wi-Fi updates), and flashing and first-drive notes. `secrets.h` is gitignored; copy `secrets.example.h`. |
+| [`pcb/DESIGN.md`](pcb/DESIGN.md) | Draft brief for a universal ride-on ECU board (KiCad, standard connectors). |
+| `source/` | The original project spec (PDF). |
+| `deploy.sh` | Publishes the Wiring Academy to the live site. |
 
 ## Review of the original plan (2026-11-16)
 
@@ -112,14 +142,19 @@ Keep the car's wire runs; don't pull new ones through the car.
 
 Fuse map: **20A** on battery + (main, right after the big white plug) · **2A** in the buck's own slot · **10A** on the steering driver's B+ (needed: its feed is 18 AWG). Step-by-step with diagrams: [power-hookup.html](power-hookup.html).
 
-The dash power button is only a signal to the ESP32; the car has no switch that carries main current. The main switch (after the 20A fuse) is needed because the ESP32 and buck draw about 0.1A all the time, which flattens the battery in a few days. Without it, unplug the big white plug after riding.
+The dash power button is only a signal to the ESP32; the car has no switch that carries main current. The main switch (after the 20A fuse) is needed because the ESP32 and buck draw about 0.1A all the time, which flattens the battery in a few days. Until the switch arrives, the 20A fuse doubles as the off switch: pull it after riding.
 
 Stage 2, later: a shafted 10k pot for the steering column (the kit pot is fine for bench testing) and a 3D-printed PETG bracket. Optional anytime: an Xbox Wireless controller (the S3 only pairs with BLE pads).
 
 ## Next
 
-1. Bench rehearsal (tutorial Phase 4, step 2): S3 on the breadboard over USB, LEDs on GPIO 4/5, a pushbutton as the pedal, the kit pot on GPIO1.
-2. Photos of the stock board and harness: where the motor, steering, pedal and shifter wires land, and whether there's a stock fuse or breaker and a power switch.
+Status 2026-11-25: Stage 1a in progress. The dash, tail light and remote control work on the bench (classic ESP32, test mode).
+
+1. Driver logic wiring ([driver-hookup.html](driver-hookup.html)).
+2. Power wiring and the first motor spin ([power-hookup.html](power-hookup.html), steps 1–13), wheels off the ground.
+3. Main switch when it arrives (power page step 7).
+4. Before anyone rides: set `TEST_MODE = false` and update over Wi-Fi.
+5. Stage 1: steering driver. Stage 2: steering pot and PID. Later: Xbox controller, battery-voltage sensing, the KiCad board.
 
 ## Deploy
 
