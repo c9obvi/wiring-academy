@@ -124,7 +124,7 @@ function ferr(p,x,y){el(p,'rect',{x:x-7,y:y-5,width:14,height:10,rx:2,fill:'#1e8
 const WP=230, WN=530, P=i=>WP+30+(i-1)*40, N=i=>WN+30+(i-1)*40, X0=780, XR=844, DX=995;
 function drawMap(st){
   const M=document.getElementById('map'); M.innerHTML='';
-  M.setAttribute('viewBox',(st.rear||st.buck||st.steer)?'0 120 1200 645':'0 120 910 645');  // zoom in until the drivers join
+  M.setAttribute('viewBox',st.motors?'0 110 1470 670':(st.rear||st.buck||st.steer)?'0 120 1200 660':'0 120 910 645');  // zoom in until the drivers join
   const n=k=>st.glow.includes(k);
   rbox(M,20,P(1)-60,120,N(1)-P(1)+120,'#1b2631','#455a64','BATTERY','12V');
   txt(M,124,P(1)+7,'+',{c:'#ff8a80',s:24,w:800}); txt(M,124,N(1)+8,'−',{c:'#cfd8e3',s:26,w:800});
@@ -182,17 +182,33 @@ function drawMap(st){
   if(st.v12){ txt(M,600,(P(1)+N(1))/2+10,'meter across the buses: '+st.v12,{c:'#a5d6a7',s:16,w:800}); }
   if(st.rear){
     rbox(M,DX,180,190,140,'#1d2b1d',n('rear')?ORG:'#43a047','BTS7960 #1','rear drive');
-    term(M,DX,225,'B+'); term(M,DX,285,'B−'); txt(M,DX+148,250,'M+ M−',{c:'#9fb3c8',s:12}); txt(M,DX+148,266,'empty for now',{c:'#9fb3c8',s:11});
+    term(M,DX,225,'B+'); term(M,DX,285,'B−'); if(st.motors){ term(M,DX+190,225,''); term(M,DX+190,285,''); txt(M,DX+170,230,'M+',{c:'#fff',s:14,w:700,a:'end'}); txt(M,DX+170,290,'M−',{c:'#fff',s:14,w:700,a:'end'}); }
+    else { txt(M,DX+148,250,'M+ M−',{c:'#9fb3c8',s:12}); txt(M,DX+148,266,'empty for now',{c:'#9fb3c8',s:11}); }
     wire(M,[[XR,N(2)],[945,N(2)],[945,285],[DX,285]],BLK,7,n('rear'));
     wire(M,[[XR,P(2)],[870,P(2)],[870,225],[DX,225]],RED,7,n('rear'));
   }
+  if(st.motors){
+    const nm=n('motors'), WA=225, WB=285, wx=1255;
+    wire(M,[[DX+190,WA],[wx-22,WA]],RED,7,nm); wire(M,[[DX+190,WB],[wx-22,WB]],BLK,7,nm);
+    [WA,WB].forEach(y=>{ el(M,'rect',{x:wx-22,y:y-18,width:54,height:36,rx:6,fill:'#d7dde2',stroke:'#9aa6b0','stroke-width':2});
+      [0,1,2].forEach(k=>el(M,'rect',{x:wx-18+k*16,y:y-12,width:12,height:24,rx:2,fill:'#f39c12'})); });
+    txt(M,wx+5,WA-26,'3-port Wago A',{c:'#9fb3c8',s:11}); txt(M,wx+5,WB+34,'3-port Wago B',{c:'#9fb3c8',s:11});
+    const mot=(cy,l1,l2)=>{ el(M,'circle',{cx:1410,cy,r:34,fill:'#37474f',stroke:nm?ORG:'#90a4ae','stroke-width':3}); txt(M,1410,cy+6,'M',{c:'#fff',s:20,w:800});
+      txt(M,1410,cy+52,l1,{c:'#cfd8e3',s:12,w:700}); txt(M,1410,cy+67,l2,{c:'#9fb3c8',s:11}); };
+    mot(150,'motor 1','orange + white'); mot(370,'motor 2','red + black');
+    wire(M,[[1376,140],[1340,140],[1340,WA-6],[wx+32,WA-6]],'#ff9800',4,nm);
+    wire(M,[[1376,160],[1355,160],[1355,WB-6],[wx+32,WB-6]],'#eeeeee',4,nm);
+    wire(M,[[1376,360],[1310,360],[1310,WA+6],[wx+32,WA+6]],'#e53935',4,nm);
+    wire(M,[[1376,380],[1325,380],[1325,WB+6],[wx+32,WB+6]],'#555',4,nm);
+    if(st.spin) txt(M,1300,470,st.spin,{c:'#a5d6a7',s:15,w:800});
+  }
   if(st.buck){
-    rbox(M,DX,560,190,150,'#2a2516',n('buck')?ORG:'#f9a825','BUCK 12V→5V','');
-    term(M,DX,600,'IN+'); term(M,DX,660,'IN−'); fuse(M,DX+135,600,'#9e9e9e','2A',!st.buckFuse);
-    el(M,'rect',{x:DX+112,y:650,width:46,height:22,rx:3,fill:'#90a4ae'}); txt(M,DX+135,666,'USB-A',{c:'#111',s:11,w:800});
-    txt(M,DX+135,694,st.usb?'→ ESP32 ✓':'→ ESP32 later',{c:st.usb?'#a5d6a7':'#9fb3c8',s:12,w:st.usb?700:400});
-    wire(M,[[XR,N(4)],[915,N(4)],[915,660],[DX,660]],BLK,4,n('buck'));
-    wire(M,[[XR,P(4)],[858,P(4)],[858,600],[DX,600]],RED,4,n('buck'));
+    rbox(M,DX,585,190,150,'#2a2516',n('buck')?ORG:'#f9a825','BUCK 12V→5V','');
+    term(M,DX,622,'IN+'); term(M,DX,695,'IN−'); fuse(M,DX+135,628,'#9e9e9e','2A',!st.buckFuse);
+    el(M,'rect',{x:DX+112,y:672,width:46,height:22,rx:3,fill:'#90a4ae'}); txt(M,DX+135,688,'USB-A',{c:'#111',s:11,w:800});
+    txt(M,DX+135,722,st.usb?'→ ESP32 ✓':'→ ESP32 later',{c:st.usb?'#a5d6a7':'#9fb3c8',s:12,w:st.usb?700:400});
+    wire(M,[[XR,N(4)],[915,N(4)],[915,695],[DX,695]],BLK,4,n('buck'));
+    wire(M,[[XR,P(4)],[858,P(4)],[858,622],[DX,622]],RED,4,n('buck'));
   }
   if(st.steer){
     rbox(M,DX,370,190,140,'#1d2b1d',n('steer')?ORG:'#43a047','BTS7960 #2','steering');
@@ -330,7 +346,7 @@ ${detail('toggle','Pre-wired switches have two leads. It doesn\'t matter which g
 <div class="why">The buses get tested on their own, so if anything is wrong, nothing expensive is connected yet. This is the most important check on the page.</div>
 <ol class="do"><li><b>Short check, battery still disconnected:</b> dial to the beep (or Ω) setting. Touch one probe to the metal of any + bus port and the other to any − bus port. <b>It must NOT beep.</b></li>
 <li>Push the <b>20A</b> fuse into the holder and close the cap.</li>
-<li>Switch <b>OFF</b>. Push the battery + connector back onto its tab.</li>
+<li>Switch <b>OFF</b>. Push the battery + connector back onto its tab. <i>(No switch yet? Steps 4 and 5 merge: with the fuse in, the buses are live, so skip straight to reading 12.x.)</i></li>
 <li>Dial to <b>V⎓</b>. Red probe on the + bus, black probe on the − bus. It should read <b>0</b> (switch is off).</li>
 <li>Flip the switch <b>ON</b>. It should read <b>12.x</b>.</li>
 <li>Switch <b>OFF</b>, pull the fuse out, pull the battery + connector off again.</li></ol>
@@ -362,13 +378,34 @@ ${detail('screw','B+ and B− are big screw terminals. Go by the printed labels.
 <li>Open the dashboard (mclaren.local). It should come back on its own within about 15 seconds.</li></ol>
 <div class="check"><b>Good:</b> 5V on the meter and the dashboard is back. Tell me and I'll check it from here.</div>
 <div class="oops"><b>No 5V:</b> check the buck's 2A fuse and its input leads. <b>The dashboard keeps dropping or restarting:</b> tell me, and we'll look at the cable and the grounds together.</div>`},
-{t:'Later: steering driver',st:{...AFTER_SW,rear:true,buck:true,buckFuse:true,usb:true,steer:true,glow:['steer']},need:['the second fuse holder','a 10A fuse (red, "10" on top)','18 AWG wire'],body:`
+{t:'Rear motors → the driver\'s M+ and M−',st:{...AFTER_SW,rear:true,buck:true,buckFuse:true,usb:true,motors:true,glow:['motors']},need:['2 three-port Wagos (221-413)','14 AWG red + black','ferrules','wire cutters'],body:`
+<div class="why">Both rear motors share one driver, wired side by side ("in parallel"): each motor gets one wire into Wago A and its other wire into Wago B. Wago A goes to the driver's <b>M+</b>, Wago B to <b>M−</b>. Each motor still has its own white plug from the old board; those get snipped the same way you did the power plug.</div>
+<div class="danger"><b>Before this step,</b> the driver's small 8-pin header must be wired to the ESP32 (the <b>driver hookup page</b>, all steps, with the 10k resistor in place). That resistor is what keeps the motors off while the ESP32 starts up.</div>
+${detail('cut','Same as before: battery off, one wire at a time, right next to each plug.')}
+<ol class="do"><li><b>Battery + connector off, fuse out.</b></li>
+<li>Snip the white plug off <b>motor 1</b> (orange + white wires) and <b>motor 2</b> (red + black). Strip and ferrule all four wires.</li>
+<li><b>Wago A:</b> motor 1 <b>orange</b> + motor 2 <b>red</b> + a 14 AWG <b>red</b> piece → driver <b>M+</b>.</li>
+<li><b>Wago B:</b> motor 1 <b>white</b> + motor 2 <b>black</b> + a 14 AWG <b>black</b> piece → driver <b>M−</b>.</li>
+<li>Label the Wagos "M+" and "M−".</li></ol>
+<div class="check"><b>Check:</b> each Wago holds exactly three wires: one from each motor plus the one to the driver. Screws on M+ and M− tight, tug-proof.</div>
+<div class="oops"><b>Which motor wire goes in which Wago is a guess for now</b>, because the motors are mounted mirror-image. The next step tests it, and fixing it means swapping two wires in the Wagos. Nothing gets damaged either way.</div>`},
+{t:'TEST: first spin (wheels off the ground)',test:true,st:{...AFTER_SW,batt:true,fuseIn:true,swOn:true,rear:true,buck:true,buckFuse:true,usb:true,motors:true,glow:['batt','fuseIn','motors'],spin:'10% from the Mac'},need:['something to lift the rear wheels (a box or bricks)','your phone with this chat'],body:`
+<div class="why">The first time the motors move. <b>I drive it from here at 10%</b>, very slowly, while you watch the wheels. You only power it up and tell me what you see.</div>
+<div class="danger"><b>The rear wheels must be off the ground</b>, both of them, free to spin. Hands, hair and sleeves away from the wheels. Test mode is on, so <b>the pedal also drives</b>: nobody touches the pedal during this test.</div>
+<ol class="do"><li>Lift the car so both rear wheels hang free.</li>
+<li>Short check (+ bus to − bus must not beep), then the 20A fuse in and the battery + connector on. <b>No switch yet? Fuse in = ON.</b></li>
+<li>Check the dashboard is up (mclaren.local), then message me <b>"go"</b>.</li>
+<li>I run forward at 10% for 2 seconds, stop, then reverse at 10% for 2 seconds.</li>
+<li>Tell me what each wheel did.</li></ol>
+<div class="check"><b>Good:</b> both wheels turn the same direction, forward on "forward". <b>To stop instantly at any time:</b> pull the 20A fuse, or tap E-STOP on the dashboard.</div>
+<div class="oops"><b>Wheels turn opposite ways</b> (fighting each other): fuse out, swap motor 2's two wires between Wago A and B. <b>Both go backward on "forward":</b> swap the M+ and M− wires at the driver, or I flip it in firmware. <b>Nothing moves:</b> tell me what the dashboard shows; I'll check the driver signals from here.</div>`},
+{t:'Later: steering driver',st:{...AFTER_SW,rear:true,buck:true,buckFuse:true,usb:true,motors:true,steer:true,glow:['steer']},need:['the second fuse holder','a 10A fuse (red, "10" on top)','18 AWG wire'],body:`
 <div class="why">Do this when we start Stage 1 steering. Its feed is thinner 18 AWG wire, so it gets its own <b>10A</b> fuse; the 20A main fuse wouldn't protect wire that thin.</div>
 <ol class="do"><li>Battery disconnected.</li>
 <li>Second fuse holder (empty): cut, strip and ferrule both ends. One end → <b>+ bus port 3</b>, the other → driver #2 <b>B+</b> (18 AWG if you need to extend it).</li>
 <li>18 AWG black: <b>− bus port 3</b> → driver #2 <b>B−</b>.</li>
 <li>The 10A fuse stays out until we test steering together.</li></ol>`},
-{t:'Every ride, from now on',st:{...AFTER_SW,batt:true,fuseIn:true,swOn:false,rear:true,buck:true,buckFuse:true,usb:true,steer:true,glow:['sw']},body:`
+{t:'Every ride, from now on',st:{...AFTER_SW,batt:true,fuseIn:true,swOn:false,rear:true,buck:true,buckFuse:true,usb:true,motors:true,steer:true,glow:['sw']},body:`
 <div class="why"><b>Before riding:</b> switch ON. <b>After:</b> switch OFF. That's it. (No switch yet: pull the 20A fuse after riding.)</div>
 <ul><li><b>Charging:</b> works exactly as before, through the stock charge port. Everything new is off while the charger is in.</li>
 <li><b>Before any drive test, wheels off the ground.</b></li>
