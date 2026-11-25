@@ -59,7 +59,7 @@ Stock board: **JR1630RX-RM2-12V** (12V, max 20A load, 2.4 GHz remote). Everythin
 | Big white 2-pin ×2 | orange + white on one motor, red + black on the other | Rear motors | Seen in photos; which is left/right still to label |
 | Small 7-pin, bottom-left of the board | pink/red, white, green, black, orange, yellow, blue | **Dash plug** (full map below) | Multimeter, battery unplugged |
 
-Battery: its leads are sealed to the battery, so the battery plug is the only disconnect and the battery half of it is always live. Battery red → small black box (probably a self-resetting breaker; rating not read yet) → splits to the charge port and the board. Leave the box and the charge-port wire alone.
+Battery: its leads are sealed to the battery, so the battery plug is the only disconnect and the battery half of it is always live. Battery red → small black box (probably a self-resetting breaker; rating not read yet) → splits to the charge port and the board. Leave the box and the charge-port wire alone. Ground is not black at the plug: battery − → black → charge port → **brown** → big white plug. So at the plug, **pink/red = +** and **brown = −**. The charge port most likely cuts that ground while the charger plug is in (a drive-while-charging interlock); to be confirmed with a meter.
 
 **Dash plug (mapped with a multimeter, battery unplugged):**
 

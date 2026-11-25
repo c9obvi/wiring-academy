@@ -50,13 +50,13 @@ th{color:var(--mut);font-weight:600}
 <div class="card">
   <h2>1 · The whole power picture</h2>
   <div class="bar"><button id="showAll" class="sel">Show everything</button><span id="stepNote"></span></div>
-  <svg id="map" viewBox="0 70 1200 670"></svg>
+  <svg id="map" viewBox="0 150 1200 590"></svg>
   <div class="legend">
     <span><i style="background:#e53935;height:8px"></i>+12V, 14 AWG (heavy)</span>
     <span><i style="background:#222;height:8px;outline:1px solid #8a9aaa"></i>Ground, 14 AWG</span>
     <span><i style="background:#e53935;height:4px"></i>+12V, 18 AWG</span>
     <span><i style="background:#222;height:4px;outline:1px solid #8a9aaa"></i>Ground, 18 AWG</span>
-    <span><i style="background:#546e7a;height:4px"></i>Stock, leave alone</span>
+    <span><i style="background:#8d6e63;height:8px"></i>Brown: the car's stock ground</span>
   </div>
 </div>
 
@@ -96,8 +96,8 @@ th{color:var(--mut);font-weight:600}
   <div class="card">
     <h2>6 · The big white plug</h2>
     <svg id="plug" viewBox="0 0 520 260"></svg>
-    <p style="margin:6px 0 0;font-size:14px">Keep the plug: it's your battery disconnect. When the old board comes out, cut its wires <b>at the board end</b>, so the car-side half of the plug keeps long red and black leads. Those leads become your new power input. The battery half and the charge port stay stock.</p>
-    <div class="tip">Plug it in, then put the meter on the car-side leads: <b>red probe on red, black on black, should read +12.x V</b>. A minus sign means the colours are swapped somewhere. Stop and tell me.</div>
+    <p style="margin:6px 0 0;font-size:14px">Keep the plug: it's your battery disconnect. On this car its <b>pink/red</b> wire is <b>+</b> (after the stock breaker) and its <b>brown</b> wire is <b>−</b>: ground runs from battery − through the charge port first, which cuts it while charging. When the old board comes out, cut its wires <b>at the board end</b>, so the car-side half of the plug keeps long red and black leads. Those leads become your new power input. The battery half and the charge port stay stock.</p>
+    <div class="tip">Plug it in, then put the meter on the car-side leads: <b>red probe on the pink/red pin, black probe on the brown pin: +12.x V</b>. A minus sign means it's the other way round. Stop and tell me. Bonus check: push the charger's plug into the charge port (charger not in the wall). If the reading drops to 0 V, that's the charging safety switch, and it's working.</div>
   </div>
 </div>
 
@@ -116,7 +116,7 @@ th{color:var(--mut);font-weight:600}
   <h2>8 · Send me photos of</h2>
   <table>
     <tr><td>The <b>switch</b> (how many wires, colours, any markings)</td><td>The <b>buck's input leads</b> and its fuse slot (and the fuse in it, if any)</td></tr>
-    <tr><td>The <b>big white plug</b>, both halves</td><td>The <b>black box</b> on the battery red (any number printed on it)</td></tr>
+    <tr><td>The <b>big white plug</b>, both halves</td><td>Close-ups of the <b>breaker box</b> at the top and the <b>pink-wire cluster</b> on the right (any printing)</td></tr>
     <tr><td>The <b>rear driver's big screw terminals</b> (B+ B− M+ M− labels)</td><td>Your layout under the seat before you power up</td></tr>
   </table>
 </div>
@@ -171,12 +171,17 @@ term(s,160,P(1),'','r',RED); term(s,160,N(1),'','r','#000');
 el(s,'text',{x:140,y:P(1)+6,fill:'#ff8a80','font-size':22,'font-weight':800,'text-anchor':'middle'},'+'); el(s,'text',{x:140,y:N(1)+7,fill:'#cfd8e3','font-size':24,'font-weight':800,'text-anchor':'middle'},'−');
 wire(s,[[160,P(1)],[195,P(1)]],RED,8);
 el(s,'rect',{x:195,y:P(1)-16,width:46,height:32,rx:5,fill:'#111',stroke:'#666'});
-el(s,'text',{x:218,y:P(1)-24,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'black box');
-el(s,'text',{x:218,y:P(1)+34,fill:'#9fb3c8','font-size':11,'text-anchor':'middle'},'(stock breaker)');
+el(s,'text',{x:218,y:P(1)-24,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'breaker box');
+el(s,'text',{x:218,y:P(1)+34,fill:'#9fb3c8','font-size':11,'text-anchor':'middle'},'(stock)');
 wire(s,[[241,P(1)],[300,P(1)]],RED,8);
-wire(s,[[262,P(1)],[262,120],[300,120]],STOCK,5);
-box(s,300,90,150,60,'#1b2631','#455a64','Charge port','stock · leave alone');
-wire(s,[[160,N(1)],[300,N(1)]],BLK,8);
+wire(s,[[262,P(1)],[262,N(1)-58]],RED,5);
+wire(s,[[160,N(1)],[196,N(1)]],BLK,8);
+box(s,180,N(1)-58,104,100,'#1b2631','#455a64','Charge','port (stock)');
+el(s,'text',{x:232,y:N(1)+20,fill:'#9fb3c8','font-size':11,'text-anchor':'middle'},'cuts ground');
+el(s,'text',{x:232,y:N(1)+34,fill:'#9fb3c8','font-size':11,'text-anchor':'middle'},'while charging');
+wire(s,[[284,N(1)],[300,N(1)]],'#8d6e63',8);
+el(s,'text',{x:292,y:N(1)+62,fill:'#bcaaa4','font-size':12,'font-weight':700,'text-anchor':'middle'},'brown = −');
+el(s,'text',{x:292,y:P(1)-52,fill:'#ff8a80','font-size':12,'font-weight':700,'text-anchor':'middle'},'');
 // the plug
 s=g(M,'plug');
 el(s,'rect',{x:300,y:P(1)-40,width:46,height:N(1)-P(1)+80,rx:8,fill:'#eceff1',stroke:'#90a4ae','stroke-width':2});
@@ -185,7 +190,7 @@ el(s,'text',{x:349,y:P(1)-52,fill:'#fff','font-size':14,'font-weight':700,'text-
 el(s,'text',{x:323,y:(P(1)+N(1))/2,fill:'#37474f','font-size':12,'font-weight':700,'text-anchor':'middle',transform:`rotate(-90 323 ${(P(1)+N(1))/2})`},'battery half');
 el(s,'text',{x:375,y:(P(1)+N(1))/2,fill:'#b35a00','font-size':12,'font-weight':700,'text-anchor':'middle',transform:`rotate(-90 375 ${(P(1)+N(1))/2})`},'car half (old board pigtail)');
 // step 3: ground in
-s=g(M,'3'); wire(s,[[398,N(1)],[X0,N(1)]],BLK,8,[560,N(1)-12,'black 14 AWG → GND Wago port 1']);
+s=g(M,'3'); wire(s,[[398,N(1)],[X0,N(1)]],BLK,8,[560,N(1)-12,'from the brown pin → GND Wago port 1']);
 // step 4: red chain
 s=g(M,'4');
 wire(s,[[398,P(1)],[470,P(1)]],RED,8); fuse(s,496,P(1),'#fdd835','20A');
@@ -237,9 +242,9 @@ el(s,'text',{x:902,y:422,fill:'#ff8a80','font-size':12,'font-weight':700,'text-a
 // ---------- steps ----------
 const STEPS=[
  ['1','stock',"<b>Unplug the battery.</b> Take every fuse out of every holder, the buck's slot included. Cut both inline fuse holder loops (see section 3)."],
- ['2','plug',"<b>Car half of the big white plug:</b> cut the old board's wires at the board end so you keep long red and black leads on the plug. Strip them and crimp blue ferrules on."],
- ['3','3',"<b>Ground first:</b> black lead from the plug → <b>GND Wago, port 1</b>."],
- ['4','4',"<b>The red chain:</b> plug red → one lead of the <b>20A fuse holder</b> (empty) → its other lead → <b>switch</b> → switch's other lead → <b>+12V Wago, port 1</b>. Join the leads with 2-port Wagos or the switch's own terminals. Switch <b>OFF</b>."],
+ ['2','plug',"<b>Car half of the big white plug:</b> cut the old board's wires at the board end so you keep long leads on the plug. On this car the plug's <b>pink/red pin is +</b> and its <b>brown pin is − (ground)</b>. Go by which pin they mate with, not by the old board's wire colours. Strip them and crimp blue ferrules on."],
+ ['3','3',"<b>Ground first:</b> the lead that mates with the <b>brown</b> pin → <b>GND Wago, port 1</b>."],
+ ['4','4',"<b>The red chain:</b> the lead that mates with the <b>pink/red</b> pin → one lead of the <b>20A fuse holder</b> (empty) → its other lead → <b>switch</b> → switch's other lead → <b>+12V Wago, port 1</b>. Join the leads with 2-port Wagos or the switch's own terminals. Switch <b>OFF</b>."],
  ['5','bus',"<span class='test'>TEST</span><b>Buses only, nothing else connected.</b> Beep check between the two Wagos with the battery unplugged (must NOT beep). Then: fuse in (<b>20A</b>), plug in the battery, switch OFF = 0 V, switch ON = <b>+12.x V</b>, red probe on Wago+. Switch OFF and <b>unplug the battery</b> again."],
  ['6','6',"<b>Rear driver:</b> 14 AWG red from <b>+12V Wago port 2 → B+</b>, 14 AWG black from <b>GND Wago port 2 → B−</b>. Read the labels on the driver twice; B+ and B− reversed kills it."],
  ['7','7',"<b>Buck:</b> its red input lead → <b>+12V Wago port 4</b>, its black → <b>GND Wago port 4</b>. Put a <b>2A</b> fuse in its slot."],
@@ -307,8 +312,9 @@ el(W,'text',{x:260,y:240,fill:'#ffd54f','font-size':13,'text-anchor':'middle'},'
 const Q=document.getElementById('plug');
 el(Q,'rect',{x:150,y:40,width:60,height:170,rx:8,fill:'#eceff1',stroke:'#90a4ae','stroke-width':2});
 el(Q,'rect',{x:216,y:40,width:60,height:170,rx:8,fill:'#eceff1',stroke:'#ff8000','stroke-width':3});
-wire(Q,[[20,80],[150,80]],RED,7); wire(Q,[[20,170],[150,170]],BLK,7);
-el(Q,'text',{x:70,y:66,fill:'#9fb3c8','font-size':12,'text-anchor':'middle'},'from battery');
+wire(Q,[[20,80],[150,80]],RED,7); wire(Q,[[20,170],[150,170]],'#8d6e63',7);
+el(Q,'text',{x:70,y:66,fill:'#ff8a80','font-size':12,'text-anchor':'middle'},'pink/red = +');
+el(Q,'text',{x:70,y:196,fill:'#bcaaa4','font-size':12,'text-anchor':'middle'},'brown = − (ground)');
 wire(Q,[[276,80],[400,80]],RED,7); wire(Q,[[276,170],[400,170]],BLK,7);
 el(Q,'rect',{x:396,y:73,width:16,height:14,rx:2,fill:'#1e88e5'});el(Q,'rect',{x:396,y:163,width:16,height:14,rx:2,fill:'#1e88e5'});
 el(Q,'text',{x:460,y:85,fill:'#cfd8e3','font-size':12,'text-anchor':'middle'},'→ 20A fuse');
