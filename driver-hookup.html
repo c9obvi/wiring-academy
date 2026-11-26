@@ -3,208 +3,142 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Driver hookup · McLaren F1</title>
+<title>Driver ↔ ESP32 signal wires · McLaren F1</title>
 <style>
 :root{--bg:#0e141b;--card:#151e28;--line:#2a3a4c;--txt:#e6edf3;--mut:#8fa3b8;--org:#ff8000}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
-main{max-width:1100px;margin:0 auto;padding:16px}
-h1{font-size:22px;margin:4px 0 2px}h1 span{color:var(--org)}
-.sub{color:var(--mut);margin:0 0 14px}
+body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:14px}
+h1{font-size:22px;margin:2px 0}h1 span{color:var(--org)}
+.sub{color:var(--mut);margin:0 0 10px;font-size:14.5px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
-.card h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:0 0 10px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.card h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--org);margin:0 0 8px}
 svg{width:100%;height:auto;display:block}
 svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
-.mono{font-family:ui-monospace,Menlo,monospace}
-.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;color:var(--mut);margin-top:8px}
-.legend i{display:inline-block;width:22px;height:6px;border-radius:3px;vertical-align:middle;margin-right:6px}
-.warn{background:#33250a;border:1px solid #6b4a0f;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:14px}
-.tip{background:#10273a;border:1px solid #1e4a6e;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:14px}
-.steps label{display:flex;gap:10px;align-items:flex-start;padding:9px 6px;border-bottom:1px solid #1d2935;cursor:pointer}
-.steps input{width:20px;height:20px;margin-top:2px;accent-color:var(--org);flex:none}
-.steps b{color:#fff}
-.steps .n{color:var(--org);font-weight:800;min-width:22px}
-table{width:100%;border-collapse:collapse;font-size:14px}
-td,th{border-bottom:1px solid var(--line);padding:6px 4px;text-align:left}
+.why{background:#10273a;border:1px solid #1e4a6e;border-radius:10px;padding:10px 12px;font-size:15px;margin:8px 0}
+.check{background:#13301a;border:1px solid #2e6b34;border-radius:10px;padding:10px 12px;font-size:15px;margin:8px 0}
+.danger{background:#3a1212;border:1px solid #7a2323;border-radius:10px;padding:10px 12px;font-size:15px;margin:8px 0}
+.row{display:grid;grid-template-columns:34px 30px 1fr;gap:8px;align-items:center;padding:6px 4px;border-bottom:1px solid #1d2935;cursor:pointer}
+.row input{width:22px;height:22px;accent-color:#43a047}
+.badge{display:inline-flex;width:26px;height:26px;border-radius:50%;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#111}
+.done svg{opacity:.45}
+table{width:100%;border-collapse:collapse;font-size:15px}
+td,th{border-bottom:1px solid var(--line);padding:7px 5px;text-align:left;vertical-align:top}
 th{color:var(--mut);font-weight:600}
-.kbd{font-family:ui-monospace,Menlo,monospace;background:#0f1720;border:1px solid var(--line);border-radius:5px;padding:0 5px}
-.toggle{float:right;font-size:13px;color:var(--mut)}
-.toggle input{accent-color:var(--org)}
-@media print{body{background:#fff;color:#000}.card{background:#fff;border-color:#999}}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:820px){.grid3{grid-template-columns:1fr}}
+a{color:#ffb74d}
 </style>
 </head>
 <body>
 <main>
-<h1>Driver hookup · <span>BTS7960 ↔ ESP32</span></h1>
-<p class="sub">Classic ESP32 (DOIT 30-pin) · USB power · Wago grounds. Battery stays <b>disconnected</b>, and the driver's big screw terminals stay empty today.</p>
+<h1>Driver ↔ ESP32 · <span>the small signal wires</span></h1>
+<p class="sub">Classic ESP32 (DOIT 30-pin) held <b>USB up</b> · rear BTS7960 driver · logic ground on a <b>5-port Wago</b>. Do this with everything <b>OFF</b> (battery Wago open).</p>
 
 <div class="card">
-  <h2>1 · Your ESP32, held USB-up <label class="toggle"><input type="checkbox" id="onlyNew" checked> highlight today's wires</label></h2>
-  <svg id="esp" viewBox="0 0 1000 860"></svg>
-  <div class="legend">
-    <span><i style="background:#42a5f5"></i>RPWM (forward)</span><span><i style="background:#ab47bc"></i>LPWM (reverse)</span>
-    <span><i style="background:#66bb6a"></i>Enable (Y-splice)</span><span><i style="background:#fdd835"></i>3.3V</span>
-    <span><i style="background:#1c1c1c;outline:1px solid #8a9aaa"></i>Ground</span><span><i style="background:#455a64"></i>Already connected</span>
-  </div>
-</div>
-
-<div class="grid">
-  <div class="card">
-    <h2>2 · Driver's small header (8 pins)</h2>
-    <svg id="drv" viewBox="0 0 520 470"></svg>
-    <p class="sub" style="margin:6px 0 0">Go by the labels printed on your board, which can differ in order. <b>R_IS</b> and <b>L_IS</b> stay empty.</p>
-  </div>
-  <div class="card">
-    <div class="tip" style="margin:0 0 10px"><b>Easier version of sections 3 and 4:</b> <a href="enable-cable.html" style="color:#ffb74d">enable-cable.html</a> walks through the 10k resistor cable on its own, with one picture from end to end, and moves logic ground to a 5-port Wago.</div><h2>3 · Wago B (3-port, logic ground)</h2>
-    <svg id="wago" viewBox="0 0 520 470"></svg>
-    <p class="sub" style="margin:6px 0 0">Every wire gets a <b>white ferrule</b> (E0508). The resistor leg <b>shares port 2</b> with the driver GND wire: twist them together, one ferrule.</p>
-  </div>
+  <h2>1 · Every connection, one row each</h2>
+  <p class="sub" style="margin:0 0 6px">Tick each row as it's done. The number in the circle matches the pin maps in section 2.</p>
+  <div id="rows"></div>
+  <div class="why"><b>Leave empty:</b> the driver's <b>R_IS</b> and <b>L_IS</b> pins. Nothing goes on them.</div>
 </div>
 
 <div class="card">
-  <h2>4 · The Y-splice (one solder joint: ties both enables to D4 and adds the 10k safety resistor)</h2>
-  <svg id="ysplice" viewBox="0 0 1100 380"></svg>
-  <div class="tip"><b>Why the 10k resistor?</b> While the ESP32 boots, its pins float for about half a second. The resistor holds R_EN and L_EN at ground, so the driver stays <b>off</b> until the firmware says go. With no motor power connected you could skip it today, but it must be in before battery day.</div>
+  <h2>2 · Where the pins physically are</h2>
+  <div class="grid3">
+    <div><svg id="espMap" viewBox="0 0 300 600"></svg></div>
+    <div><svg id="drvMap" viewBox="0 0 300 600"></svg></div>
+    <div><svg id="wagoMap" viewBox="0 0 300 600"></svg></div>
+  </div>
+  <p class="sub" style="margin:6px 0 0">Go by the labels printed on your boards; the driver's header has a label next to each pin. Count ESP32 pins from the USB end.</p>
 </div>
 
-<div class="card steps">
-  <h2>5 · Do it in this order</h2>
-  <label><input type="checkbox" data-k="s1"><span class="n">1</span><span><b>Unplug the ESP32's USB.</b> Battery stays disconnected.</span></label>
-  <label><input type="checkbox" data-k="s2"><span class="n">2</span><span><b>Make the Y-splice</b> (section 4): three short wires (female ends for D4, R_EN and L_EN) plus one leg of the 10k resistor. Twist, solder, heat-shrink.</span></label>
-  <label><input type="checkbox" data-k="s3"><span class="n">3</span><span>Y-splice ends: <b>D4</b> (left column, 5th) · <b>R_EN</b> · <b>L_EN</b>. Resistor's free leg goes to Wago B port 2 (step 6).</span></label>
-  <label><input type="checkbox" data-k="s4"><span class="n">4</span><span><b>RPWM → RX2</b> (left, 6th) and <b>LPWM → TX2</b> (left, 7th).</span></label>
-  <label><input type="checkbox" data-k="s5"><span class="n">5</span><span><b>VCC → 3V3</b> (left, <b>top</b> pin). Double-check it's not on GND right below it.</span></label>
-  <label><input type="checkbox" data-k="s6"><span class="n">6</span><span><b>Wago B:</b> port 1 tail light GND · port 2 driver GND + resistor leg (one ferrule) · port 3 lead → <b>GND</b> (left, 2nd). Tug every wire.</span></label>
-  <label><input type="checkbox" data-k="s7"><span class="n">7</span><span><b>Short check, USB still unplugged</b>, meter on continuity: ESP32 <span class="kbd">3V3 ↔ GND</span> and driver <span class="kbd">VCC ↔ GND</span>: <b>no steady beep</b>. (A blip that stops is just capacitors charging.)</span></label>
-  <label><input type="checkbox" data-k="s8"><span class="n">8</span><span><b>Plug USB back in</b>, power button on. Car should show on <span class="kbd">mclaren.local</span>.</span></label>
-  <label><input type="checkbox" data-k="s9"><span class="n">9</span><span><b>Meter test</b> (DC volts, black probe on the driver's GND pin), then tell Claude <b>"go"</b> to drive it at 30% from the Mac:
-    <table style="margin-top:6px"><tr><th>Red probe on</th><th>Idle</th><th>Driving forward 30%</th><th>Reverse</th></tr>
-    <tr><td>R_EN</td><td>0 V</td><td>≈ 3.3 V</td><td>≈ 3.3 V</td></tr>
-    <tr><td>RPWM</td><td>0 V</td><td>≈ 1 V</td><td>0 V</td></tr>
-    <tr><td>LPWM</td><td>0 V</td><td>0 V</td><td>≈ 0.6 V</td></tr></table>
-    The meter averages the fast pulses, so 30% of 3.3 V reads about 1 V.</span></label>
-  <div class="warn"><b>3V3 and GND are next-door neighbours</b> on the left column (pins 1 and 2). A jumper one pin off shorts the board's power and it drops off Wi-Fi, which is exactly what bit us before. Check them twice.</div>
+<div class="card">
+  <h2>3 · Check, then power on</h2>
+  <div class="danger"><b>Still OFF</b> for these three checks (meter on beep / Ω).</div>
+  <table>
+    <tr><th>Probes on</th><th>Good</th><th>If not</th></tr>
+    <tr><td>ESP32 <b>3V3</b> ↔ ESP32 <b>GND</b></td><td>no steady beep (a blip that stops is fine)</td><td>3V3 is touching ground somewhere. Check row 1 isn't on a GND pin.</td></tr>
+    <tr><td>Driver <b>VCC</b> ↔ driver <b>GND</b></td><td>no steady beep</td><td>Same as above, from the driver side.</td></tr>
+    <tr><td>ESP32 <b>D4</b> ↔ ESP32 <b>GND</b> (Ω)</td><td><b>about 10 kΩ</b></td><td>0: the resistor is bypassed. OL: the resistor isn't reaching the Wago.</td></tr>
+  </table>
+  <div class="check" style="margin-top:10px"><b>Then:</b> ON (car-side wire into the battery Wago), check the dashboard is back at <b>mclaren.local</b>, and message Claude <b>"go"</b>. No motors are connected, so nothing moves. I drive the outputs from here while you measure with the meter on <b>DC volts</b>, <b>black probe on the driver's GND pin</b>:</div>
+  <table>
+    <tr><th>Red probe on</th><th>Stopped</th><th>While I drive forward 30%</th><th>While I drive reverse</th></tr>
+    <tr><td>R_EN (or L_EN)</td><td>0 V</td><td><b>about 3.3 V</b></td><td><b>about 3.3 V</b></td></tr>
+    <tr><td>RPWM</td><td>0 V</td><td><b>about 1 V</b></td><td>0 V</td></tr>
+    <tr><td>LPWM</td><td>0 V</td><td>0 V</td><td><b>about 0.6 V</b></td></tr>
+  </table>
+  <p class="sub" style="margin:6px 0 0">A meter shows the average of the fast on/off signal, which is why 30% reads about 1V instead of 3.3V. When those numbers match, you're cleared for <a href="power-hookup.html">power page</a> step 12: the motors.</p>
+</div>
+
+<div class="card">
+  <h2>Related</h2>
+  <p style="margin:0"><a href="enable-cable.html">enable-cable.html</a>: building the Y-cable with the 10k resistor (row 2), step by step. · <a href="power-hookup.html">power-hookup.html</a>: the 12V side.</p>
 </div>
 </main>
-
 <script>
 const NS='http://www.w3.org/2000/svg';
-function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
-function tx(p,x,y,s,a){const e=el('text',Object.assign({x,y,fill:'#e6edf3','font-size':14},a||{}),p);e.textContent=s;return e;}
-const C={rp:'#42a5f5',lp:'#ab47bc',en:'#66bb6a',v3:'#fdd835',gnd:'#1c1c1c',old:'#455a64',v5:'#fb8c00'};
-
-/* ---------- 1. ESP32 pin map, USB at top (DOIT 30-pin, real order) ---------- */
-const LEFT=[['3V3','Driver VCC','v3',1],['GND','Wago B port 3 (logic ground)','gnd',1],['D15','',null],['D2','',null],
-  ['D4','Y-splice → R_EN + L_EN','en',1],['RX2','Driver RPWM  (GPIO16)','rp',1],['TX2','Driver LPWM  (GPIO17)','lp',1],
-  ['D5','Tail light CS','old',0],['D18','Tail light CLK','old',0],['D19','Dash yellow','old',0],['D21','Dash green','old',0],
-  ['RX0','leave free (USB serial)',null],['TX0','leave free (USB serial)',null],['D22','Dash white','old',0],['D23','Tail light DIN','old',0]];
-const RIGHT=[['VIN','Tail light VCC (5V)','old',0],['GND','Wago A (dash black + pink)','old',0],['D13','',null],['D12','',null],['D14','',null],
-  ['D27','',null],['D26','',null],['D25','',null],['D33','Dash blue','old',0],['D32','Dash orange','old',0],['D35','',null],['D34','',null],
-  ['VN','',null],['VP','',null],['EN','(reset, leave free)',null]];
-function drawEsp(onlyNew){
-  const s=document.getElementById('esp'); s.innerHTML='';
-  const bx=400,bw=200,by=60,bh=790, top=172, step=44;
-  el('rect',{x:bx,y:by,width:bw,height:bh,rx:14,fill:'#10161c',stroke:'#607d8b','stroke-width':3},s);
-  el('rect',{x:bx+bw/2-34,y:by-26,width:68,height:40,rx:6,fill:'#90a4ae'},s); tx(s,bx+bw/2,by-34,'USB',{fill:'#8fa3b8','text-anchor':'middle','font-size':13});
-  el('rect',{x:bx+72,y:by+bh-120,width:56,height:92,rx:6,fill:'#9aa7b0',opacity:.5},s); tx(s,bx+bw/2,by+bh-12,'antenna end',{fill:'#8fa3b8','text-anchor':'middle','font-size':12});
-  tx(s,bx+bw/2,by+50,'ESP32',{'text-anchor':'middle','font-size':20,'font-weight':800});
-  tx(s,bx+bw/2,by+72,'DOIT 30-pin · USB up',{'text-anchor':'middle','font-size':12,fill:'#8fa3b8'});
-  const side=(rows,isLeft)=>rows.forEach(([lab,dest,c,isNew],i)=>{
-    const y=top+i*step, px=isLeft?bx:bx+bw, dim=onlyNew && !isNew && c;
-    const col=c?C[c]:null;
-    el('circle',{cx:px,cy:y,r:9,fill:'#d4a017',stroke:'#111','stroke-width':2},s);
-    tx(s,isLeft?px+18:px-18,y+5,lab,{'text-anchor':isLeft?'start':'end','font-size':15,'font-weight':700,class:'mono',fill:/GND/.test(lab)?'#b0bec5':/3V3|VIN/.test(lab)?'#fff176':'#80deea'});
-    tx(s,isLeft?px-14:px+14,y-14,String(i+1),{'text-anchor':isLeft?'end':'start','font-size':10,fill:'#5d7186'});
-    if(!col) return;
-    const x2=isLeft?40:960;
-    el('line',{x1:px,y1:y,x2:isLeft?x2+230:x2-230,y2:y,stroke:c==='gnd'?'#8a9aaa':'#000','stroke-width':c==='old'?6:10,'stroke-linecap':'round',opacity:dim?.35:1},s);
-    el('line',{x1:px,y1:y,x2:isLeft?x2+230:x2-230,y2:y,stroke:col,'stroke-width':c==='old'?4:7,'stroke-linecap':'round',opacity:dim?.35:1},s);
-    const tag=el('g',{opacity:dim?.4:1},s);
-    el('rect',{x:isLeft?x2-0:x2-230,y:y-15,width:230,height:30,rx:8,fill:isNew?'#2a1a08':'#0f1720',stroke:isNew?'#ff8000':'#2a3a4c','stroke-width':isNew?2:1},tag);
-    tx(tag,isLeft?x2+10:x2-220,y+5,dest,{'font-size':13.5,'font-weight':isNew?700:400});
-    if(isNew) tx(tag,isLeft?x2+222:x2-8,y-19,'TODAY',{'text-anchor':isLeft?'end':'end','font-size':10,'font-weight':800,fill:'#ff8000'});
-  });
-  side(LEFT,true); side(RIGHT,false);
-}
-
-/* ---------- 2. BTS7960 small header ---------- */
-(function(){
-  const s=document.getElementById('drv');
-  el('rect',{x:30,y:30,width:460,height:150,rx:12,fill:'#5d1414',stroke:'#e57373','stroke-width':2},s);
-  for(let k=0;k<7;k++) el('rect',{x:120+k*42,y:60,width:30,height:70,fill:'#9e9e9e',opacity:.5},s);
-  tx(s,260,105,'BTS7960 #1',{'text-anchor':'middle','font-size':20,'font-weight':800});
-  tx(s,260,126,'rear motor driver',{'text-anchor':'middle','font-size':12,fill:'#ffcdd2'});
-  const P=[['RPWM','RX2','rp'],['LPWM','TX2','lp'],['R_EN','Y-splice','en'],['L_EN','Y-splice','en'],['R_IS','empty',null],['L_IS','empty',null],['VCC','3V3','v3'],['GND','Wago B p2','gnd']];
-  P.forEach(([n,to,c],i)=>{
-    const x=58+i*58, y=180;
-    if(c){ el('line',{x1:x,y1:y,x2:x,y2:y+130,stroke:c==='gnd'?'#8a9aaa':'#000','stroke-width':10,'stroke-linecap':'round'},s); el('line',{x1:x,y1:y,x2:x,y2:y+130,stroke:C[c],'stroke-width':7,'stroke-linecap':'round'},s); }
-    el('circle',{cx:x,cy:y,r:9,fill:'#d4a017',stroke:'#111','stroke-width':2},s);
-    tx(s,x,y-16,n,{'text-anchor':'middle','font-size':12.5,'font-weight':700,class:'mono'});
-    const g=el('g',{transform:`translate(${x} ${y+150}) rotate(60)`},s);
-    tx(g,0,0,to,{'font-size':13.5,'font-weight':c?700:400,fill:c?'#e6edf3':'#5d7186'});
-  });
+function el(p,tag,a,t){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(t!==undefined)e.textContent=t;p.appendChild(e);return e;}
+function txt(p,x,y,t,o={}){return el(p,'text',{x,y,fill:o.c||'#cfd8e3','font-size':o.s||14,'font-weight':o.w||400,'text-anchor':o.a||'middle'},t);}
+const C={y:'#fdd835',g:'#66bb6a',b:'#42a5f5',p:'#ab47bc',k:'#b0bec5'};
+// one row per connection: [colour, left name, left where, wire, right name, right where, extra]
+const ROWS=[
+ ['y','3V3','ESP32 · left, 1st (top)','plain jumper','VCC','driver header'],
+ ['g','D4','ESP32 · left, 5th','Y-cable (enable-cable page)','R_EN + L_EN','driver header (both)','10k leg → ground Wago port 3'],
+ ['b','RX2','ESP32 · left, 6th (GPIO16)','plain jumper','RPWM','driver header'],
+ ['p','TX2','ESP32 · left, 7th (GPIO17)','plain jumper','LPWM','driver header'],
+ ['k','GND','driver header','jumper + white ferrule','port 2','ground Wago'],
+ ['k','GND','ESP32 · left, 2nd','jumper + white ferrule','port 4','ground Wago'],
+ ['k','tail light GND','tail light (already wired)','its wire','port 1','ground Wago'],
+];
+const saved=JSON.parse(localStorage.getItem('drvRows')||'{}');
+const R=document.getElementById('rows');
+ROWS.forEach(([col,ln,lw,wl,rn,rw,extra],i)=>{
+  const d=document.createElement('label'); d.className='row'+(saved[i]?' done':'');
+  d.innerHTML=`<input type="checkbox" ${saved[i]?'checked':''}><span class="badge" style="background:${C[col]}">${i+1}</span><svg viewBox="0 0 640 ${extra?84:56}"></svg>`;
+  const s=d.querySelector('svg'), gnd=rw.startsWith('ground');
+  el(s,'rect',{x:2,y:6,width:190,height:44,rx:8,fill:'#1b2631',stroke:'#455a64','stroke-width':2});
+  txt(s,16,27,ln,{c:'#fff',s:17,w:800,a:'start'}); txt(s,16,44,lw,{c:'#9fb3c8',s:12,a:'start'});
+  el(s,'line',{x1:192,y1:28,x2:446,y2:28,stroke:C[col],'stroke-width':7,'stroke-linecap':'round'});
+  txt(s,319,19,wl,{c:'#cfd8e3',s:12});
+  el(s,'rect',{x:446,y:6,width:190,height:44,rx:8,fill:gnd?'#2b3138':'#1d2b1d',stroke:gnd?'#9aa6b0':'#43a047','stroke-width':2});
+  txt(s,460,27,rn,{c:'#fff',s:17,w:800,a:'start'}); txt(s,460,44,rw,{c:'#9fb3c8',s:12,a:'start'});
+  if(extra){ el(s,'line',{x1:319,y1:28,x2:319,y2:72,stroke:'#e8d3a2','stroke-width':4}); el(s,'rect',{x:309,y:40,width:20,height:24,rx:6,fill:'#e8d3a2',stroke:'#a58a52'});
+    txt(s,340,66,extra,{c:'#e8d3a2',s:13,w:700,a:'start'}); }
+  const cb=d.querySelector('input'); cb.onchange=()=>{saved[i]=cb.checked;localStorage.setItem('drvRows',JSON.stringify(saved));d.classList.toggle('done',cb.checked);};
+  R.appendChild(d);
+});
+function badge(p,x,y,n,col){ el(p,'circle',{cx:x,cy:y,r:12,fill:C[col]}); txt(p,x,y+5,n,{c:'#111',s:13,w:800}); }
+(()=>{const S=document.getElementById('espMap');
+  txt(S,150,22,'ESP32, USB up · LEFT column',{c:'#fff',s:14,w:700});
+  el(S,'rect',{x:60,y:44,width:180,height:546,rx:12,fill:'#1b2631',stroke:'#455a64','stroke-width':2});
+  el(S,'rect',{x:130,y:34,width:40,height:20,rx:4,fill:'#90a4ae'}); txt(S,150,49,'USB',{c:'#111',s:11,w:800});
+  const L=['3V3','GND','D15','D2','D4','RX2','TX2','D5','D18','D19','D21','RX0','TX0','D22','D23'];
+  const use={'3V3':[1,'y'],'GND':[6,'k'],'D4':[2,'g'],'RX2':[3,'b'],'TX2':[4,'p']};
+  L.forEach((n,i)=>{const y=80+i*34, u=use[n];
+    el(S,'circle',{cx:90,cy:y,r:8,fill:u?C[u[1]]:'#37474f'}); txt(S,108,y+5,(i+1)+'. '+n,{c:u?'#fff':'#6b7d8f',s:14,w:u?800:400,a:'start'});
+    if(u) badge(S,215,y,u[0],u[1]);});
 })();
-
-/* ---------- 3. Wago B ---------- */
-(function(){
-  const s=document.getElementById('wago');
-  el('rect',{x:110,y:150,width:300,height:110,rx:12,fill:'#cfd8dc22',stroke:'#9e9e9e','stroke-width':2},s);
-  tx(s,260,290,'WAGO B · 3-port · logic GND',{'text-anchor':'middle','font-size':15,'font-weight':800});
-  const ports=[['1','tail light'],['2','driver + 10k'],['3','→ ESP32']];
-  ports.forEach(([n,short],i)=>{
-    const x=160+i*100;
-    el('rect',{x:x-22,y:160,width:44,height:40,rx:5,fill:'#ff9800'},s);
-    el('circle',{cx:x,cy:150,r:10,fill:'#eceff1',stroke:'#263238','stroke-width':2},s);
-    tx(s,x,240,n,{'text-anchor':'middle','font-size':16,'font-weight':800,fill:'#263238'});
-    el('line',{x1:x,y1:140,x2:x,y2:50,stroke:'#8a9aaa','stroke-width':10,'stroke-linecap':'round'},s);
-    el('line',{x1:x,y1:140,x2:x,y2:50,stroke:'#1c1c1c','stroke-width':7,'stroke-linecap':'round'},s);
-    el('rect',{x:x-7,y:120,width:14,height:22,rx:2,fill:'#eceff1'},s);
-    tx(s,x,36,short,{'text-anchor':'middle','font-size':13,'font-weight':700});
-  });
-  el('path',{d:'M222 70 C 232 90 250 104 255 122',stroke:'#d7ccc8','stroke-width':3,fill:'none'},s);
-  tx(s,175,66,'10k leg',{'font-size':12,fill:'#d7ccc8'});
-  [['1','Tail light GND'],['2','Driver GND + the 10k resistor leg (twisted, one ferrule)'],['3','Lead → ESP32 GND (left column, 2nd pin)']].forEach(([n,t],i)=>{
-    tx(s,40,334+i*30,'Port '+n,{'font-size':14,'font-weight':800,fill:'#ff9800'}); tx(s,108,334+i*30,t,{'font-size':14});
-  });
-  tx(s,260,440,'white tube = ferrule (E0508), crimped on every wire',{'text-anchor':'middle','font-size':13,fill:'#8fa3b8'});
+(()=>{const S=document.getElementById('drvMap');
+  txt(S,150,22,'BTS7960 · small 8-pin header',{c:'#fff',s:14,w:700});
+  el(S,'rect',{x:60,y:44,width:180,height:330,rx:12,fill:'#1d2b1d',stroke:'#43a047','stroke-width':2});
+  const H=['RPWM','LPWM','R_EN','L_EN','R_IS','L_IS','VCC','GND'];
+  const use={'RPWM':[3,'b'],'LPWM':[4,'p'],'R_EN':[2,'g'],'L_EN':[2,'g'],'VCC':[1,'y'],'GND':[5,'k']};
+  H.forEach((n,i)=>{const y=80+i*36, u=use[n];
+    el(S,'rect',{x:82,y:y-9,width:18,height:18,fill:u?C[u[1]]:'#37474f'}); txt(S,112,y+5,n,{c:u?'#fff':'#6b7d8f',s:15,w:u?800:400,a:'start'});
+    if(u) badge(S,215,y,u[0],u[1]); else txt(S,215,y+5,'empty',{c:'#6b7d8f',s:12});});
+  txt(S,150,400,'order may differ: read the labels',{c:'#9fb3c8',s:12});
 })();
-
-/* ---------- 4. Y-splice ---------- */
-(function(){
-  const s=document.getElementById('ysplice');
-  const wire=(d,c)=>{ el('path',{d,stroke:'#000','stroke-width':11,fill:'none','stroke-linecap':'round','stroke-linejoin':'round'},s); el('path',{d,stroke:c,'stroke-width':8,fill:'none','stroke-linecap':'round','stroke-linejoin':'round'},s); };
-  const jx=540, jy=170;
-  wire(`M200 170 L${jx} ${jy}`,C.en);
-  wire(`M${jx} ${jy} C 640 170 680 80 800 80`,C.en);
-  wire(`M${jx} ${jy} C 640 170 680 170 800 170`,C.en);
-  el('path',{d:`M${jx} ${jy} C 600 170 610 280 640 282`,stroke:'#d7ccc8','stroke-width':4,fill:'none'},s);
-  const rg=el('g',{transform:'translate(690 282)'},s);
-  el('rect',{x:-45,y:-14,width:90,height:28,rx:12,fill:'#d7ccc8',stroke:'#4e342e','stroke-width':2},rg);
-  [[-24,'#795548'],[-10,'#000'],[4,'#ff9800'],[20,'#c9a227']].forEach(([x,c])=>el('rect',{x,y:-14,width:7,height:28,fill:c},rg));
-  tx(rg,0,-22,'10 kΩ (brown · black · orange)',{'text-anchor':'middle','font-size':13,fill:'#d7ccc8'});
-  el('path',{d:'M735 282 L800 282',stroke:'#d7ccc8','stroke-width':4,fill:'none'},s);
-  wire('M800 282 L860 282','#1c1c1c');
-  el('rect',{x:jx-45,y:jy-24,width:90,height:48,rx:16,fill:'#263238',stroke:'#90a4ae','stroke-width':2,opacity:.92},s);
-  tx(s,jx,jy+5,'solder +',{'text-anchor':'middle','font-size':12.5,'font-weight':700});
-  tx(s,jx,jy+20,'heat shrink',{'text-anchor':'middle','font-size':11,fill:'#b0bec5'});
-  const end=(x,y,lab,sub,left)=>{ el('rect',{x:left?x-70:x,y:y-17,width:70,height:34,rx:6,fill:'#212121',stroke:'#616161'},s);
-    tx(s,left?x-35:x+35,y+5,'female',{'text-anchor':'middle','font-size':11,fill:'#9e9e9e'});
-    tx(s,left?x-80:x+80,y-2,lab,{'text-anchor':left?'end':'start','font-size':16,'font-weight':800});
-    tx(s,left?x-80:x+80,y+16,sub,{'text-anchor':left?'end':'start','font-size':12,fill:'#8fa3b8'}); };
-  end(200,170,'ESP32 D4','left, 5th pin',true);
-  end(800,80,'Driver R_EN','');
-  end(800,170,'Driver L_EN','');
-  tx(s,870,278,'Wago B port 2',{'font-size':15,'font-weight':800}); tx(s,870,296,'(shared with driver GND)',{'font-size':12,fill:'#8fa3b8'});
-  tx(s,550,350,'All three green wires and one resistor leg twist together at one point. Solder it, slide the heat shrink over, shrink it.',{'text-anchor':'middle','font-size':13,fill:'#8fa3b8'});
+(()=>{const S=document.getElementById('wagoMap');
+  txt(S,150,22,'Ground Wago · 5-port',{c:'#fff',s:14,w:700});
+  el(S,'rect',{x:90,y:44,width:120,height:236,rx:10,fill:'#d7dde2',stroke:'#9aa6b0','stroke-width':2});
+  const P=[['tail light GND',7,'k'],['driver GND',5,'k'],['10k resistor leg',2,'g'],['ESP32 GND',6,'k'],['spare (display later)',0]];
+  P.forEach(([n,b,col],i)=>{const y=80+i*44;
+    el(S,'rect',{x:102,y:y-14,width:26,height:28,rx:3,fill:'#f39c12',stroke:'#a35f00'}); txt(S,150,y+5,i+1,{c:'#333',s:14,w:800});
+    if(b) badge(S,186,y,b,col);
+    txt(S,150,320+i*24,(i+1)+': '+n,{c:b?'#fff':'#6b7d8f',s:13,w:b?700:400});});
+  txt(S,150,460,'Only ground goes in here.',{c:'#ff8a80',s:13,w:700}); txt(S,150,480,'Never 3V3, never 12V.',{c:'#ff8a80',s:13,w:700});
 })();
-
-/* ---------- toggles + checklist persistence ---------- */
-const box=document.getElementById('onlyNew'); box.onchange=()=>drawEsp(box.checked); drawEsp(true);
-const KEY='mclaren-driver-hookup';
-let st={}; try{st=JSON.parse(localStorage.getItem(KEY))||{};}catch(e){}
-document.querySelectorAll('input[data-k]').forEach(c=>{ c.checked=!!st[c.dataset.k]; c.onchange=()=>{ st[c.dataset.k]=c.checked; localStorage.setItem(KEY,JSON.stringify(st)); }; });
 </script>
 </body>
 </html>
