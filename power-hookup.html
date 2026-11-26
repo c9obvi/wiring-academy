@@ -422,7 +422,7 @@ ${detail('screw','B+ and B− are big screw terminals. Go by the printed labels.
 <div class="oops"><b>No 5V:</b> check the buck's 2A fuse and its input leads. <b>The dashboard keeps dropping or restarting:</b> tell me, and we'll look at the cable and the grounds together.</div>`},
 {t:'Rear motors → the driver\'s M+ and M−',st:{...AFTER_SW,rear:true,buck:true,buckFuse:true,usb:true,motors:true,glow:['motors']},need:['2 three-port Wagos (221-413)','14 AWG red + black','ferrules','wire cutters'],body:`
 <div class="why">Both rear motors share one driver, wired side by side ("in parallel"): each motor gets one wire into Wago A and its other wire into Wago B. Wago A goes to the driver's <b>M+</b>, Wago B to <b>M−</b>. Each motor still has its own white plug from the old board; those get snipped the same way you did the power plug.</div>
-<div class="danger"><b>Before this step,</b> the driver's small 8-pin header must be wired to the ESP32 (the <b>driver hookup page</b>, all steps, with the 10k resistor in place). That resistor is what keeps the motors off while the ESP32 starts up.</div>
+<div class="danger"><b>Before this step,</b> the driver's small 8-pin header must be wired to the ESP32 (the <b>driver hookup page</b>, all steps, with the 10k resistor in place: <a href="enable-cable.html" style="color:#ffb74d">enable-cable.html</a> shows that cable step by step). That resistor is what keeps the motors off while the ESP32 starts up.</div>
 ${detail('cut','Same as before: battery off, one wire at a time, right next to each plug.')}
 <ol class="do"><li><b>Battery + connector off, fuse out.</b></li>
 <li>Snip the white plug off <b>motor 1</b> (orange + white wires) and <b>motor 2</b> (red + black). Strip and ferrule all four wires.</li>

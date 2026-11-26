@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The enable Y-cable (10k resistor) · McLaren F1</title>
+<style>
+:root{--bg:#0e141b;--card:#151e28;--line:#2a3a4c;--txt:#e6edf3;--mut:#8fa3b8;--org:#ff8000}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:14px}
+h1{font-size:22px;margin:2px 0}h1 span{color:var(--org)}
+.sub{color:var(--mut);margin:0 0 10px;font-size:14.5px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.card h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--org);margin:0 0 8px}
+svg{width:100%;height:auto;display:block}
+svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+.why{background:#10273a;border:1px solid #1e4a6e;border-radius:10px;padding:10px 12px;font-size:15px;margin:8px 0}
+.check{background:#13301a;border:1px solid #2e6b34;border-radius:10px;padding:10px 12px;font-size:15px;margin:8px 0}
+.oops{background:#33250a;border:1px solid #6b4a0f;border-radius:10px;padding:10px 12px;font-size:15px;margin:8px 0}
+.danger{background:#3a1212;border:1px solid #7a2323;border-radius:10px;padding:10px 12px;font-size:15px;margin:8px 0}
+.need{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}.need span{background:#0f1720;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13.5px}
+.steps label{display:flex;gap:10px;align-items:flex-start;padding:9px 6px;border-bottom:1px solid #1d2935;cursor:pointer}
+.steps input{width:20px;height:20px;margin-top:3px;accent-color:#43a047;flex:none}
+.steps .n{color:var(--org);font-weight:800;min-width:22px}
+code{font-family:ui-monospace,Menlo,monospace;background:#0f1720;border:1px solid var(--line);border-radius:5px;padding:0 5px}
+</style>
+</head>
+<body>
+<main>
+<h1>The enable Y-cable · <span>the 10k resistor, start to finish</span></h1>
+<p class="sub">One small cable. You build it on the table, check it with the meter, then plug in its four ends. That's the whole job. (This page replaces sections 3 and 4 of the driver page.)</p>
+
+<div class="card">
+  <h2>1 · The circuit (what it does)</h2>
+  <svg id="sch" viewBox="0 0 900 300"></svg>
+  <div class="why"><b>In plain words:</b> R_EN and L_EN are the driver's "allowed to drive" inputs. D4 is the ESP32 saying <b>yes</b> (3.3V) or <b>no</b> (0V). But while the ESP32 is starting up, unplugged or off, D4 says <i>nothing</i>: the wire "floats", and the driver can read random noise as yes. The 10k resistor is a <b>weak spring pulling the line to "no"</b> (ground). When the ESP32 says yes, it easily overpowers that weak spring. As a firmware person: it's an external pull-down, so EN reads LOW whenever the GPIO isn't actively driven.</div>
+</div>
+
+<div class="card">
+  <h2>2 · The finished cable, lying on your table</h2>
+  <svg id="cable" viewBox="0 0 900 380"></svg>
+  <p class="sub" style="margin:4px 0 0">One joint (the "knot") where <b>four things meet</b>: three wires and one leg of the resistor. The resistor's other leg gets one more wire, ending in a ferrule for the ground Wago.</p>
+</div>
+
+<div class="card">
+  <h2>3 · Build it (off the car, nothing powered)</h2>
+  <div class="need"><span>3 female-female jumper wires</span><span>one 10k resistor (stripes: brown, black, orange, gold)</span><span>one extra piece of jumper wire (~10 cm)</span><span>heat shrink: 1 fat piece (~2 cm), 1 thin piece</span><span>soldering iron + solder</span><span>1 white ferrule + crimper</span><span>tape + pen</span></div>
+  <div class="steps" id="build"></div>
+  <div class="check"><b>Prove it with the meter before it goes anywhere near the car:</b><br>
+  • <b>Beep mode:</b> touch any two of the three plug ends (D4, R, L) together with the probes: <b>beeps</b>. All three are joined.<br>
+  • <b>Ω mode</b> (20k range if it asks): one probe in any plug end, the other on the ferrule: <b>about 10 kΩ</b> (9.5 to 10.5). That's the resistor, sitting between the knot and ground.<br>
+  If both are right, the cable is right.</div>
+  <div class="oops"><b>Reads 0 or beeps from a plug end to the ferrule?</b> The resistor got bypassed: a strand from the knot touches the ferrule wire. Re-do that heat shrink. <b>Reads nothing (OL) from a plug end to the ferrule?</b> The resistor's leg isn't soldered to the extra wire. Re-solder it.</div>
+</div>
+
+<div class="card">
+  <h2>4 · Where its four ends go</h2>
+  <svg id="map" viewBox="0 0 900 550"></svg>
+  <div class="danger"><b>Everything OFF first</b> (battery Wago open, so the ESP32 is dark too). Never plug or unplug on live pins.</div>
+  <div class="steps" id="plug"></div>
+  <div class="check"><b>Final check, still OFF:</b> meter on Ω, one probe on the ESP32's D4 pin, the other on the ESP32's GND pin (left column, 2nd): <b>about 10 kΩ</b>. Not 0, no steady beep.<br>Then turn it ON, check that the dashboard is back, and message Claude <b>"go"</b>. I'll drive it from here with no motors connected, and you measure <b>R_EN: about 3.3V while driving, 0V when stopped</b>.</div>
+</div>
+</main>
+<script>
+const NS='http://www.w3.org/2000/svg', ORG='#ff8000', GRN='#66bb6a', GND='#b0bec5';
+function el(p,tag,a,t){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(t!==undefined)e.textContent=t;p.appendChild(e);return e;}
+function txt(p,x,y,t,o={}){return el(p,'text',{x,y,fill:o.c||'#cfd8e3','font-size':o.s||14,'font-weight':o.w||400,'text-anchor':o.a||'middle'},t);}
+function line(p,pts,c,w){el(p,'path',{d:'M'+pts.map(q=>q.join(',')).join(' L'),fill:'none',stroke:c,'stroke-width':w||4,'stroke-linejoin':'round','stroke-linecap':'round'});}
+function resistor(p,x,y,vertical,len){ // a beige body with brown-black-orange-gold bands
+  const L=len||70, W=22;
+  if(vertical){ el(p,'rect',{x:x-W/2,y,width:W,height:L,rx:9,fill:'#e8d3a2',stroke:'#a58a52'});
+    [['#6d4c41',.2],['#111',.36],['#ef6c00',.52],['#c9a227',.8]].forEach(([c,f])=>el(p,'rect',{x:x-W/2,y:y+L*f-3,width:W,height:6,fill:c})); }
+  else { el(p,'rect',{x,y:y-W/2,width:L,height:W,rx:9,fill:'#e8d3a2',stroke:'#a58a52'});
+    [['#6d4c41',.2],['#111',.36],['#ef6c00',.52],['#c9a227',.8]].forEach(([c,f])=>el(p,'rect',{x:x+L*f-3,y:y-W/2,width:6,height:W,fill:c})); }
+}
+function plugEnd(p,x,y,label,dir){ // a female dupont end; dir -1 = opening points left, +1 = right
+  el(p,'rect',{x:dir<0?x-46:x,y:y-9,width:46,height:18,rx:3,fill:'#111',stroke:'#555'});
+  el(p,'rect',{x:dir<0?x-46:x+40,y:y-4,width:6,height:8,fill:'#777'});
+  txt(p,dir<0?x-60:x+60,y+5,label,{c:'#fff',s:15,w:800,a:dir<0?'end':'start'});
+}
+function ferrule(p,x,y){ el(p,'rect',{x:x-8,y,width:16,height:12,rx:2,fill:'#eceff1'}); el(p,'rect',{x:x-4,y:y+12,width:8,height:16,fill:'#cfd8dc'}); }
+
+// 1 · schematic
+(()=>{const S=document.getElementById('sch');
+  el(S,'rect',{x:20,y:100,width:150,height:70,rx:10,fill:'#1b2631',stroke:'#455a64','stroke-width':2}); txt(S,95,130,'ESP32',{c:'#fff',s:16,w:700}); txt(S,95,152,'GPIO4 (D4)',{c:'#9fb3c8',s:13});
+  line(S,[[170,135],[420,135]],GRN,4); el(S,'circle',{cx:420,cy:135,r:8,fill:ORG});
+  txt(S,420,115,'the knot',{c:ORG,s:13,w:700});
+  line(S,[[420,135],[420,70],[640,70]],GRN,4); line(S,[[420,135],[640,135]],GRN,4);
+  el(S,'rect',{x:640,y:40,width:220,height:120,rx:10,fill:'#1d2b1d',stroke:'#43a047','stroke-width':2}); txt(S,750,30,'BTS7960 small header',{c:'#9fb3c8',s:13});
+  txt(S,660,75,'R_EN',{c:'#fff',s:15,w:800,a:'start'}); txt(S,660,140,'L_EN',{c:'#fff',s:15,w:800,a:'start'});
+  line(S,[[420,135],[420,175]],GRN,4); resistor(S,420,175,true,60); txt(S,450,212,'10k',{c:'#e8d3a2',s:15,w:800,a:'start'});
+  line(S,[[420,235],[420,265]],GND,4); [0,1,2].forEach(i=>line(S,[[400+i*7,265+i*7],[440-i*7,265+i*7]],GND,3));
+  txt(S,470,282,'ground (logic-ground Wago)',{c:GND,s:13,a:'start'});
+  txt(S,560,240,'ESP32 says "go" → 3.3V wins, driver ON',{c:'#a5d6a7',s:13,a:'start'});
+  txt(S,560,262,'ESP32 off / booting → resistor wins → OFF',{c:'#ff8a80',s:13,a:'start'});
+})();
+
+// 2 · the physical cable
+(()=>{const C=document.getElementById('cable'), K=[450,150];
+  // three jumper pieces into the knot
+  line(C,[[150,150],[K[0]-30,K[1]]],GRN,6); plugEnd(C,150,150,'D4',-1);
+  line(C,[[K[0]+30,K[1]],[600,90],[740,90]],GRN,6); plugEnd(C,740,90,'R',1);
+  line(C,[[K[0]+30,K[1]],[600,210],[740,210]],GRN,6); plugEnd(C,740,210,'L',1);
+  // the knot under heat shrink
+  el(C,'rect',{x:K[0]-34,y:K[1]-22,width:68,height:44,rx:12,fill:'#212121',stroke:ORG,'stroke-width':3});
+  txt(C,K[0],K[1]-34,'knot: 3 wires + resistor leg, soldered, heat-shrunk',{c:ORG,s:13,w:700});
+  // resistor hanging from the knot
+  line(C,[[K[0],K[1]+22],[K[0],K[1]+50]],'#bbb',3); resistor(C,K[0],K[1]+50,true,70);
+  txt(C,K[0]+24,K[1]+92,'10k',{c:'#e8d3a2',s:15,w:800,a:'start'});
+  el(C,'rect',{x:K[0]-12,y:K[1]+118,width:24,height:26,rx:6,fill:'#212121'}); txt(C,K[0]+24,K[1]+136,'thin heat shrink over leg + joint',{c:'#9fb3c8',s:12,a:'start'});
+  line(C,[[K[0],K[1]+144],[K[0],K[1]+190],[300,K[1]+190]],'#222',6); line(C,[[K[0],K[1]+144],[K[0],K[1]+190],[300,K[1]+190]],'#555',3);
+  ferrule(C,300,K[1]+176); el(C,'rect',{x:262,y:K[1]+184,width:30,height:12,rx:2,fill:'#eceff1'});
+  txt(C,250,K[1]+195,'white ferrule → logic-ground Wago',{c:'#fff',s:14,w:700,a:'end'});
+  txt(C,600,K[1]+195,'(extra wire, ~10 cm)',{c:'#9fb3c8',s:12});
+  txt(C,150,120,'tape label',{c:'#9fb3c8',s:12});
+})();
+
+// 4 · where the ends go
+(()=>{const M=document.getElementById('map');
+  // ESP32 left column, USB up (top part only)
+  el(M,'rect',{x:30,y:30,width:170,height:300,rx:12,fill:'#1b2631',stroke:'#455a64','stroke-width':2});
+  el(M,'rect',{x:95,y:12,width:40,height:22,rx:4,fill:'#90a4ae'}); txt(M,115,28,'USB',{c:'#111',s:11,w:800});
+  txt(M,115,60,'ESP32 · left column',{c:'#9fb3c8',s:12});
+  const pins=['3V3','GND','D15','D2','D4','RX2','TX2'];
+  pins.forEach((n,i)=>{const y=90+i*34, hot=n==='D4'||n==='GND';
+    el(M,'circle',{cx:185,cy:y,r:9,fill:hot?(n==='D4'?GRN:GND):'#37474f',stroke:'#111'});
+    txt(M,168,y+5,(n==='GND'?'(2nd) ':n==='D4'?'(5th) ':'')+n,{c:hot?'#fff':'#6b7d8f',s:14,w:hot?800:400,a:'end'});});
+  // driver header
+  el(M,'rect',{x:640,y:40,width:230,height:330,rx:12,fill:'#1d2b1d',stroke:'#43a047','stroke-width':2});
+  txt(M,755,66,'BTS7960 · small header',{c:'#9fb3c8',s:12});
+  const H=['RPWM','LPWM','R_EN','L_EN','R_IS','L_IS','VCC','GND'];
+  H.forEach((n,i)=>{const y=95+i*34, hot=n==='R_EN'||n==='L_EN'||n==='GND';
+    el(M,'rect',{x:652,y:y-9,width:18,height:18,fill:hot?(n==='GND'?GND:GRN):'#37474f'});
+    txt(M,682,y+5,n,{c:hot?'#fff':'#6b7d8f',s:14,w:hot?800:400,a:'start'});});
+  // the cable
+  const K=[440,180];
+  line(M,[[194,226],[K[0]-28,K[1]]],GRN,5); txt(M,300,232,'"D4" plug',{c:GRN,s:13,w:700});
+  line(M,[[K[0]+28,K[1]],[560,163],[652,163]],GRN,5); txt(M,590,153,'"R" plug',{c:GRN,s:13,w:700});
+  line(M,[[K[0]+28,K[1]],[560,197],[652,197]],GRN,5); txt(M,590,217,'"L" plug',{c:GRN,s:13,w:700});
+  el(M,'rect',{x:K[0]-30,y:K[1]-18,width:60,height:36,rx:10,fill:'#212121',stroke:ORG,'stroke-width':3}); txt(M,K[0],K[1]-26,'knot',{c:ORG,s:13,w:700});
+  line(M,[[K[0],K[1]+18],[K[0],K[1]+40]],'#bbb',3); resistor(M,K[0],K[1]+40,true,56); txt(M,K[0]+22,K[1]+75,'10k',{c:'#e8d3a2',s:14,w:800,a:'start'});
+  // logic-ground Wago
+  const WX=300, WY=380;
+  el(M,'rect',{x:WX,y:WY,width:320,height:60,rx:8,fill:'#d7dde2',stroke:'#9aa6b0','stroke-width':2});
+  const ports=['tail light','driver GND','resistor','ESP32 GND','spare'];
+  ports.forEach((n,i)=>{const x=WX+32+i*64; el(M,'rect',{x:x-11,y:WY+8,width:22,height:26,rx:3,fill:'#f39c12',stroke:'#a35f00'}); txt(M,x,WY+50,i+1,{c:'#333',s:12,w:800}); txt(M,x,WY+78,n,{c:'#cfd8e3',s:11.5,w:700}); });
+  txt(M,WX+160,WY+106,'logic-ground Wago (5-port): one wire per port',{c:GND,s:13,w:700});
+  // wires into it
+  line(M,[[K[0],K[1]+96],[K[0],365],[WX+160,365],[WX+160,WY+8]],'#888',4);
+  line(M,[[652,333],[630,333],[630,350],[WX+96,350],[WX+96,WY+8]],GND,4); txt(M,520,343,'driver GND',{c:GND,s:12});
+  line(M,[[194,124],[222,124],[222,535],[WX+224,535],[WX+224,WY+90]],GND,4); txt(M,232,527,'ESP32 GND',{c:GND,s:12,a:'start'});
+})();
+
+// checklists
+const BUILD=[
+ 'Cut <b>three</b> female-female jumpers about 12 cm from one end. Keep the three pieces that have a <b>female plug</b>. Strip 1 cm off each cut end.',
+ 'Slide the <b>fat heat shrink</b> onto one of the three wires now, pushed back out of the way. (It can\'t go on after soldering.)',
+ 'Trim one resistor leg to about 1 cm. Twist the <b>three bare wire ends + that leg</b> into one tight bundle.',
+ '<b>Solder</b> the bundle. Let it cool, then slide the heat shrink over it and shrink it with the iron\'s side or a lighter, from a distance.',
+ 'Slide the <b>thin heat shrink</b> onto the extra wire. Solder the extra wire to the resistor\'s <b>other</b> leg, then shrink it over the joint.',
+ 'Strip the extra wire\'s free end, fold it double, and crimp a <b>white ferrule</b> on.',
+ 'Tape-label the three plugs <b>D4</b>, <b>R</b> and <b>L</b> (R and L are interchangeable; the labels just keep you tidy).',
+ 'Do the <b>meter check</b> below.',
+];
+const PLUG=[
+ '<b>OFF</b>: battery Wago open. If anything is already plugged onto <b>D4</b>, <b>R_EN</b> or <b>L_EN</b>, take it off; this cable replaces it.',
+ '<b>"D4" plug</b> → ESP32 <b>D4</b> (left column, 5th pin from the top, USB up).',
+ '<b>"R" plug</b> → driver <b>R_EN</b>. <b>"L" plug</b> → driver <b>L_EN</b>. Go by the labels printed on the driver.',
+ 'Logic ground: swap your 3-port Wago B for a <b>5-port</b> so every wire gets its own port. Port 1: tail light GND · port 2: <b>driver GND</b> pin · port 3: <b>the resistor wire</b> · port 4: wire to the ESP32\'s <b>GND</b> (left column, 2nd) · port 5: spare.',
+ 'Tug every plug and every Wago wire gently.',
+ 'Do the <b>final check</b> below.',
+];
+function list(id,items,key){ const box=document.getElementById(id), saved=JSON.parse(localStorage.getItem(key)||'{}');
+  items.forEach((h,i)=>{ const l=document.createElement('label'); l.innerHTML=`<input type="checkbox"><span class="n">${i+1}</span><span>${h}</span>`;
+    const cb=l.querySelector('input'); cb.checked=!!saved[i]; cb.onchange=()=>{saved[i]=cb.checked;localStorage.setItem(key,JSON.stringify(saved));}; box.appendChild(l); }); }
+list('build',BUILD,'ecBuild'); list('plug',PLUG,'ecPlug');
+</script>
+</body>
+</html>
