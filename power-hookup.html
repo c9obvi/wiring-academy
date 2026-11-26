@@ -57,7 +57,8 @@ b.r{color:#ff8a80}b.br{color:#d7b49e}
 <div class="layout">
   <div class="sticky">
     <div class="card" style="padding:10px">
-      <div class="bmode"><span>My battery +:</span><button data-m="wago">Wago disconnect (sealed lead, cut)</button><button data-m="tab">push-on connector</button></div>
+      <div class="bmode"><span>My battery +:</span><button data-m="wago">Wago disconnect (sealed lead, cut)</button><button data-m="tab">push-on connector</button>
+        <span style="margin-left:14px">Main switch:</span><button data-s="none">not yet</button><button data-s="yes">installed</button></div>
       <svg id="map" viewBox="0 120 1200 645" style="max-height:62vh"></svg>
       <div class="legend">
         <span><i style="background:#e53935;height:7px"></i>+ (positive)</span>
@@ -349,7 +350,14 @@ ${detail('holder','Cut the loop on the side opposite the fuse socket.')}
 <li>Take a second 5-port Wago and write <b>"+"</b> on it. This is the <b>+ bus</b>.</li>
 <li><b>No switch yet?</b> Put the holder's other end straight into <b>+ bus port 1</b>, and skip the next step. <b>Have the switch?</b> Leave that end free for the next step.</li></ol>
 <div class="check"><b>Check:</b> car pink/red → small Wago → fuse holder (empty, cap closed) → its other end.</div>`},
-{t:'The main switch',st:{...AFTER_SW,glow:['sw']},need:['30A on/off toggle switch, pre-wired','1 small Wago'],body:`
+{t:'The main switch',tNoSw:'The main switch: skip for now',noSw:()=>`${SWNOTE()}
+<div class="check"><b>Nothing to do today.</b> In step 6 the fuse holder's free end went straight into <b>+ bus port 1</b>. Go on to step 8.</div>
+<h3>When the switch arrives</h3>
+<ol class="do"><li>${OFF().replace(/^./,c=>c.toUpperCase())}.</li>
+<li>Flip the switch to <b>OFF</b>. Ferrule its two leads.</li>
+<li>Take the fuse holder's end out of + bus port 1. Fuse holder end + switch <b>lead 1</b> → a small Wago.</li>
+<li>Switch <b>lead 2</b> → <b>+ bus port 1</b>.</li>
+<li>Set "Main switch" above the picture to <b>installed</b>, and the steps go back to the switch version.</li></ol>`,st:{...AFTER_SW,glow:['sw']},need:['30A on/off toggle switch, pre-wired','1 small Wago'],body:`
 <div class="why"><b>It's a plain physical flip switch</b>, like a light switch but for 12V. Not a relay and not anything electronic. It turns the whole system on and off. It's needed because the ESP32 never sleeps (Wi-Fi), so without it the parked car slowly drains the battery. The dash power button can't do this job: it's only a signal wire.</div>
 ${detail('toggle','Pre-wired switches have two leads. It doesn\'t matter which goes where.')}
 <ol class="do"><li><b>Check your Amazon orders</b> for "30A toggle switch"; it was on the basket list. If you don't have one, the README links the one I picked (12V, 30A, pre-wired, rubber boot). Anything rated <b>12V DC, 20A or more</b> works.</li>
@@ -360,7 +368,16 @@ ${detail('toggle','Pre-wired switches have two leads. It doesn\'t matter which g
 <li>Mount it later somewhere a grown-up can reach but Luka can't, like under the seat.</li></ol>
 <div class="check"><b>Check:</b> pink/red → Wago → fuse holder → Wago → switch → + bus port 1.</div>
 <div class="oops"><b>Switch not here yet?</b> Skip this step. The fuse doubles as the off switch: <b>fuse out = everything off.</b> Pull it after every ride until the switch arrives.</div>`},
-{t:'TEST: power the buses (nothing else connected)',test:true,st:{...AFTER_SW,batt:true,fuseIn:true,swOn:true,glow:['batt','fuseIn'],v12:'12.x V ✓'},need:['multimeter','a 20A fuse (yellow, "20" on top)'],body:`
+{t:'TEST: power the buses (nothing else connected)',noSw:()=>`${SWNOTE()}
+<div class="why" style="margin-top:8px">The buses get tested on their own, so if anything is wrong, nothing expensive is connected yet. This is the most important check on the page. <b>Fuse already in? Fine, leave it in.</b></div>
+<ol class="do"><li><b>Short check, everything OFF</b> (car-side wire out): dial to the beep (or Ω) setting. Touch one probe to the metal of any + bus port and the other to any − bus port. <b>It must NOT beep.</b></li>
+<li>20A fuse in, cap closed.</li>
+<li>Dial to <b>V⎓</b>, but don't measure yet.</li>
+<li><b>ON:</b> ${ON()}. The buses are live from this moment.</li>
+<li>Red probe on the + bus, black probe on the − bus: should read <b>12.x</b>.</li>
+<li><b>OFF:</b> ${OFF()}. Measure again: <b>0</b>.</li></ol>
+<div class="check"><b>Good:</b> no beep, <b>+12.x</b> when ON, 0 when OFF. Send me a photo of the meter and your Wagos.</div>
+<div class="oops"><b>It beeped:</b> + and − are touching somewhere: a stray copper strand, or a wire in the wrong Wago. Don't turn it ON until it's silent. <b>Minus sign:</b> the buses are swapped. <b>Fuse blew:</b> there's a short. In every case, OFF and send me a photo.</div>`,test:true,st:{...AFTER_SW,batt:true,fuseIn:true,swOn:true,glow:['batt','fuseIn'],v12:'12.x V ✓'},need:['multimeter','a 20A fuse (yellow, "20" on top)'],body:`
 <div class="why">The buses get tested on their own, so if anything is wrong, nothing expensive is connected yet. This is the most important check on the page.</div>
 <ol class="do"><li><b>Short check, battery still disconnected:</b> dial to the beep (or Ω) setting. Touch one probe to the metal of any + bus port and the other to any − bus port. <b>It must NOT beep.</b></li>
 <li>Push the <b>20A</b> fuse into the holder and close the cap.</li>
@@ -387,7 +404,14 @@ ${detail('screw','B+ and B− are big screw terminals. Go by the printed labels.
 <li>Ferrule its leads. Red → <b>+ bus port 4</b>. Black → <b>− bus port 4</b>.</li></ol>
 <div class="check"><b>Check:</b> the buck's red is in the + bus and its black in the − bus.</div>
 <div class="oops"><b>Leads not red/black, or more than two?</b> Send me a photo of the label first.</div>`},
-{t:'TEST: buck on, ESP32 onto car power',test:true,st:{...AFTER_SW,batt:true,fuseIn:true,swOn:true,rear:true,buck:true,buckFuse:true,usb:true,glow:['batt','fuseIn','buck']},need:['USB power meter','the ESP32\'s USB cable'],body:`
+{t:'TEST: buck on, ESP32 onto car power',noSw:()=>`${SWNOTE()}
+<ol class="do"><li>Short check again while OFF: + bus to − bus must not beep.</li>
+<li>20A fuse in. <b>ON:</b> ${ON()}.</li>
+<li>Plug the USB meter into the buck's USB port: <b>5.0–5.2 V</b>.</li>
+<li>Move the ESP32's USB cable from the power bank to the buck (through the USB meter if you like).</li>
+<li>Open the dashboard (mclaren.local). It should come back on its own within about 15 seconds.</li></ol>
+<div class="check"><b>Good:</b> 5V on the meter and the dashboard is back. Tell me and I'll check it from here.</div>
+<div class="oops"><b>No 5V:</b> check the buck's 2A fuse and its input leads. <b>The dashboard keeps dropping or restarting:</b> tell me, and we'll look at the cable and the grounds together.</div>`,test:true,st:{...AFTER_SW,batt:true,fuseIn:true,swOn:true,rear:true,buck:true,buckFuse:true,usb:true,glow:['batt','fuseIn','buck']},need:['USB power meter','the ESP32\'s USB cable'],body:`
 <div class="why">The moment of truth: the car's battery now powers the ESP32.</div>
 <ol class="do"><li>Short check again, battery disconnected: + bus to − bus must not beep.</li>
 <li>20A fuse in, switch OFF, battery + connector on.</li>
@@ -407,7 +431,16 @@ ${detail('cut','Same as before: battery off, one wire at a time, right next to e
 <li>Label the Wagos "M+" and "M−".</li></ol>
 <div class="check"><b>Check:</b> each Wago holds exactly three wires: one from each motor plus the one to the driver. Screws on M+ and M− tight, tug-proof.</div>
 <div class="oops"><b>Which motor wire goes in which Wago is a guess for now</b>, because the motors are mounted mirror-image. The next step tests it, and fixing it means swapping two wires in the Wagos. Nothing gets damaged either way.</div>`},
-{t:'TEST: first spin (wheels off the ground)',test:true,st:{...AFTER_SW,batt:true,fuseIn:true,swOn:true,rear:true,buck:true,buckFuse:true,usb:true,motors:true,glow:['batt','fuseIn','motors'],spin:'10% from the Mac'},need:['something to lift the rear wheels (a box or bricks)','your phone with this chat'],body:`
+{t:'TEST: first spin (wheels off the ground)',noSw:()=>`${SWNOTE()}
+<div class="why" style="margin-top:8px">The first time the motors move. <b>I drive it from here at 10%</b>, very slowly, while you watch the wheels. You only power it up and tell me what you see.</div>
+<div class="danger"><b>The rear wheels must be off the ground</b>, both of them, free to spin. Hands, hair and sleeves away from the wheels. Test mode is on, so <b>the pedal also drives</b>: nobody touches the pedal during this test.</div>
+<ol class="do"><li>Lift the car so both rear wheels hang free.</li>
+<li>Short check while OFF (+ bus to − bus must not beep). 20A fuse in.</li>
+<li><b>ON:</b> ${ON()}.</li>
+<li>Check the dashboard is up (mclaren.local), then message me <b>"go"</b>.</li>
+<li>I run forward at 10% for 2 seconds, stop, then reverse at 10% for 2 seconds. Tell me what each wheel did.</li></ol>
+<div class="check"><b>Good:</b> both wheels turn the same direction, forward on "forward". <b>To stop instantly at any time:</b> OFF (${OFF()}), pull the fuse, or tap E-STOP on the dashboard.</div>
+<div class="oops"><b>Wheels turn opposite ways</b> (fighting each other): OFF, then swap motor 2's two wires between Wago A and B. <b>Both go backward on "forward":</b> swap the M+ and M− wires at the driver, or I flip it in firmware. <b>Nothing moves:</b> tell me what the dashboard shows; I'll check the driver signals from here.</div>`,test:true,st:{...AFTER_SW,batt:true,fuseIn:true,swOn:true,rear:true,buck:true,buckFuse:true,usb:true,motors:true,glow:['batt','fuseIn','motors'],spin:'10% from the Mac'},need:['something to lift the rear wheels (a box or bricks)','your phone with this chat'],body:`
 <div class="why">The first time the motors move. <b>I drive it from here at 10%</b>, very slowly, while you watch the wheels. You only power it up and tell me what you see.</div>
 <div class="danger"><b>The rear wheels must be off the ground</b>, both of them, free to spin. Hands, hair and sleeves away from the wheels. Test mode is on, so <b>the pedal also drives</b>: nobody touches the pedal during this test.</div>
 <ol class="do"><li>Lift the car so both rear wheels hang free.</li>
@@ -423,7 +456,12 @@ ${detail('cut','Same as before: battery off, one wire at a time, right next to e
 <li>Second fuse holder (empty): cut, strip and ferrule both ends. One end → <b>+ bus port 3</b>, the other → driver #2 <b>B+</b> (18 AWG if you need to extend it).</li>
 <li>18 AWG black: <b>− bus port 3</b> → driver #2 <b>B−</b>.</li>
 <li>The 10A fuse stays out until we test steering together.</li></ol>`},
-{t:'Every ride, from now on',st:{...AFTER_SW,batt:true,fuseIn:true,swOn:false,rear:true,buck:true,buckFuse:true,usb:true,motors:true,steer:true,glow:['sw']},body:`
+{t:'Every ride, from now on',noSw:()=>`${SWNOTE()}
+<ul><li><b>Before riding:</b> ON. <b>After riding:</b> OFF. Every time: parked with it ON, the ESP32 slowly drains the battery.</li>
+<li><b>Charging:</b> works exactly as before, through the stock charge port. Everything new is off while the charger is in.</li>
+<li><b>Before any drive test, wheels off the ground.</b></li>
+<li><b>A fuse blew?</b> Something drew too much current. Never swap in a bigger one; tell me first.</li>
+<li><b>Switch arrived?</b> Step 7, then set "Main switch" to installed.</li></ul>`,st:{...AFTER_SW,batt:true,fuseIn:true,swOn:false,rear:true,buck:true,buckFuse:true,usb:true,motors:true,steer:true,glow:['sw']},body:`
 <div class="why"><b>Before riding:</b> switch ON. <b>After:</b> switch OFF. That's it. (No switch yet: pull the 20A fuse after riding.)</div>
 <ul><li><b>Charging:</b> works exactly as before, through the stock charge port. Everything new is off while the charger is in.</li>
 <li><b>Before any drive test, wheels off the ground.</b></li>
@@ -431,6 +469,10 @@ ${detail('cut','Same as before: battery off, one wire at a time, right next to e
 <li><b>Working on wires again?</b> Switch off and pull the battery + connector. Every time.</li></ul>`},
 ];
 let BMODE=localStorage.getItem('pwBatt')||'wago';
+let NOSW=(localStorage.getItem('pwSw')||'none')==='none';
+const ON=()=>BMODE==='wago'?'put the car-side red wire into the <b>battery Wago</b>, lever down':'push the battery + connector onto its tab';
+const OFF=()=>BMODE==='wago'?'lever up and pull the car-side red wire out of the <b>battery Wago</b>':'pull the battery + connector off its tab';
+const SWNOTE=()=>`<div class="why"><b>No switch yet:</b> your on/off is the battery ${BMODE==='wago'?'Wago':'connector'}. <b>ON</b> = ${ON()}. <b>OFF</b> = ${OFF()}. (Pulling the 20A fuse also turns everything off.)</div>`;
 const WAGO_TXT=[
  ['Push the battery + connector back onto its tab','Put the car-side red wire back into the <b>battery Wago</b>, lever down'],
  ['pull the battery + connector off again','lever up and pull the car-side red wire out of the <b>battery Wago</b> again'],
@@ -439,16 +481,18 @@ const WAGO_TXT=[
  ['pull the battery + connector','open the <b>battery Wago</b> (car-side red wire out)'],
 ];
 function swapText(h){ if(BMODE!=='wago') return h; for(const [a,b] of WAGO_TXT) h=h.split(a).join(b); return h; }
-function setMode(m){ BMODE=m; localStorage.setItem('pwBatt',m); document.querySelectorAll('.bmode button').forEach(b=>b.classList.toggle('sel',b.dataset.m===m)); show(cur); }
-document.querySelectorAll('.bmode button').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
-document.querySelectorAll('.bmode button').forEach(b=>b.classList.toggle('sel',b.dataset.m===BMODE));
+function setSw(v){ NOSW=v==='none'; localStorage.setItem('pwSw',v); document.querySelectorAll('.bmode button[data-s]').forEach(b=>b.classList.toggle('sel',(b.dataset.s==='none')===NOSW)); show(cur); }
+document.querySelectorAll('.bmode button[data-s]').forEach(b=>{ b.onclick=()=>setSw(b.dataset.s); b.classList.toggle('sel',(b.dataset.s==='none')===NOSW); });
+function setMode(m){ BMODE=m; localStorage.setItem('pwBatt',m); document.querySelectorAll('.bmode button[data-m]').forEach(b=>b.classList.toggle('sel',b.dataset.m===m)); show(cur); }
+document.querySelectorAll('.bmode button[data-m]').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+document.querySelectorAll('.bmode button[data-m]').forEach(b=>b.classList.toggle('sel',b.dataset.m===BMODE));
 let cur=Math.min(+(localStorage.getItem('pwStep')||0),STEPS.length-1); const done=JSON.parse(localStorage.getItem('pwDone')||'{}');
 function show(i){
   cur=Math.max(0,Math.min(STEPS.length-1,i)); localStorage.setItem('pwStep',cur);
   const s=STEPS[cur];
-  drawMap({...BASE,...(s.st||{})});
+  drawMap({...BASE,...(s.st||{}),...(NOSW?{sw:false}:{})});
   const need=s.need?`<h3>You need</h3><div class="need">${s.need.map(x=>`<span>${x}</span>`).join('')}</div>`:'';
-  document.getElementById('step').innerHTML=`<div class="stitle"><small>Step ${cur} of ${STEPS.length-1}${s.test?' · test':''}</small>${s.t}</div>${need}<h3>${cur?'Do this':'Before you start'}</h3>${swapText(s.body)}
+  document.getElementById('step').innerHTML=`<div class="stitle"><small>Step ${cur} of ${STEPS.length-1}${s.test?' · test':''}${NOSW&&s.noSw?' · no-switch version':''}</small>${NOSW&&s.tNoSw?s.tNoSw:s.t}</div>${need}<h3>${cur?'Do this':'Before you start'}</h3>${swapText(NOSW&&s.noSw?s.noSw():s.body)}
    <div class="nav"><button id="back">◀ Back</button>${cur?`<label><input type="checkbox" id="dn" ${done[cur]?'checked':''}> done</label>`:''}<button class="next" id="next">${cur===STEPS.length-1?'Finish':'Next ▶'}</button></div>`;
   document.querySelectorAll('#step svg[data-d]').forEach(sv=>D[sv.dataset.d](sv));
   document.getElementById('back').onclick=()=>show(cur-1);
