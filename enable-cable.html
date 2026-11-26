@@ -40,7 +40,7 @@ code{font-family:ui-monospace,Menlo,monospace;background:#0f1720;border:1px soli
 <div class="card">
   <h2>2 · The finished cable, lying on your table</h2>
   <svg id="cable" viewBox="0 0 900 380"></svg>
-  <p class="sub" style="margin:4px 0 0">One joint (the "knot") where <b>four things meet</b>: three wires and one leg of the resistor. The resistor's other leg gets one more wire, ending in a ferrule for the ground Wago.</p>
+  <p class="sub" style="margin:4px 0 0">One joint (the "knot") where <b>four things meet</b>: three wires and one leg of the resistor. The resistor's <b>other leg</b> goes to the ground Wago: <b>straight in</b> if the Wago is right next to the knot (a resistor leg is solid wire, so no ferrule), or through a short <b>extra wire with a ferrule</b> if it's further away. The picture shows the long way.</p>
 </div>
 
 <div class="card">
@@ -49,7 +49,7 @@ code{font-family:ui-monospace,Menlo,monospace;background:#0f1720;border:1px soli
   <div class="steps" id="build"></div>
   <div class="check"><b>Prove it with the meter before it goes anywhere near the car:</b><br>
   • <b>Beep mode:</b> touch any two of the three plug ends (D4, R, L) together with the probes: <b>beeps</b>. All three are joined.<br>
-  • <b>Ω mode</b> (20k range if it asks): one probe in any plug end, the other on the ferrule: <b>about 10 kΩ</b> (9.5 to 10.5). That's the resistor, sitting between the knot and ground.<br>
+  • <b>Ω mode</b> (20k range if it asks): one probe in any plug end, the other on the ferrule (or the bare resistor leg): <b>about 10 kΩ</b> (9.5 to 10.5). That's the resistor, sitting between the knot and ground.<br>
   If both are right, the cable is right.</div>
   <div class="oops"><b>Reads 0 or beeps from a plug end to the ferrule?</b> The resistor got bypassed: a strand from the knot touches the ferrule wire. Re-do that heat shrink. <b>Reads nothing (OL) from a plug end to the ferrule?</b> The resistor's leg isn't soldered to the extra wire. Re-solder it.</div>
 </div>
@@ -158,8 +158,7 @@ const BUILD=[
  'Slide the <b>fat heat shrink</b> onto one of the three wires now, pushed back out of the way. (It can\'t go on after soldering.)',
  'Trim one resistor leg to about 1 cm. Twist the <b>three bare wire ends + that leg</b> into one tight bundle.',
  '<b>Solder</b> the bundle. Let it cool, then slide the heat shrink over it and shrink it with the iron\'s side or a lighter, from a distance.',
- 'Slide the <b>thin heat shrink</b> onto the extra wire. Solder the extra wire to the resistor\'s <b>other</b> leg, then shrink it over the joint.',
- 'Strip the extra wire\'s free end, fold it double, and crimp a <b>white ferrule</b> on.',
+ '<b>The resistor\'s other leg: pick one.</b><br><b>Short way (Wago within ~2 cm of the knot):</b> leave the leg bare. It\'s solid wire, so it goes straight into the Wago with <b>no ferrule and no extra wire</b>. Give it a gentle curve, not a sharp bend.<br><b>Long way (Wago further away):</b> slide the thin heat shrink onto a ~10 cm piece of wire, solder it to the leg, and shrink it over the joint. Strip the wire\'s free end, fold it double, and crimp a <b>white ferrule</b> on (stranded wire needs one).',
  'Tape-label the three plugs <b>D4</b>, <b>R</b> and <b>L</b> (R and L are interchangeable; the labels just keep you tidy).',
  'Do the <b>meter check</b> below.',
 ];

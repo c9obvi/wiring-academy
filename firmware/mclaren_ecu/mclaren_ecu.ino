@@ -17,6 +17,7 @@
 #include <WebServer.h>
 #include <ESPmDNS.h>
 #include <esp_system.h>
+#include <Preferences.h>   // flash storage for settings that survive a restart
 
 // Garage mode: define HOME_WIFI_SSID in secrets.h and the car also joins your home Wi-Fi, so new
 // firmware can be sent over the air (no laptop at the car) and http://mclaren.local/status shows
@@ -31,7 +32,7 @@
 #define GARAGE_MODE 0
 #endif
 
-#define FW_VERSION "stage1a-taillab " __DATE__ " " __TIME__  // shows on /status, so you can tell which build is running
+#define FW_VERSION "stage1a-tailsave " __DATE__ " " __TIME__  // shows on /status, so you can tell which build is running
 
 // ---------------- pins (match the wiring tutorial) ----------------
 // One sketch, two boards: the right map is picked from the board you select in the IDE.
@@ -206,7 +207,17 @@ void maxConfig() {
 }
 uint8_t reverseBits(uint8_t b) { uint8_t r = 0; for (int i = 0; i < 8; i++) if (b & (1 << i)) r |= 1 << (7 - i); return r; }
 uint8_t shownRows[8], shownLvl = 0;   // what the matrix is showing right now (the dashboard draws it)
-void maxShow(const uint8_t rows[8], uint8_t intensity) {
+uint8_t tailRot = 0;   // 0-3: quarter turns clockwise, for however the light ends up mounted
+void rotateRows(const uint8_t in[8], uint8_t out[8], uint8_t q) {
+  for (int r = 0; r < 8; r++) out[r] = 0;
+  for (int r = 0; r < 8; r++) for (int c = 0; c < 8; c++) if (in[r] & (0x80 >> c)) {
+    int nr = r, nc = c;
+    for (int k = 0; k < q; k++) { int t = nr; nr = nc; nc = 7 - t; }   // one quarter turn clockwise
+    out[nr] |= 0x80 >> nc;
+  }
+}
+void maxShow(const uint8_t rowsIn[8], uint8_t intensity) {
+  uint8_t rows[8]; rotateRows(rowsIn, rows, tailRot);
   maxConfig();  // every frame re-sends the setup too (~1 ms total), so one bad write can't leave the light stuck
   maxSend(0x0A, intensity & 0x0F);
   for (int i = 0; i < 8; i++) {
@@ -230,7 +241,7 @@ const uint8_t PAT_OFF[8]  = {0, 0, 0, 0, 0, 0, 0, 0};
 // The MAX7219 has ONE brightness for all 64 LEDs, so "edge bright, inside dim" is done by lighting fewer inside LEDs.
 enum DriveLook { LOOK_ARROW, LOOK_DIM, LOOK_EDGE };
 const char* LOOK_NAMES[] = {"arrow", "dim", "edge"};
-DriveLook tailLook = LOOK_ARROW;
+DriveLook tailLook = LOOK_EDGE;   // factory default (was the arrow)
 uint8_t tailDriveLvl = TAIL_DIM, tailBrakeLvl = TAIL_BRIGHT, edgeFill = 0;  // edgeFill: inside LEDs lit, 0 / 25 / 50 %
 bool tailFlash = true;
 uint16_t flashMs = 200;  // each blink: this long on, this long off (was 90 ms, too quick to read)
@@ -305,14 +316,37 @@ void updateTail(uint32_t now) {
     case TAIL_OFF:     maxShow(PAT_OFF, 0); break;
   }
 }
+// saved defaults live in flash ("tail" namespace) and load at boot; "Back to default" = factory settings
+Preferences prefs;
+void tailFactory() { tailLook = LOOK_EDGE; tailDriveLvl = TAIL_DIM; tailBrakeLvl = TAIL_BRIGHT; edgeFill = 0; tailFlash = true; flashMs = 200; flashN = 4; tailRot = 0; }
+void tailLoad() {
+  prefs.begin("tail", true);
+  tailLook = (DriveLook)constrain(prefs.getUChar("look", tailLook), 0, 2);
+  tailDriveLvl = constrain(prefs.getUChar("drv", tailDriveLvl), 0, TAIL_LAB_MAX);
+  tailBrakeLvl = constrain(prefs.getUChar("brk", tailBrakeLvl), 0, TAIL_LAB_MAX);
+  edgeFill = prefs.getUChar("fill", edgeFill); if (edgeFill != 25 && edgeFill != 50) edgeFill = 0;
+  tailFlash = prefs.getBool("flash", tailFlash);
+  flashMs = constrain(prefs.getUShort("fms", flashMs), 60, 500);
+  flashN = constrain(prefs.getUChar("fn", flashN), 1, 5);
+  tailRot = prefs.getUChar("rot", tailRot) & 3;
+  prefs.end();
+}
+void tailSave() {
+  prefs.begin("tail", false);
+  prefs.putUChar("look", tailLook); prefs.putUChar("drv", tailDriveLvl); prefs.putUChar("brk", tailBrakeLvl); prefs.putUChar("fill", edgeFill);
+  prefs.putBool("flash", tailFlash); prefs.putUShort("fms", flashMs); prefs.putUChar("fn", flashN); prefs.putUChar("rot", tailRot);
+  prefs.end();
+  logEvent("tail: settings saved as default");
+}
 int tailJson(char* b, size_t n) {
-  return snprintf(b, n, "{\"look\":\"%s\",\"drv\":%d,\"brk\":%d,\"fill\":%d,\"flash\":%d,\"fms\":%d,\"fn\":%d,\"max\":%d,\"pv\":%d,\"lvl\":%d,\"rows\":[%d,%d,%d,%d,%d,%d,%d,%d]}",
-                  LOOK_NAMES[tailLook], tailDriveLvl, tailBrakeLvl, edgeFill, (int)tailFlash, flashMs, flashN, TAIL_LAB_MAX, tailPreview ? 1 : 0, shownLvl,
+  return snprintf(b, n, "{\"look\":\"%s\",\"drv\":%d,\"brk\":%d,\"fill\":%d,\"flash\":%d,\"fms\":%d,\"fn\":%d,\"rot\":%d,\"max\":%d,\"pv\":%d,\"lvl\":%d,\"rows\":[%d,%d,%d,%d,%d,%d,%d,%d]}",
+                  LOOK_NAMES[tailLook], tailDriveLvl, tailBrakeLvl, edgeFill, (int)tailFlash, flashMs, flashN, tailRot * 90, TAIL_LAB_MAX, tailPreview ? 1 : 0, shownLvl,
                   shownRows[0], shownRows[1], shownRows[2], shownRows[3], shownRows[4], shownRows[5], shownRows[6], shownRows[7]);
 }
 // /tail?look=arrow|dim|edge&drv=0-10&brk=0-10&fill=0|25|50&flash=0|1&preview=d|r|b|g&reset=1  (cosmetic only, so any network may use it)
 void handleTail() {
-  if (server.hasArg("reset")) { tailLook = LOOK_ARROW; tailDriveLvl = TAIL_DIM; tailBrakeLvl = TAIL_BRIGHT; edgeFill = 0; tailFlash = true; flashMs = 200; flashN = 4; }
+  if (server.hasArg("reset")) tailFactory();
+  if (server.hasArg("rot")) tailRot = (server.arg("rot").toInt() / 90) & 3;
   if (server.hasArg("look")) { String l = server.arg("look"); for (int i = 0; i < 3; i++) if (l == LOOK_NAMES[i]) tailLook = (DriveLook)i; }
   if (server.hasArg("drv")) tailDriveLvl = constrain(server.arg("drv").toInt(), 0, TAIL_LAB_MAX);
   if (server.hasArg("brk")) tailBrakeLvl = constrain(server.arg("brk").toInt(), 0, TAIL_LAB_MAX);
@@ -321,9 +355,10 @@ void handleTail() {
   if (server.hasArg("fms")) flashMs = constrain(server.arg("fms").toInt(), 60, 500);
   if (server.hasArg("fn")) flashN = constrain(server.arg("fn").toInt(), 1, 5);
   if (server.hasArg("preview")) { char c = server.arg("preview")[0]; if (strchr("drbg", c)) { tailPreview = c; previewStart = millis(); } }
+  if (server.hasArg("save")) tailSave();
   tailDirty = true;
   updateTail(millis());
-  char b[220]; tailJson(b, sizeof b);
+  char b[240]; tailJson(b, sizeof b);
   server.sendHeader("Cache-Control", "no-store");
   server.send(200, "application/json", b);
 }
@@ -487,8 +522,9 @@ button{background:#8e1b1b;color:#fff;border:0;border-radius:10px;padding:12px 18
 <label class="sl"><span>Blinks</span><input type="range" id="fn" min="1" max="5"><b id="fnV"></b></label>
 <label class="sl"><span>Blink speed</span><input type="range" id="fms" min="60" max="500" step="10"><b id="fmsV" style="min-width:58px"></b></label>
 <div style="font-size:12px;color:var(--mut);margin:6px 0 4px">Preview on the real light (4 s, no motors):</div>
-<div class="pv"><button data-p="d">▶ Driving</button><button data-p="g">▶ Let go</button><button data-p="b">▶ Brake</button><button data-p="r">▶ Reverse</button><button id="tlReset" style="background:#2a3a4c">Back to default</button></div>
-<small>The chip has one brightness for all 64 LEDs, so "Bright edge" dims the inside by lighting fewer of its LEDs. Reverse always shows the down arrow. Brightness stops at 10 to protect the USB supply. These settings reset when the car restarts; tell Claude the one you like to make it the default.</small>
+<div class="sl" style="margin-top:4px"><span>Rotate</span><span class="seg" id="rot" style="margin:0"><button data-v="0">0°</button><button data-v="90">90°</button><button data-v="180">180°</button><button data-v="270">270°</button></span></div>
+<div class="pv"><button data-p="d">▶ Driving</button><button data-p="g">▶ Let go</button><button data-p="b">▶ Brake</button><button data-p="r">▶ Reverse</button><button id="tlReset" style="background:#2a3a4c">Factory default</button><button id="tlSave" style="background:#1b5e20">💾 Save as default</button></div><div id="tlSaved" style="font-size:12px;color:#a5d6a7;min-height:16px;margin-top:4px"></div>
+<small>The chip has one brightness for all 64 LEDs, so "Bright edge" dims the inside by lighting fewer of its LEDs. Reverse always shows the down arrow. Brightness stops at 10 to protect the USB supply. <b>Save as default</b> keeps your settings through restarts and updates. <b>Factory default</b> goes back to Bright edge (not saved until you press Save).</small>
 </div></div></div>
 <div class="card"><h2>Links</h2><div class="grid"><div class="tile"><span>Driving phone</span><b id="phone"></b></div>
 <div class="tile"><span>On car Wi-Fi</span><b id="ap"></b></div><div class="tile"><span>Home Wi-Fi</span><b id="rssi"></b></div></div></div>
@@ -538,6 +574,7 @@ function tl(t){ const op=(0.25+0.75*Math.sqrt((2*t.lvl+1)/31)).toFixed(2);
   $('bigTxt').textContent=(t.pv?'preview · ':'live · ')+(t.rows.some(r=>r)?'level '+t.lvl:'off');
   for(const b of $('look').children) b.classList.toggle('sel',b.dataset.v===t.look);
   for(const b of $('fill').children) b.classList.toggle('sel',+b.dataset.v===t.fill);
+  for(const b of $('rot').children) b.classList.toggle('sel',+b.dataset.v===t.rot);
   $('fillRow').style.display=t.look==='edge'?'flex':'none';
   if(Date.now()-tlTouch>1500) for(const k of ['drv','brk','fn','fms']) $(k).value=t[k]; tlLabels();
   if(document.activeElement!==$('flash')) $('flash').checked=!!t.flash; }
@@ -550,6 +587,8 @@ let tlT=0; for(const k of ['drv','brk','fn','fms']) $(k).oninput=()=>{ tlTouch=D
 $('flash').onchange=()=>tlSend('flash='+($('flash').checked?1:0)+($('flash').checked?'&preview=g':''));
 document.querySelector('.pv').onclick=e=>{ if(e.target.dataset.p) tlSend('preview='+e.target.dataset.p); };
 $('tlReset').onclick=()=>tlSend('reset=1&preview=g');
+$('rot').onclick=e=>{ if(e.target.dataset.v) tlSend('rot='+e.target.dataset.v+'&preview=d'); };
+$('tlSave').onclick=async()=>{ await tlSend('save=1'); $('tlSaved').textContent='Saved. These are now the defaults at every start.'; setTimeout(()=>$('tlSaved').textContent='',4000); };
 async function tick(){ try{ const r=await fetch('/telemetry',{cache:'no-store'}); last=await r.json(); fails=0; render(last); }
   catch(e){ if(++fails>2){ $('pill').textContent='OFFLINE'; $('pill').className='pill stop'; $('sub').textContent='car not answering'; } } }
 setInterval(tick,333); tick();
@@ -628,6 +667,7 @@ void setup() {
   pinMode(PIN_REAR_EN, OUTPUT); digitalWrite(PIN_REAR_EN, LOW);
   pwmSetup(PIN_REAR_RPWM, CH_R);
   pwmSetup(PIN_REAR_LPWM, CH_L);
+  tailLoad();
   maxInit();
   maxShow(PAT_OFF, 0);   // dark until Wi-Fi is up: the radio's start-up current spike comes first, alone
   inGoFwd.begin(); inGoRev.begin(); inHighLow.begin(); inMode.begin(); inPower.begin();
