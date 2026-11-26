@@ -218,7 +218,7 @@ body.mobile .term{transform-box:fill-box;transform-origin:center;transform:scale
       <p class="meta" style="margin:0 0 6px">Pick what matches <b>your</b> build. The map, the steps, the pin map and the stages all redraw to match.</p>
       <label>Microcontroller<select id="boardSel"><option value="classic">Classic ESP32 (WROOM-32 / DOIT 30-pin)</option><option value="s3">ESP32-S3 DevKitC-1 (long board)</option></select></label>
       <label>ESP32 power<select id="powerSel"><option value="usb">USB cable from the buck's USB socket</option><option value="leads">Buck 5V/GND wire leads → VIN/GND</option></select></label>
-      <label>Grounds<select id="gndSel"><option value="wago">Wago splice (2× 3-port), board has 2 GND pins</option><option value="direct">Direct to pins (screw breakout / custom PCB)</option></select></label>
+      <label>Grounds<select id="gndSel"><option value="wago5">Wago: 5-port logic GND + 3-port dash GND (your build)</option><option value="wago">Wago: two 3-port (A dash, B driver + tail)</option><option value="direct">Direct to pins (screw breakout / custom PCB)</option></select></label>
     </div></div>
   <button class="btn small" id="mobileBtn" title="Switch to phone layout">📱 Phone</button>
   <a class="repo-link" href="https://github.com/c9obvi/wiring-academy" title="View on GitHub">GitHub</a>
@@ -341,18 +341,20 @@ const COMPS = [
     terms:[T('r','b',.3,'red','Left motor red lead. The color is only a label; direction gets verified at first power-up.'), T('k','b',.7,'blk','Left motor black lead.')]},
   {id:'rmot', kind:'motor', x:730, y:1180, w:120, h:60, title:'Right rear motor', sub:'',
     terms:[T('r','b',.3,'red','Right motor red lead.'), T('k','b',.7,'blk','Right motor black lead.')]},
-  {id:'wpos', kind:'wago', x:180, y:1300, w:126, h:38, title:'WAGO #1', sub:'motor +', ports:'t', bus:true,
+  {id:'wpos', kind:'wago', x:180, y:1300, w:126, h:38, title:'M+ WAGO', sub:'3-port · motors +', ports:'t', bus:true,
     terms:[1,2,3].map((n,i)=>T('p'+n,'t',.2+i*.3,String(n),'Wago #1 port '+n+' (the "red club"). All 3 holes are joined inside.'))},
-  {id:'wneg', kind:'wago', x:740, y:1300, w:110, h:38, title:'WAGO #2', sub:'motor −', ports:'t', bus:true, gnd:true,
+  {id:'wneg', kind:'wago', x:740, y:1300, w:110, h:38, title:'M− WAGO', sub:'3-port · motors −', ports:'t', bus:true, gnd:true,
     terms:[1,2,3].map((n,i)=>T('p'+n,'t',.2+i*.3,String(n),'Wago #2 port '+n+' (the "black club"). All 3 holes are joined inside.'))},
   {id:'max', kind:'matrix', x:440, y:1368, w:150, h:100, title:'MAX7219 tail light', sub:'8×8 red',
     terms:[T('CLK','r',.12,'CLK','Clock (SPI SCK).'), T('CS','r',.31,'CS','Chip select / LOAD.'),
            T('DIN','r',.5,'DIN','Data in (SPI MOSI).'), T('GND','r',.69,'GND','Ground.'),
            T('VCC','r',.88,'VCC','5V supply. 64 LEDs need more current than the 3V3 pin can give.')]},
-  {id:'wgA', kind:'wago', x:392, y:604, w:66, h:30, title:'WAGO A', sub:'logic GND', ports:'t', bus:true, gnd:true, variant:'wago',
+  {id:'wgA', kind:'wago', x:392, y:604, w:66, h:30, title:'DASH GND', sub:'3-port Wago A', ports:'t', bus:true, gnd:true, variant:['wago','wago5'],
     terms:[1,2,3].map((n,i)=>T('p'+n,'t',.2+i*.3,String(n),'Logic-ground Wago A, port '+n+'. Dash black and pink in, one lead out to the ESP32 GND pin on the left. Thin jumper wire: strip 22 mm and fold it back to 11 mm.'))},
-  {id:'wgB', kind:'wago', x:736, y:790, w:66, h:30, title:'WAGO B', sub:'logic GND', ports:'t', bus:true, gnd:true, variant:'wago',
+  {id:'wgB', kind:'wago', x:736, y:790, w:66, h:30, title:'WAGO B', sub:'3-port logic GND', ports:'t', bus:true, gnd:true, variant:'wago',
     terms:[1,2,3].map((n,i)=>T('p'+n,'t',.2+i*.3,String(n),'Logic-ground Wago B, port '+n+'. Tail light and driver GND in, one lead out to the ESP32 GND pin on the right.'))},
+  {id:'wgL', kind:'wago', x:700, y:790, w:150, h:30, title:'LOGIC GND', sub:'5-port Wago', ports:'t', bus:true, gnd:true, variant:'wago5',
+    terms:[['1','tail light GND'],['2','driver GND'],['3','10k resistor leg'],['4','lead to the ESP32 GND'],['5','spare (display later)']].map(([n,what],i)=>T('p'+n,'t',.1+i*.2,n,'Logic GND Wago, port '+n+': '+what+'. One wire per port. Only ground ever goes in here.'))},
 ];
 
 const COMP = {}; const TERMS = {};
@@ -526,7 +528,7 @@ wire(4,'l4','esp.IO6','drv1.R_EN','grn',3,'sig','GPIO6 → enables',
  {fix:'The original plan tied R_EN/L_EN to 3.3V ("always on"). Put them on a GPIO so the software has a kill switch.'});
 wire(4,'l5','drv1.R_EN','drv1.GND','brn',2,'sig','10 kΩ pull-down: EN → GND',
  'A <b>10 kΩ resistor</b> from the EN pins to GND on the header. Solder it across the header pins, or tuck it into the dupont housing.',
- 'While the ESP32 boots, its pins float for about half a second. The pull-down guarantees the motors are OFF until your code explicitly says go.', {res:true});
+ 'While the ESP32 boots, its pins float for about half a second. The pull-down guarantees the motors are OFF until your code explicitly says go.', {res:true, gnd:['wago','direct']});
 wire(4,'l6','esp.IO4','drv1.RPWM','blu',3,'sig','GPIO4 → RPWM (forward)',
  'Jumper from GPIO4 to <b>RPWM</b>.',
  'PWM on RPWM = forward. Duty cycle = speed: 20% duty ≈ 20% power.');
@@ -600,15 +602,15 @@ wire(7,'c6','dash.pnk','esp.GNDb','pnk',3,'gnd','Pink/red → GND',
  'Splice pink/red to a jumper and plug onto another GND pin.',
  'The power button connects pink to white. Putting pink on ground means white reads LOW whenever the button is on.',
  {warn:'In the stock car this wire may have carried supply voltage from the old board. Wired to the ESP32 it is only a switch contact. Never plug it back into the stock board while it is also connected to the ESP32.', gnd:'direct'});
-wire(7,'c6w','dash.pnk','wgA.p1','pnk',3,'gnd','Pink/red → Wago A',
+wire(7,'c6w','dash.pnk','wgA.p1','pnk',3,'gnd','Pink/red → Dash GND Wago',
  'Dash <b>pink/red</b> into port 1 of <b>Wago A</b> (a 3-port). Cut the jumper, keep the end that\'s in the dash plug, strip 22 mm and fold it to 11 mm.',
- 'The power button connects pink to white, so pink must be on ground.', {gnd:'wago'});
-wire(7,'c5w','dash.blk','wgA.p2','blk',3,'gnd','Black → Wago A',
+ 'The power button connects pink to white, so pink must be on ground.', {gnd:['wago','wago5']});
+wire(7,'c5w','dash.blk','wgA.p2','blk',3,'gnd','Black → Dash GND Wago',
  'Dash <b>black</b> into port 2 of <b>Wago A</b>, same thin-wire trick.',
- 'Black is the common for orange, blue, yellow and green.', {gnd:'wago'});
-wire(7,'gA','wgA.p3','esp.GND','blk',3,'gnd','Wago A → ESP32 GND (left side)',
+ 'Black is the common for orange, blue, yellow and green.', {gnd:['wago','wago5']});
+wire(7,'gA','wgA.p3','esp.GND','blk',3,'gnd','Dash GND Wago → ESP32 GND (left side)',
  'One jumper (female end on the ESP32 side) from Wago A\'s last port to the <b>GND</b> pin next to VIN: left side, 2nd from the bottom.',
- 'Both dash grounds now share that one pin. Tug-test all three wires.', {gnd:'wago'});
+ 'Both dash grounds now share that one pin. Tug-test all three wires.', {gnd:['wago','wago5']});
 wire(7,'c7','dash.wht','esp.IO8','wht',3,'sig','White (power button) → GPIO8',
  'Splice white to a jumper and plug onto GPIO8.',
  'Power button off = the firmware disables the car, your phone included, just like stock. When it comes back on, the driver has to let go of the pedal before it drives.',
@@ -665,10 +667,23 @@ S.find(s=>s.id==='meter').usb = {items:['<b>Lift the B+ wire out of the rear dri
   'Switch OFF, unplug the battery, put the B+ wire back.']};
 S.find(s=>s.id==='b5').wago = {warn:'With the Wago ground splice, the left GND pin is taken by Wago A. Put this black lead into Wago A instead (use a 5-port for Wago A), or use a screw-terminal breakout.'};
 S.find(s=>s.id==='t1').usb = {real:'From the ESP32\'s <b>VIN</b> pin (5V on some boards) to the matrix <b>VCC</b>. With USB power, VIN outputs the USB 5V.'};
+// 5-port logic-ground setup: same jobs, each ground with its own port on the Logic GND Wago
+const placeAfter = id => { const st = S.pop(); S.splice(S.findIndex(x=>x.id===id)+1, 0, st); };
+wire(4,'l2L','drv1.GND','wgL.p2','blk',3,'gnd','Driver GND → Logic GND Wago',
+ 'Jumper from the driver\'s <b>GND</b> header pin into port 2 of the <b>Logic GND Wago</b> (5-port), with a folded white ferrule.',
+ 'This is the driver\'s reference for the signal pins. The 5-port Wago gives every ground its own port, so nothing has to share.', {gnd:'wago5'}); placeAfter('l2w');
+wire(4,'gL','wgL.p4','esp.GNDb','blk',3,'gnd','Logic GND Wago → ESP32 GND',
+ 'One jumper (female end on the ESP32 side) from port 4 of the Logic GND Wago to the ESP32 GND pin that the Dash GND Wago is <b>not</b> using. A DOIT classic held USB up has two: left column 2nd (under 3V3) and right column 2nd (under VIN).',
+ 'Everything in the Logic GND Wago now shares that one GND pin. Both ESP32 GND pins are the same inside; they just can\'t hold two plugs each.', {gnd:'wago5', tip:'Tug-test every wire in a Wago. Thin jumper wire needs a folded ferrule.'}); placeAfter('gB');
+wire(4,'l5L','drv1.R_EN','wgL.p3','brn',2,'sig','10 kΩ pull-down: enables → Logic GND Wago',
+ 'The <b>10 kΩ resistor</b>: one leg is soldered into the enable Y-cable\'s knot (with the wires to GPIO6, R_EN and L_EN), the other leg goes into port 3 of the Logic GND Wago, straight in or with a short extension. The enable-cable guide shows it step by step.',
+ 'While the ESP32 boots, its pins float for about half a second. The pull-down holds the enables LOW, so the motors stay OFF until your code explicitly says go.', {res:true, gnd:'wago5'}); placeAfter('l5');
+wire(6,'t2L','max.GND','wgL.p1','blk',3,'gnd','MAX7219 GND → Logic GND Wago',
+ 'Jumper from the matrix <b>GND</b> pin into port 1 of the <b>Logic GND Wago</b>.', 'The tail light shares the Logic GND Wago with the driver.', {gnd:'wago5'}); placeAfter('t2w');
 const ALL_WIRES = S.filter(s=>s.t==='wire');
 let STEPS = S, WIRES = ALL_WIRES, PH_STEPS = [];
 function rebuildSteps(){   // drop steps that don't apply to the selected power setup, keeping the user's place
-  const keep = st => (!st.power || st.power === state.power) && (!st.gnd || st.gnd === state.gnd);
+  const keep = st => (!st.power || st.power === state.power) && (!st.gnd || [].concat(st.gnd).includes(state.gnd));
   const curId = STEPS[state.i] && STEPS[state.i].id;
   STEPS = S.filter(keep); WIRES = STEPS.filter(st=>st.t==='wire');
   PH_STEPS = PHASES.map(p => STEPS.map((st,i)=>st.ph===p.n?i:-1).filter(i=>i>=0));
@@ -685,7 +700,7 @@ function rebuildSteps(){   // drop steps that don't apply to the selected power 
    STATE
    ===================================================================== */
 const KEY = 'mclaren-wiring-academy-v1';
-let state = {i:0, done:{}, checks:{}, quiz:{}, real:{}, layers:{hv:true,gnd:true,lv:true,sig:true}, board:'classic', sheet:'half', power:'usb', gnd:'wago'};
+let state = {i:0, done:{}, checks:{}, quiz:{}, real:{}, layers:{hv:true,gnd:true,lv:true,sig:true}, board:'classic', sheet:'half', power:'usb', gnd:'wago5'};
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) state = {...state, ...s, layers:{...state.layers, ...(s.layers||{})}}; } catch(e){}
 
 /* =====================================================================
@@ -724,9 +739,9 @@ const BOARDS = {
 { const q = new URLSearchParams(location.search); if (BOARDS[q.get('board')]) state.board = q.get('board');
   if (q.has('mobile')) state.mobile = q.get('mobile')!=='0';
   if (['usb','leads'].includes(q.get('power'))) state.power = q.get('power');
-  if (['wago','direct'].includes(q.get('gnd'))) state.gnd = q.get('gnd'); if (q.get('sheet')) state.sheet = q.get('sheet'); }
+  if (['wago','wago5','direct'].includes(q.get('gnd'))) state.gnd = q.get('gnd'); if (q.get('sheet')) state.sheet = q.get('sheet'); }
 if (!BOARDS[state.board]) state.board = 'classic';
-if (!['wago','direct'].includes(state.gnd)) state.gnd = 'wago';
+if (!['wago','wago5','direct'].includes(state.gnd)) state.gnd = 'wago5';
 const BOARD = () => BOARDS[state.board];
 const pinOf = n => (BOARD().map && BOARD().map[n]) || n;
 function bt(s){  // translate S3-written text for the selected board
@@ -741,7 +756,7 @@ function boardify(obj, keys){
   if (!o){ o = {}; for (const k of keys) if (obj[k]!==undefined) o[k] = Array.isArray(obj[k]) ? [...obj[k]] : obj[k]; ORIG.set(obj, o); }
   let src = o;   // per-setup wording, where a step has it
   if (state.power==='usb' && obj.usb) src = {...src, ...obj.usb};
-  if (state.gnd==='wago' && obj.wago) src = {...src, ...obj.wago};
+  if (state.gnd!=='direct' && obj.wago) src = {...src, ...obj.wago};
   for (const k of keys){
     if (src[k]!==undefined) obj[k] = Array.isArray(src[k]) ? src[k].map(bt) : bt(src[k]);
     else if (!(k in o)) delete obj[k];
@@ -759,14 +774,14 @@ function applyBoard(){
   const gs = document.getElementById('gndSel'); if (gs) gs.value = state.gnd;
   setupSummary();
 }
-const hiddenTerms = () => [...(state.power==='usb' ? ['buck.out+','buck.out-'] : ['buck.usb','esp.usb']), ...(state.gnd==='wago' ? [] : ['wgA.p1','wgA.p2','wgA.p3','wgB.p1','wgB.p2','wgB.p3'])];
+const hiddenTerms = () => [...(state.power==='usb' ? ['buck.out+','buck.out-'] : ['buck.usb','esp.usb']), ...COMPS.filter(c=>c.variant && ![].concat(c.variant).includes(state.gnd)).flatMap(c=>c.terms.map(t=>c.id+'.'+t.id))];
 function applyPowerVisibility(){ const h = hiddenTerms(); for (const fid in termEls) termEls[fid].style.display = h.includes(fid) ? 'none' : ''; }
-function setupSummary(){ const e = document.getElementById('setupSum'); if (e) e.textContent = `${BOARD().short} · ${state.power==='usb'?'USB power':'lead power'} · ${state.gnd==='wago'?'Wago GND':'direct GND'}`; }
+function setupSummary(){ const e = document.getElementById('setupSum'); if (e) e.textContent = `${BOARD().short} · ${state.power==='usb'?'USB power':'lead power'} · ${state.gnd==='wago5'?'5-port Wago GND':state.gnd==='wago'?'3-port Wago GND':'direct GND'}`; }
 function switchGnd(g){
   state.gnd = g; save(); rebuildSteps(); applyBoard();
   gComps.innerHTML = ''; COMPS.forEach(drawComp); applyPowerVisibility(); clearSel();
   renderWires(); renderLegend(); renderPanel(); applyHighlights(); refocus();
-  toast(g==='wago' ? 'Grounds: two 3-port <b>Wagos</b> (A and B) collect the grounds, one lead each to the ESP32\'s two GND pins.' : 'Grounds: every ground goes <b>straight to a GND pin</b>, as on a screw-terminal breakout or the custom PCB.', 'good');
+  toast(g==='wago5' ? 'Grounds: the <b>Logic GND Wago</b> (5-port) takes the driver, the tail light, the 10k resistor and one lead to the ESP32. The dash keeps its 3-port <b>Dash GND Wago</b>.' : g==='wago' ? 'Grounds: two 3-port <b>Wagos</b> (A and B) collect the grounds, one lead each to the ESP32\'s two GND pins.' : 'Grounds: every ground goes <b>straight to a GND pin</b>, as on a screw-terminal breakout or the custom PCB.', 'good');
 }
 function switchPower(p){
   state.power = p; save(); rebuildSteps(); applyBoard();
@@ -832,7 +847,7 @@ function drawCar(){
 }
 
 function drawComp(c){
-  if (c.variant && c.variant !== state.gnd) return;   // parts that only exist in one setup
+  if (c.variant && ![].concat(c.variant).includes(state.gnd)) return;   // parts that only exist in some setups
   const g = el('g', {class:'comp', 'data-id':c.id}, gComps);
   const {x,y,w,h} = c;
   const body = (fill, stroke, rx=10) => el('rect', {class:'body', x, y, width:w, height:h, rx, fill, stroke, 'stroke-width':2}, g);

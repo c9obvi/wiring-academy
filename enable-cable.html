@@ -145,11 +145,11 @@ function ferrule(p,x,y){ el(p,'rect',{x:x-8,y,width:16,height:12,rx:2,fill:'#ece
   el(M,'rect',{x:WX,y:WY,width:320,height:60,rx:8,fill:'#d7dde2',stroke:'#9aa6b0','stroke-width':2});
   const ports=['tail light','driver GND','resistor','ESP32 GND','spare'];
   ports.forEach((n,i)=>{const x=WX+32+i*64; el(M,'rect',{x:x-11,y:WY+8,width:22,height:26,rx:3,fill:'#f39c12',stroke:'#a35f00'}); txt(M,x,WY+50,i+1,{c:'#333',s:12,w:800}); txt(M,x,WY+78,n,{c:'#cfd8e3',s:11.5,w:700}); });
-  txt(M,WX+160,WY+106,'logic-ground Wago (5-port): one wire per port',{c:GND,s:13,w:700});
+  txt(M,WX+160,WY+106,'Logic GND Wago (5-port): one wire per port',{c:GND,s:13,w:700});
   // wires into it
   line(M,[[K[0],K[1]+96],[K[0],365],[WX+160,365],[WX+160,WY+8]],'#888',4);
   line(M,[[652,333],[630,333],[630,350],[WX+96,350],[WX+96,WY+8]],GND,4); txt(M,520,343,'driver GND',{c:GND,s:12});
-  line(M,[[194,124],[222,124],[222,535],[WX+224,535],[WX+224,WY+90]],GND,4); txt(M,232,527,'ESP32 GND',{c:GND,s:12,a:'start'});
+  line(M,[[194,124],[222,124],[222,535],[WX+224,535],[WX+224,WY+90]],GND,4); txt(M,232,527,'ESP32 GND (the free GND pin)',{c:GND,s:12,a:'start'});
 })();
 
 // checklists

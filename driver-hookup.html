@@ -40,6 +40,7 @@ a{color:#ffb74d}
   <p class="sub" style="margin:0 0 6px">Tick each row as it's done. The number in the circle matches the pin maps in section 2.</p>
   <div id="rows"></div>
   <div class="why"><b>Leave empty:</b> the driver's <b>R_IS</b> and <b>L_IS</b> pins. Nothing goes on them.</div>
+  <div class="why"><b>* Which ESP32 GND pin (row 6)?</b> Your DOIT board has two, and they're the same inside: <b>left column 2nd</b> (under 3V3) and <b>right column 2nd</b> (under VIN). Each pin holds one plug. The <b>Dash GND Wago</b> (the 3-port with the dash's pink and black) already uses one of them, so row 6 takes the <b>other</b> one.</div>
 </div>
 
 <div class="card">
@@ -59,7 +60,7 @@ a{color:#ffb74d}
     <tr><th>Probes on</th><th>Good</th><th>If not</th></tr>
     <tr><td>ESP32 <b>3V3</b> ↔ ESP32 <b>GND</b></td><td>no steady beep (a blip that stops is fine)</td><td>3V3 is touching ground somewhere. Check row 1 isn't on a GND pin.</td></tr>
     <tr><td>Driver <b>VCC</b> ↔ driver <b>GND</b></td><td>no steady beep</td><td>Same as above, from the driver side.</td></tr>
-    <tr><td>ESP32 <b>D4</b> ↔ ESP32 <b>GND</b> (Ω)</td><td><b>about 10 kΩ</b></td><td>0: the resistor is bypassed. OL: the resistor isn't reaching the Wago.</td></tr>
+    <tr><td>ESP32 <b>D4</b> ↔ ESP32 <b>GND</b> (Ω)</td><td><b>about 10 kΩ</b></td><td>0: the resistor is bypassed. OL: the resistor isn't reaching the Logic GND Wago.</td></tr>
   </table>
   <div class="check" style="margin-top:10px"><b>Then:</b> ON (car-side wire into the battery Wago), check the dashboard is back at <b>mclaren.local</b>, and message Claude <b>"go"</b>. No motors are connected, so nothing moves. I drive the outputs from here while you measure with the meter on <b>DC volts</b>, <b>black probe on the driver's GND pin</b>:</div>
   <table>
@@ -84,19 +85,19 @@ const C={y:'#fdd835',g:'#66bb6a',b:'#42a5f5',p:'#ab47bc',k:'#b0bec5'};
 // one row per connection: [colour, left name, left where, wire, right name, right where, extra]
 const ROWS=[
  ['y','3V3','ESP32 · left, 1st (top)','plain jumper','VCC','driver header'],
- ['g','D4','ESP32 · left, 5th','Y-cable (enable-cable page)','R_EN + L_EN','driver header (both)','10k leg → ground Wago port 3'],
+ ['g','D4','ESP32 · left, 5th','Y-cable (enable-cable page)','R_EN + L_EN','driver header (both)','10k leg → Logic GND Wago port 3'],
  ['b','RX2','ESP32 · left, 6th (GPIO16)','plain jumper','RPWM','driver header'],
  ['p','TX2','ESP32 · left, 7th (GPIO17)','plain jumper','LPWM','driver header'],
- ['k','GND','driver header','jumper + white ferrule','port 2','ground Wago'],
- ['k','GND','ESP32 · left, 2nd','jumper + white ferrule','port 4','ground Wago'],
- ['k','tail light GND','tail light (already wired)','its wire','port 1','ground Wago'],
+ ['k','GND','driver header','jumper + white ferrule','port 2','Logic GND Wago'],
+ ['k','GND','ESP32 · the free GND pin*','jumper + white ferrule','port 4','Logic GND Wago'],
+ ['k','tail light GND','tail light (already wired)','its wire','port 1','Logic GND Wago'],
 ];
 const saved=JSON.parse(localStorage.getItem('drvRows')||'{}');
 const R=document.getElementById('rows');
 ROWS.forEach(([col,ln,lw,wl,rn,rw,extra],i)=>{
   const d=document.createElement('label'); d.className='row'+(saved[i]?' done':'');
   d.innerHTML=`<input type="checkbox" ${saved[i]?'checked':''}><span class="badge" style="background:${C[col]}">${i+1}</span><svg viewBox="0 0 640 ${extra?84:56}"></svg>`;
-  const s=d.querySelector('svg'), gnd=rw.startsWith('ground');
+  const s=d.querySelector('svg'), gnd=rw.startsWith('Logic GND');
   el(s,'rect',{x:2,y:6,width:190,height:44,rx:8,fill:'#1b2631',stroke:'#455a64','stroke-width':2});
   txt(s,16,27,ln,{c:'#fff',s:17,w:800,a:'start'}); txt(s,16,44,lw,{c:'#9fb3c8',s:12,a:'start'});
   el(s,'line',{x1:192,y1:28,x2:446,y2:28,stroke:C[col],'stroke-width':7,'stroke-linecap':'round'});
@@ -114,7 +115,7 @@ function badge(p,x,y,n,col){ el(p,'circle',{cx:x,cy:y,r:12,fill:C[col]}); txt(p,
   el(S,'rect',{x:60,y:44,width:180,height:546,rx:12,fill:'#1b2631',stroke:'#455a64','stroke-width':2});
   el(S,'rect',{x:130,y:34,width:40,height:20,rx:4,fill:'#90a4ae'}); txt(S,150,49,'USB',{c:'#111',s:11,w:800});
   const L=['3V3','GND','D15','D2','D4','RX2','TX2','D5','D18','D19','D21','RX0','TX0','D22','D23'];
-  const use={'3V3':[1,'y'],'GND':[6,'k'],'D4':[2,'g'],'RX2':[3,'b'],'TX2':[4,'p']};
+  const use={'3V3':[1,'y'],'GND':[6,'k'],'D4':[2,'g'],'RX2':[3,'b'],'TX2':[4,'p']}; // GND: or the right column's, whichever is free
   L.forEach((n,i)=>{const y=80+i*34, u=use[n];
     el(S,'circle',{cx:90,cy:y,r:8,fill:u?C[u[1]]:'#37474f'}); txt(S,108,y+5,(i+1)+'. '+n,{c:u?'#fff':'#6b7d8f',s:14,w:u?800:400,a:'start'});
     if(u) badge(S,215,y,u[0],u[1]);});
@@ -130,7 +131,7 @@ function badge(p,x,y,n,col){ el(p,'circle',{cx:x,cy:y,r:12,fill:C[col]}); txt(p,
   txt(S,150,400,'order may differ: read the labels',{c:'#9fb3c8',s:12});
 })();
 (()=>{const S=document.getElementById('wagoMap');
-  txt(S,150,22,'Ground Wago · 5-port',{c:'#fff',s:14,w:700});
+  txt(S,150,22,'Logic GND Wago · 5-port',{c:'#fff',s:14,w:700});
   el(S,'rect',{x:90,y:44,width:120,height:236,rx:10,fill:'#d7dde2',stroke:'#9aa6b0','stroke-width':2});
   const P=[['tail light GND',7,'k'],['driver GND',5,'k'],['10k resistor leg',2,'g'],['ESP32 GND',6,'k'],['spare (display later)',0]];
   P.forEach(([n,b,col],i)=>{const y=80+i*44;

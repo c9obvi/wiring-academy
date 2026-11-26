@@ -202,19 +202,19 @@ function drawMap(st){
     wire(M,[[XR,P(2)],[870,P(2)],[870,225],[DX,225]],RED,7,n('rear'));
   }
   if(st.motors){
-    const nm=n('motors'), WA=225, WB=285, wx=1255;
+    // drawn as a loop so no wire crosses another: motor 1 sits between the Wagos, motor 2 outside it
+    const nm=n('motors'), WA=225, WB=285, wx=1255, R=wx+32;
     wire(M,[[DX+190,WA],[wx-22,WA]],RED,7,nm); wire(M,[[DX+190,WB],[wx-22,WB]],BLK,7,nm);
-    [WA,WB].forEach(y=>{ el(M,'rect',{x:wx-22,y:y-18,width:54,height:36,rx:6,fill:'#d7dde2',stroke:'#9aa6b0','stroke-width':2});
+    [[WA,'M+ Wago'],[WB,'M− Wago']].forEach(([y,name])=>{ el(M,'rect',{x:wx-22,y:y-18,width:54,height:36,rx:6,fill:'#d7dde2',stroke:'#9aa6b0','stroke-width':2});
       [0,1,2].forEach(k=>el(M,'rect',{x:wx-18+k*16,y:y-12,width:12,height:24,rx:2,fill:'#f39c12'})); });
-    txt(M,wx+5,WA-26,'3-port Wago A',{c:'#9fb3c8',s:11}); txt(M,wx+5,WB+34,'3-port Wago B',{c:'#9fb3c8',s:11});
-    const mot=(cy,l1,l2)=>{ el(M,'circle',{cx:1410,cy,r:34,fill:'#37474f',stroke:nm?ORG:'#90a4ae','stroke-width':3}); txt(M,1410,cy+6,'M',{c:'#fff',s:20,w:800});
-      txt(M,1410,cy+52,l1,{c:'#cfd8e3',s:12,w:700}); txt(M,1410,cy+67,l2,{c:'#9fb3c8',s:11}); };
-    mot(150,'motor 1','orange + white'); mot(370,'motor 2','red + black');
-    wire(M,[[1376,140],[1340,140],[1340,WA-6],[wx+32,WA-6]],'#ff9800',4,nm);
-    wire(M,[[1376,160],[1355,160],[1355,WB-6],[wx+32,WB-6]],'#eeeeee',4,nm);
-    wire(M,[[1376,360],[1310,360],[1310,WA+6],[wx+32,WA+6]],'#e53935',4,nm);
-    wire(M,[[1376,380],[1325,380],[1325,WB+6],[wx+32,WB+6]],'#555',4,nm);
-    if(st.spin) txt(M,1300,470,st.spin,{c:'#a5d6a7',s:15,w:800});
+    [[WA,'+','#ff8a80'],[WB,'−','#fff']].forEach(([y,sym,c])=>{ el(M,'circle',{cx:wx+5,cy:y,r:11,fill:'#111'}); txt(M,wx+5,y+7,sym,{c,s:20,w:800}); });
+    const m=(cx,cy,label)=>{ el(M,'circle',{cx,cy,r:24,fill:'#37474f',stroke:nm?ORG:'#90a4ae','stroke-width':3}); txt(M,cx,cy+6,label,{c:'#fff',s:16,w:800}); };
+    // motor 1: orange to M+, white to M-
+    wire(M,[[R,WA-6],[1350,WA-6],[1350,231]],'#ff9800',4,nm); wire(M,[[R,WB+6],[1350,WB+6],[1350,279]],'#eeeeee',4,nm); m(1350,255,'M1');
+    // motor 2: red over the top to M+, black under the bottom to M-
+    wire(M,[[wx+5,WA-18],[wx+5,150],[1430,150],[1430,231]],'#e53935',4,nm); wire(M,[[wx+5,WB+18],[wx+5,360],[1430,360],[1430,279]],'#555',4,nm); m(1430,255,'M2');
+    txt(M,1360,392,'+ = M+ Wago, − = M− Wago (3-port each)',{c:'#cfd8e3',s:12}); txt(M,1360,409,'M1 = motor 1 (orange + white)',{c:'#cfd8e3',s:12}); txt(M,1360,426,'M2 = motor 2 (red + black)',{c:'#cfd8e3',s:12});
+    if(st.spin) txt(M,1360,452,st.spin,{c:'#a5d6a7',s:15,w:800});
   }
   if(st.buck){
     rbox(M,DX,585,190,150,'#2a2516',n('buck')?ORG:'#f9a825','BUCK 12V→5V','');
@@ -421,14 +421,14 @@ ${detail('screw','B+ and B− are big screw terminals. Go by the printed labels.
 <div class="check"><b>Good:</b> 5V on the meter and the dashboard is back. Tell me and I'll check it from here.</div>
 <div class="oops"><b>No 5V:</b> check the buck's 2A fuse and its input leads. <b>The dashboard keeps dropping or restarting:</b> tell me, and we'll look at the cable and the grounds together.</div>`},
 {t:'Rear motors → the driver\'s M+ and M−',st:{...AFTER_SW,rear:true,buck:true,buckFuse:true,usb:true,motors:true,glow:['motors']},need:['2 three-port Wagos (221-413)','14 AWG red + black','ferrules','wire cutters'],body:`
-<div class="why">Both rear motors share one driver, wired side by side ("in parallel"): each motor gets one wire into Wago A and its other wire into Wago B. Wago A goes to the driver's <b>M+</b>, Wago B to <b>M−</b>. Each motor still has its own white plug from the old board; those get snipped the same way you did the power plug.</div>
+<div class="why">Both rear motors share one driver, wired side by side ("in parallel"): each motor puts one wire into the <b>M+ Wago</b> and its other wire into the <b>M− Wago</b>. The two 3-port Wagos are per side (+ and −), <b>not one per motor</b>: the M+ Wago goes to the driver's <b>M+</b>, the M− Wago to <b>M−</b>. Each motor still has its own white plug from the old board; those get snipped the same way you did the power plug.</div>
 <div class="danger"><b>Before this step,</b> the driver's small 8-pin header must be wired to the ESP32 (the <b>driver hookup page</b>, all steps, with the 10k resistor in place: <a href="enable-cable.html" style="color:#ffb74d">enable-cable.html</a> shows that cable step by step). That resistor is what keeps the motors off while the ESP32 starts up.</div>
 ${detail('cut','Same as before: battery off, one wire at a time, right next to each plug.')}
 <ol class="do"><li><b>Battery + connector off, fuse out.</b></li>
 <li>Snip the white plug off <b>motor 1</b> (orange + white wires) and <b>motor 2</b> (red + black). Strip and ferrule all four wires.</li>
-<li><b>Wago A:</b> motor 1 <b>orange</b> + motor 2 <b>red</b> + a 14 AWG <b>red</b> piece → driver <b>M+</b>.</li>
-<li><b>Wago B:</b> motor 1 <b>white</b> + motor 2 <b>black</b> + a 14 AWG <b>black</b> piece → driver <b>M−</b>.</li>
-<li>Label the Wagos "M+" and "M−".</li></ol>
+<li><b>M+ Wago:</b> motor 1 <b>orange</b> + motor 2 <b>red</b> + a 14 AWG <b>red</b> piece → driver <b>M+</b>.</li>
+<li><b>M− Wago:</b> motor 1 <b>white</b> + motor 2 <b>black</b> + a 14 AWG <b>black</b> piece → driver <b>M−</b>.</li>
+<li>Label them "M+" and "M−" with tape.</li></ol>
 <div class="check"><b>Check:</b> each Wago holds exactly three wires: one from each motor plus the one to the driver. Screws on M+ and M− tight, tug-proof.</div>
 <div class="oops"><b>Which motor wire goes in which Wago is a guess for now</b>, because the motors are mounted mirror-image. The next step tests it, and fixing it means swapping two wires in the Wagos. Nothing gets damaged either way.</div>`},
 {t:'TEST: first spin (wheels off the ground)',noSw:()=>`${SWNOTE()}
@@ -440,7 +440,7 @@ ${detail('cut','Same as before: battery off, one wire at a time, right next to e
 <li>Check the dashboard is up (mclaren.local), then message me <b>"go"</b>.</li>
 <li>I run forward at 10% for 2 seconds, stop, then reverse at 10% for 2 seconds. Tell me what each wheel did.</li></ol>
 <div class="check"><b>Good:</b> both wheels turn the same direction, forward on "forward". <b>To stop instantly at any time:</b> OFF (${OFF()}), pull the fuse, or tap E-STOP on the dashboard.</div>
-<div class="oops"><b>Wheels turn opposite ways</b> (fighting each other): OFF, then swap motor 2's two wires between Wago A and B. <b>Both go backward on "forward":</b> swap the M+ and M− wires at the driver, or I flip it in firmware. <b>Nothing moves:</b> tell me what the dashboard shows; I'll check the driver signals from here.</div>`,test:true,st:{...AFTER_SW,batt:true,fuseIn:true,swOn:true,rear:true,buck:true,buckFuse:true,usb:true,motors:true,glow:['batt','fuseIn','motors'],spin:'10% from the Mac'},need:['something to lift the rear wheels (a box or bricks)','your phone with this chat'],body:`
+<div class="oops"><b>Wheels turn opposite ways</b> (fighting each other): OFF, then swap motor 2's two wires between the M+ Wago and the M− Wago. <b>Both go backward on "forward":</b> swap the M+ and M− wires at the driver, or I flip it in firmware. <b>Nothing moves:</b> tell me what the dashboard shows; I'll check the driver signals from here.</div>`,test:true,st:{...AFTER_SW,batt:true,fuseIn:true,swOn:true,rear:true,buck:true,buckFuse:true,usb:true,motors:true,glow:['batt','fuseIn','motors'],spin:'10% from the Mac'},need:['something to lift the rear wheels (a box or bricks)','your phone with this chat'],body:`
 <div class="why">The first time the motors move. <b>I drive it from here at 10%</b>, very slowly, while you watch the wheels. You only power it up and tell me what you see.</div>
 <div class="danger"><b>The rear wheels must be off the ground</b>, both of them, free to spin. Hands, hair and sleeves away from the wheels. Test mode is on, so <b>the pedal also drives</b>: nobody touches the pedal during this test.</div>
 <ol class="do"><li>Lift the car so both rear wheels hang free.</li>
@@ -449,7 +449,7 @@ ${detail('cut','Same as before: battery off, one wire at a time, right next to e
 <li>I run forward at 10% for 2 seconds, stop, then reverse at 10% for 2 seconds.</li>
 <li>Tell me what each wheel did.</li></ol>
 <div class="check"><b>Good:</b> both wheels turn the same direction, forward on "forward". <b>To stop instantly at any time:</b> pull the 20A fuse, or tap E-STOP on the dashboard.</div>
-<div class="oops"><b>Wheels turn opposite ways</b> (fighting each other): fuse out, swap motor 2's two wires between Wago A and B. <b>Both go backward on "forward":</b> swap the M+ and M− wires at the driver, or I flip it in firmware. <b>Nothing moves:</b> tell me what the dashboard shows; I'll check the driver signals from here.</div>`},
+<div class="oops"><b>Wheels turn opposite ways</b> (fighting each other): fuse out, swap motor 2's two wires between the M+ Wago and the M− Wago. <b>Both go backward on "forward":</b> swap the M+ and M− wires at the driver, or I flip it in firmware. <b>Nothing moves:</b> tell me what the dashboard shows; I'll check the driver signals from here.</div>`},
 {t:'Later: steering driver',st:{...AFTER_SW,rear:true,buck:true,buckFuse:true,usb:true,motors:true,steer:true,glow:['steer']},need:['the second fuse holder','a 10A fuse (red, "10" on top)','18 AWG wire'],body:`
 <div class="why">Do this when we start Stage 1 steering. Its feed is thinner 18 AWG wire, so it gets its own <b>10A</b> fuse; the 20A main fuse wouldn't protect wire that thin.</div>
 <ol class="do"><li>Battery disconnected.</li>
